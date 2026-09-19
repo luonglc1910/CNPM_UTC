@@ -1,0 +1,39 @@
+@{
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập - Quản lý Khách sạn</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="login-page">
+        <div class="card login-card shadow-sm">
+            <div class="card-body p-4">
+                <h1 class="h4 mb-4 text-center">Quản lý Khách sạn</h1>
+
+                @if (TempData["Info"] is string info)
+                {
+                    <div class="alert alert-info">@info</div>
+                }
+
+                <form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+                    <div class="mb-3">
+                        <label for="username" class="form-label">Tên đăng nhập</label>
+                        <input id="username" name="username" class="form-control" autocomplete="username" required />
+                    </div>
+                    <div class="mb-3">
+                        <label for="password" class="form-label">Mật khẩu</label>
+                        <input id="password" name="password" type="password" class="form-control" autocomplete="current-password" required />
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

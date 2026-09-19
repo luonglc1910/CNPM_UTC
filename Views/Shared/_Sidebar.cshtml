@@ -1,0 +1,37 @@
+@{
+    var controller = ViewContext.RouteData.Values["controller"] as string;
+    var action = ViewContext.RouteData.Values["action"] as string;
+
+    string Active(string c, string? a = null) =>
+        string.Equals(controller, c, StringComparison.OrdinalIgnoreCase)
+        && (a is null || string.Equals(action, a, StringComparison.OrdinalIgnoreCase))
+            ? "active" : "";
+}
+
+<nav class="sidebar-nav">
+    <a class="nav-link @Active("Home")" asp-controller="Home" asp-action="Index"><i class="bi bi-speedometer2"></i> Tổng quan</a>
+
+    <div class="nav-section">Danh mục &amp; Cấu hình</div>
+    <a class="nav-link @Active("RoomTypes")" asp-controller="RoomTypes" asp-action="Index"><i class="bi bi-tags"></i> Loại phòng</a>
+    <a class="nav-link @Active("Rooms")" asp-controller="Rooms" asp-action="Index"><i class="bi bi-door-closed"></i> Phòng</a>
+    <a class="nav-link @Active("HotelServices")" asp-controller="HotelServices" asp-action="Index"><i class="bi bi-cup-hot"></i> Dịch vụ</a>
+    <a class="nav-link @Active("Employees")" asp-controller="Employees" asp-action="Index"><i class="bi bi-people"></i> Nhân viên</a>
+
+    <div class="nav-section">Đặt phòng</div>
+    <a class="nav-link @Active("Reservations", "Index")" asp-controller="Reservations" asp-action="Index"><i class="bi bi-journal-bookmark"></i> Đơn đặt phòng</a>
+    <a class="nav-link @Active("Reservations", "Availability")" asp-controller="Reservations" asp-action="Availability"><i class="bi bi-calendar-check"></i> Tra cứu phòng trống</a>
+
+    <div class="nav-section">Lễ tân</div>
+    <a class="nav-link @Active("FrontDesk", "Index")" asp-controller="FrontDesk" asp-action="Index"><i class="bi bi-person-lines-fill"></i> Khách đang lưu trú</a>
+    <a class="nav-link @Active("FrontDesk", "CheckIn")" asp-controller="FrontDesk" asp-action="CheckIn"><i class="bi bi-box-arrow-in-right"></i> Check-in</a>
+    <a class="nav-link @Active("FrontDesk", "WalkIn")" asp-controller="FrontDesk" asp-action="WalkIn"><i class="bi bi-person-walking"></i> Khách vãng lai</a>
+
+    <div class="nav-section">Buồng phòng</div>
+    <a class="nav-link @Active("Housekeeping", "Index")" asp-controller="Housekeeping" asp-action="Index"><i class="bi bi-stars"></i> Trạng thái dọn phòng</a>
+    <a class="nav-link @Active("Housekeeping", "Requests")" asp-controller="Housekeeping" asp-action="Requests"><i class="bi bi-bell"></i> Yêu cầu phục vụ</a>
+
+    <div class="nav-section">Thu ngân &amp; Báo cáo</div>
+    <a class="nav-link @Active("Billing")" asp-controller="Billing" asp-action="Index"><i class="bi bi-receipt"></i> Hóa đơn</a>
+    <a class="nav-link @Active("Reports", "Revenue")" asp-controller="Reports" asp-action="Revenue"><i class="bi bi-graph-up"></i> Doanh thu</a>
+    <a class="nav-link @Active("Reports", "Occupancy")" asp-controller="Reports" asp-action="Occupancy"><i class="bi bi-pie-chart"></i> Công suất phòng</a>
+</nav>

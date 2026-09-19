@@ -1,0 +1,149 @@
+:root {
+  --sidebar-width: 250px;
+  --sidebar-bg: #1f2937;
+  --sidebar-fg: #cbd5e1;
+  --sidebar-active: #2563eb;
+}
+
+html {
+  font-size: 15px;
+}
+
+body {
+  background: #f3f4f6;
+}
+
+.admin-shell {
+  display: flex;
+  min-height: 100vh;
+}
+
+/* Sidebar */
+.admin-sidebar {
+  background: var(--sidebar-bg);
+  color: var(--sidebar-fg);
+}
+
+@media (min-width: 992px) {
+  .admin-sidebar {
+    width: var(--sidebar-width);
+    flex-shrink: 0;
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow-y: auto;
+  }
+}
+
+.admin-sidebar.offcanvas-lg {
+  --bs-offcanvas-bg: var(--sidebar-bg);
+  --bs-offcanvas-width: var(--sidebar-width);
+}
+
+.sidebar-brand {
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.15rem;
+  text-decoration: none;
+}
+
+.admin-sidebar .offcanvas-header {
+  padding: 1rem 1.25rem;
+}
+
+@media (min-width: 992px) {
+  .admin-sidebar .offcanvas-header {
+    display: flex;
+  }
+}
+
+.admin-sidebar .offcanvas-body {
+  padding: 0 0.75rem 1rem;
+}
+
+.sidebar-nav {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.sidebar-nav .nav-section {
+  margin: 1rem 0.5rem 0.25rem;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #94a3b8;
+}
+
+.sidebar-nav .nav-link {
+  color: var(--sidebar-fg);
+  padding: 0.45rem 0.75rem;
+  border-radius: 0.375rem;
+}
+
+.sidebar-nav .nav-link i {
+  width: 1.25rem;
+  display: inline-block;
+}
+
+.sidebar-nav .nav-link:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.sidebar-nav .nav-link.active {
+  color: #fff;
+  background: var(--sidebar-active);
+}
+
+/* Main area */
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.admin-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.75rem 1.5rem;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.admin-title {
+  font-size: 1.25rem;
+  margin: 0;
+}
+
+.admin-content {
+  padding: 1.5rem;
+}
+
+@media (max-width: 575.98px) {
+  .admin-topbar,
+  .admin-content {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+}
+
+.placeholder-card {
+  border-style: dashed;
+}
+
+/* Login */
+.login-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.login-card {
+  width: 100%;
+  max-width: 380px;
+}

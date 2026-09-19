@@ -1,0 +1,11 @@
+@{
+    ViewData["Title"] = "Check-in";
+}
+
+<partial name="_Placeholder" model="@("Check-in cho khách đã đặt phòng trước: chọn đơn đặt phòng, gán phòng, xác nhận giấy tờ.")" />
+
+<form method="post" class="mt-3 d-flex gap-2">
+    @* TODO: các trường nhập liệu *@
+    <button type="submit" class="btn btn-primary">Lưu</button>
+    <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+</form>

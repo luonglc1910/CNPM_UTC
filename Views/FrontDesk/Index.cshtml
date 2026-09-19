@@ -1,0 +1,9 @@
+@{
+    ViewData["Title"] = "Khách đang lưu trú";
+}
+
+<div class="d-flex justify-content-end mb-3">
+    <a class="btn btn-primary" asp-action="WalkIn">Check-in khách vãng lai</a>
+</div>
+
+<partial name="_Placeholder" model="@("Danh sách phòng đang có khách, kèm thao tác đổi phòng, thêm khách, check-out.")" />

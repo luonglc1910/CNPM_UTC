@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - Quản lý Khách sạn</title>
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body>
+    <div class="admin-shell">
+        <aside class="admin-sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="adminSidebar">
+            <div class="offcanvas-header">
+                <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
+                    <i class="bi bi-building"></i> Hotel Admin
+                </a>
+                <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#adminSidebar" aria-label="Đóng"></button>
+            </div>
+            <div class="offcanvas-body">
+                <partial name="_Sidebar" />
+            </div>
+        </aside>
+
+        <div class="admin-main">
+            <header class="admin-topbar">
+                <button class="btn btn-outline-secondary btn-sm d-lg-none" type="button" data-bs-toggle="offcanvas" data-bs-target="#adminSidebar" aria-controls="adminSidebar" aria-label="Mở menu">
+                    <i class="bi bi-list"></i>
+                </button>
+                <h1 class="admin-title">@ViewData["Title"]</h1>
+                <div class="ms-auto d-flex align-items-center gap-2">
+                    <span class="text-muted small"><i class="bi bi-person-circle"></i> @(User.Identity?.IsAuthenticated == true ? User.Identity.Name : "Admin")</span>
+                    <form asp-controller="Account" asp-action="Logout" method="post">
+                        <button type="submit" class="btn btn-outline-secondary btn-sm">Đăng xuất</button>
+                    </form>
+                </div>
+            </header>
+
+            <main class="admin-content">
+                @if (TempData["Info"] is string info)
+                {
+                    <div class="alert alert-info alert-dismissible fade show" role="alert">
+                        @info
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                    </div>
+                }
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="~/js/site.js" asp-append-version="true"></script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>
