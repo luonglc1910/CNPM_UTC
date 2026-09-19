@@ -23,10 +23,15 @@ Tôi cũng sẽ tạo cấu trúc thư mục cơ bản phản ánh 5 nhóm nghi�
 - `Models/` (Các thực thể dữ liệu)
 - `Services/` (Logic nghiệp vụ)
   - `Configuration/` (Quản lý Danh mục & Cấu hình Hệ thống)
+    - `ConfigurationsController` (GET/POST /api/configurations/...)
   - `Reservation/` (Nghiệp vụ Đặt phòng)
+    - `ReservationsController` (GET/POST/PUT /api/reservations/...)
   - `FrontDesk/` (Nghiệp vụ Lễ tân)
+    - `FrontDeskController` (GET/POST/PUT /api/frontdesk/...)
   - `Housekeeping/` (Nghiệp vụ Dịch vụ & Buồng phòng)
+    - `HousekeepingController` (GET/POST/PUT /api/housekeeping/...)
   - `Billing/` (Nghiệp vụ Thu ngân & Báo cáo Thống kê)
+    - `BillingController` (GET/POST /api/billing/...)
 
 ### Frontend (FE)
 Tôi sẽ chạy lệnh `npx -y create-vite@latest FE --template react` (hoặc `react-ts` nếu bạn dùng TypeScript) để tạo dự án React.
