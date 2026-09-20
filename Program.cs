@@ -28,6 +28,7 @@ builder.Services.AddScoped<IScreenAccess, ScreenAccess>();
 builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
 
 // Giữ nguyên ký tự tiếng Việt trong HTML thay vì mã hóa thành &#x...;
 builder.Services.Configure<WebEncoderOptions>(options =>

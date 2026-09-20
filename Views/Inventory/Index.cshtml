@@ -1,0 +1,254 @@
+@model InventoryIndexViewModel
+@{
+    ViewData["Title"] = "Tồn kho";
+    var isAdmin = User.IsInRole(Roles.Admin);
+}
+
+@* Hai tab đi qua query string chứ không phải JavaScript: bộ lọc và phân trang của mỗi tab
+   nằm nguyên trên URL, chia sẻ link hay bấm F5 đều ra đúng chỗ đang xem. *@
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(Model.IsHistoryTab ? "" : "active")"
+           asp-action="Index" asp-route-tab="@InventoryIndexViewModel.StockTab">
+            <i class="bi bi-box-seam"></i> Tồn kho
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.IsHistoryTab ? "active" : "")"
+           asp-action="Index" asp-route-tab="@InventoryIndexViewModel.HistoryTab">
+            <i class="bi bi-clock-history"></i> Lịch sử giao dịch kho
+        </a>
+    </li>
+</ul>
+
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+        <input type="hidden" name="tab" value="@Model.Tab" />
+
+        <div>
+            <label asp-for="Keyword" class="form-label mb-1 small text-muted"></label>
+            <input asp-for="Keyword" class="form-control form-control-sm" style="min-width: 200px"
+                   placeholder="VD: MB001" />
+        </div>
+
+        <div>
+            <label asp-for="HotelServiceId" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="HotelServiceId" asp-items="Model.ServiceOptions"
+                    class="form-select form-select-sm" style="min-width: 240px">
+                <option value="">— Tất cả dịch vụ —</option>
+            </select>
+        </div>
+
+        @if (Model.IsHistoryTab)
+        {
+            <div>
+                <label asp-for="Type" class="form-label mb-1 small text-muted"></label>
+                <select asp-for="Type" class="form-select form-select-sm">
+                    <option value="">— Tất cả —</option>
+                    @foreach (var type in Enum.GetValues<InventoryTransactionType>())
+                    {
+                        <option value="@((int)type)" selected="@(Model.Type == type)">@type.ToDisplayName()</option>
+                    }
+                </select>
+            </div>
+        }
+        else
+        {
+            <div class="form-check mb-2">
+                <input asp-for="LowStockOnly" class="form-check-input" />
+                <label asp-for="LowStockOnly" class="form-check-label small"></label>
+            </div>
+        }
+
+        <button type="submit" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="bi bi-search"></i> Lọc
+        </button>
+        @if (Model.HasFilter)
+        {
+            <a class="btn btn-link btn-sm mb-2" asp-action="Index" asp-route-tab="@Model.Tab">Bỏ lọc</a>
+        }
+    </form>
+
+    @if (isAdmin)
+    {
+        <div class="d-flex gap-2">
+            <a class="btn btn-primary" asp-action="Receive">
+                <i class="bi bi-box-arrow-in-down"></i> Nhập kho
+            </a>
+            <a class="btn btn-outline-primary" asp-action="Adjust">
+                <i class="bi bi-clipboard-check"></i> Điều chỉnh
+            </a>
+        </div>
+    }
+</div>
+
+@if (Model.LowStockCount > 0 && !Model.LowStockOnly && !Model.IsHistoryTab)
+{
+    <div class="alert alert-warning d-flex align-items-center gap-2">
+        <i class="bi bi-exclamation-triangle-fill"></i>
+        <span>
+            Có <strong>@Model.LowStockCount</strong> dịch vụ đang ở dưới định mức tồn tối thiểu.
+            <a asp-action="Index" asp-route-tab="@InventoryIndexViewModel.StockTab"
+               asp-route-lowStockOnly="true">Xem danh sách</a>
+        </span>
+    </div>
+}
+
+@if (!Model.IsHistoryTab)
+{
+    @if (Model.Stocks.TotalItems == 0)
+    {
+        <div class="card"><div class="card-body text-center text-muted py-5">
+            @if (Model.HasFilter)
+            {
+                <p class="mb-0">Không có dịch vụ nào khớp với bộ lọc hiện tại.</p>
+            }
+            else
+            {
+                <p class="mb-1">Chưa có dịch vụ nào bật quản lý kho.</p>
+                <p class="mb-0 small">Bật "có quản lý kho" ở màn hình <a asp-controller="HotelServices" asp-action="Index">Dịch vụ</a>.</p>
+            }
+        </div></div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Dịch vụ</th>
+                            <th>Đơn vị</th>
+                            <th class="text-end">Tồn hiện tại</th>
+                            <th class="text-end">Tồn tối thiểu</th>
+                            <th>Lần nhập gần nhất</th>
+                            <th class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.Stocks.Items)
+                    {
+                        <tr class="@(item.IsLowStock ? "table-warning" : "") @(item.IsActive ? "" : "opacity-50")">
+                            <td>
+                                <code>@item.Code</code> @item.Name
+                                @if (!item.IsActive)
+                                {
+                                    <span class="badge text-bg-secondary ms-1">Ngừng dùng</span>
+                                }
+                            </td>
+                            <td>@item.Unit</td>
+                            <td class="text-end">
+                                @if (item.IsLowStock)
+                                {
+                                    <i class="bi bi-exclamation-triangle-fill text-warning me-1"
+                                       title="Tồn dưới định mức tối thiểu"></i>
+                                }
+                                <strong>@item.StockQuantity</strong>
+                            </td>
+                            <td class="text-end">@item.MinStockLevel</td>
+                            <td>
+                                @if (item.LastReceivedAt is not null)
+                                {
+                                    @item.LastReceivedAt.Value.ToString("dd/MM/yyyy HH:mm")
+                                }
+                                else
+                                {
+                                    <span class="text-muted">Chưa từng nhập</span>
+                                }
+                            </td>
+                            <td class="text-end text-nowrap">
+                                @if (isAdmin && item.IsActive)
+                                {
+                                    <a class="btn btn-sm btn-outline-primary" asp-action="Receive"
+                                       asp-route-hotelServiceId="@item.Id" title="Nhập kho">
+                                        <i class="bi bi-box-arrow-in-down"></i>
+                                    </a>
+                                    <a class="btn btn-sm btn-outline-secondary" asp-action="Adjust"
+                                       asp-route-hotelServiceId="@item.Id" title="Điều chỉnh">
+                                        <i class="bi bi-clipboard-check"></i>
+                                    </a>
+                                }
+                                <a class="btn btn-sm btn-outline-secondary" asp-action="Index"
+                                   asp-route-tab="@InventoryIndexViewModel.HistoryTab"
+                                   asp-route-hotelServiceId="@item.Id" title="Xem lịch sử kho">
+                                    <i class="bi bi-clock-history"></i>
+                                </a>
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <partial name="_Pager" model="@((Model.Stocks.Page, Model.Stocks.TotalPages, Model.Stocks.TotalItems))" />
+    }
+}
+else
+{
+    <div class="alert alert-secondary small d-flex align-items-center gap-2">
+        <i class="bi bi-lock"></i>
+        Lịch sử kho <strong>chỉ đọc</strong>: không sửa, không xóa. Sai sót được chỉnh bằng một
+        phiếu điều chỉnh mới có lý do.
+    </div>
+
+    @if (Model.History.TotalItems == 0)
+    {
+        <div class="card"><div class="card-body text-center text-muted py-5">
+            <p class="mb-0">Chưa có giao dịch kho nào khớp với bộ lọc hiện tại.</p>
+        </div></div>
+    }
+    else
+    {
+        <div class="card">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Thời điểm</th>
+                            <th>Dịch vụ</th>
+                            <th class="text-center">Loại</th>
+                            <th class="text-end">Số lượng</th>
+                            <th class="text-end">Tồn sau</th>
+                            <th>Chứng từ</th>
+                            <th>Người thực hiện</th>
+                            <th>Lý do / ghi chú</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var item in Model.History.Items)
+                    {
+                        <tr>
+                            <td class="text-nowrap">@item.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td><code>@item.ServiceCode</code> @item.ServiceName</td>
+                            <td class="text-center">
+                                <span class="badge @item.Type.ToBadgeClass()">@item.Type.ToDisplayName()</span>
+                            </td>
+                            <td class="text-end @(item.Quantity < 0 ? "text-danger" : "text-success")">
+                                @* Dấu +/− nói ngay tồn tăng hay giảm mà không phải đọc cột Loại. *@
+                                <strong>@(item.Quantity > 0 ? "+" : "")@item.Quantity</strong>
+                                <span class="text-muted small">@item.Unit</span>
+                            </td>
+                            <td class="text-end">@item.StockAfter</td>
+                            <td>
+                                @if (item.FolioCode is not null)
+                                {
+                                    <code>@item.FolioCode</code>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                            <td>@(item.PerformedBy ?? "—")</td>
+                            <td class="small">@(item.Reason ?? "—")</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <partial name="_Pager" model="@((Model.History.Page, Model.History.TotalPages, Model.History.TotalItems))" />
+    }
+}

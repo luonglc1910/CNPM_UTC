@@ -1,0 +1,77 @@
+@model InventoryAdjustViewModel
+@{
+    ViewData["Title"] = "Điều chỉnh kho (kiểm kê)";
+}
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                @if (Model.ServiceOptions.Count == 0)
+                {
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Chưa có dịch vụ nào đang dùng và bật quản lý kho.
+                    </div>
+                    <a class="btn btn-outline-secondary mt-3" asp-action="Index">Quay lại</a>
+                }
+                else
+                {
+                    <form method="post" asp-action="Adjust">
+                        <div class="mb-3">
+                            <label asp-for="HotelServiceId" class="form-label">
+                                Dịch vụ <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="HotelServiceId" asp-items="Model.ServiceOptions" class="form-select">
+                                <option value="">— Chọn dịch vụ —</option>
+                            </select>
+                            <div class="form-text">Số trong ngoặc là tồn sổ sách để đối chiếu khi đếm.</div>
+                            <span asp-validation-for="HotelServiceId" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="CountedQuantity" class="form-label">
+                                Tồn thực tế đếm được <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="CountedQuantity" class="form-control" type="number" min="0" />
+                            <div class="form-text">
+                                Nhập <strong>số đếm được</strong>, không phải phần chênh lệch —
+                                hệ thống tự tính chênh so với tồn sổ sách.
+                            </div>
+                            <span asp-validation-for="CountedQuantity" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Reason" class="form-label">
+                                Lý do <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="Reason" class="form-control" placeholder="VD: hỏng, mất, kiểm kê cuối tháng" />
+                            <div class="form-text">Bắt buộc — đây là chỗ giải thích vì sao sổ sách lệch thực tế.</div>
+                            <span asp-validation-for="Reason" class="text-danger small"></span>
+                        </div>
+
+                        <div class="alert alert-secondary small">
+                            <i class="bi bi-journal-text"></i>
+                            Phiếu điều chỉnh sinh một dòng <strong>Điều chỉnh</strong> mang số chênh (+/−)
+                            trong lịch sử kho và được ghi vào nhật ký thao tác (BR-11).
+                            Bản ghi kho cũ không bị sửa — mọi sai sót đều chỉnh bằng phiếu mới.
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-clipboard-check"></i> Ghi nhận kiểm kê
+                            </button>
+                            <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

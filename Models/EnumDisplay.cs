@@ -39,6 +39,24 @@ public static class EnumDisplay
         _ => category.ToString()
     };
 
+    public static string ToDisplayName(this InventoryTransactionType type) => type switch
+    {
+        InventoryTransactionType.Receive => "Nhập",
+        InventoryTransactionType.Sale => "Bán",
+        InventoryTransactionType.Adjust => "Điều chỉnh",
+        InventoryTransactionType.Return => "Hoàn",
+        _ => type.ToString()
+    };
+
+    public static string ToBadgeClass(this InventoryTransactionType type) => type switch
+    {
+        InventoryTransactionType.Receive => "text-bg-success",
+        InventoryTransactionType.Sale => "text-bg-primary",
+        InventoryTransactionType.Adjust => "text-bg-warning",
+        InventoryTransactionType.Return => "text-bg-info",
+        _ => "text-bg-light"
+    };
+
     /// <summary>Màu nhãn nhóm dịch vụ trên SCR-A06 — chỉ để đọc bảng cho nhanh.</summary>
     public static string ToBadgeClass(this ServiceCategory category) => category switch
     {

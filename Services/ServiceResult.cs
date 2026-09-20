@@ -20,8 +20,14 @@ public class ServiceResult
     /// <summary>Cảnh báo kèm theo khi thành công.</summary>
     public string? Warning { get; private init; }
 
-    public static ServiceResult Ok(string? warning = null)
-        => new() { Succeeded = true, Warning = warning };
+    /// <summary>
+    /// Câu thông báo thành công do service soạn, dùng khi chỉ service mới biết đủ chi tiết
+    /// (ví dụ tồn mới sau khi nhập kho). Controller không tự dựng lại được câu này.
+    /// </summary>
+    public string? Message { get; private init; }
+
+    public static ServiceResult Ok(string? warning = null, string? message = null)
+        => new() { Succeeded = true, Warning = warning, Message = message };
 
     public static ServiceResult Fail(string error, string? field = null)
         => new() { Succeeded = false, Error = error, ErrorField = field };

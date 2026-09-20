@@ -176,7 +176,7 @@ dotnet run --project HotelManagement.Web.csproj --launch-profile http
 
 | # | Món nợ | Ghi chú |
 |---|---|---|
-| 1 | **SCR-A08/A09 — Tồn kho** chưa làm | Màn hình này chỉ bật/tắt theo dõi tồn; nhập kho và điều chỉnh kiểm kê (sinh `InventoryTransaction`) là phần tiếp theo, và chưa có nó thì dịch vụ có kho **không bán được** vì tồn luôn bằng 0 |
+| 1 | ~~**SCR-A08/A09 — Tồn kho** chưa làm~~ — đã trả xong 20/09/2026 | Xem [`04-inventory.md`](04-inventory.md) |
 | 2 | Trừ tồn khi bán dịch vụ (BR-12) chưa có | Sẽ làm cùng lúc với ghi dịch vụ vào folio (SCR-E02/F02); `AllowNegativeStock` hiện mới được lưu chứ chưa ai đọc |
 | 3 | `HasFolioHistory` mới dùng để hiện dòng nhắc | Khi có nút Xóa cứng cho dịch vụ chưa từng dùng thì dùng lại cờ này — giống món nợ "xóa mềm phòng" ở `02-catalog-rooms.md` |
 | 4 | Chưa kiểm thử được "sửa giá không ảnh hưởng dòng folio cũ" | Cần có `Folio` thật; logic nằm ở chỗ `FolioItem` chép `UnitPrice` lúc ghi nhận, sẽ kiểm được khi làm nhóm F |
@@ -186,7 +186,8 @@ dotnet run --project HotelManagement.Web.csproj --launch-profile http
 
 ## 6. Làm tiếp từ đâu
 
-1. **SCR-A08/A09 — Tồn kho**: trả món nợ số 1 ở trên, đóng trọn FR-A05 và BR-12.
+1. ~~**SCR-A08/A09 — Tồn kho**~~ — đã làm, xem [`04-inventory.md`](04-inventory.md); FR-A05 và
+   BR-12 đã đóng phần danh mục, chỉ còn phần trừ tồn lúc bán.
 2. **SCR-A10/A11 — Nhân viên**, **SCR-A12 — Cấu hình**: nốt nhóm A.
 3. **SCR-B01…B03 — Hồ sơ khách**, rồi tới lát cắt dọc luồng chính
    (tra phòng trống → đặt phòng → check-in → folio → check-out → thanh toán).
