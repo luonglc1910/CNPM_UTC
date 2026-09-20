@@ -16,6 +16,9 @@ public class AvailableRoom
     public string RoomTypeName { get; init; } = string.Empty;
 
     public decimal PricePerNight { get; init; }
+    public decimal PriceFirstHour { get; init; }
+    public decimal PriceExtraHour { get; init; }
+    public decimal PriceOvernight { get; init; }
     public int StandardCapacity { get; init; }
     public int MaxCapacity { get; init; }
 
@@ -94,11 +97,14 @@ public class AvailabilityService : IAvailabilityService
                     || rr.Reservation.Status == ReservationStatus.CheckedIn)
                 && rr.Reservation.CheckInDate < checkOut
                 && rr.Reservation.CheckOutDate > checkIn))
+            // Lượt thuê theo giờ đang mở chưa có giờ đi (BR-13): ExpectedCheckOut chỉ là mốc tạm
+            // một giờ. Nếu vẫn so theo mốc đó thì qua một giờ phòng lại hiện ra là trống trong khi
+            // khách còn nằm trong đó. Chừng nào chưa trả phòng thì nó chặn mọi khoảng phía sau.
             .Where(r => !_db.Stays.Any(s =>
                 s.RoomId == r.Id
                 && s.Status == StayStatus.CheckedIn
                 && s.ActualCheckIn < checkOut
-                && s.ExpectedCheckOut > checkIn));
+                && (s.RentalType == RentalType.Hourly || s.ExpectedCheckOut > checkIn)));
 
         return await query
             .OrderBy(r => r.RoomType.Code).ThenBy(r => r.RoomNumber)
@@ -111,6 +117,9 @@ public class AvailabilityService : IAvailabilityService
                 RoomTypeCode = r.RoomType.Code,
                 RoomTypeName = r.RoomType.Name,
                 PricePerNight = r.RoomType.BasePricePerNight,
+                PriceFirstHour = r.RoomType.PriceFirstHour,
+                PriceExtraHour = r.RoomType.PriceExtraHour,
+                PriceOvernight = r.RoomType.PriceOvernight,
                 StandardCapacity = r.RoomType.StandardCapacity,
                 MaxCapacity = r.RoomType.MaxCapacity,
                 NeedsCleaning = r.Status == RoomStatus.Dirty
@@ -161,7 +170,8 @@ public class AvailabilityService : IAvailabilityService
             .Where(s => s.RoomId == roomId
                 && s.Status == StayStatus.CheckedIn
                 && s.ActualCheckIn < checkOut
-                && s.ExpectedCheckOut > checkIn
+                // Thuê theo giờ chưa trả phòng thì chưa biết bao giờ trả — chặn tới khi trả (BR-13).
+                && (s.RentalType == RentalType.Hourly || s.ExpectedCheckOut > checkIn)
                 && (excludeStayId == null || s.Id != excludeStayId))
             .Select(s => new RoomConflict
             {

@@ -26,12 +26,51 @@
         <form method="post" asp-action="CheckOut">
             <input type="hidden" asp-for="StayId" />
             <div class="card mb-3">
-                <div class="card-header">Chốt giờ trả &amp; phụ thu (BR-01, BR-03)</div>
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>Chốt giờ trả &amp; phụ thu (BR-01, BR-03, BR-13)</span>
+                    <span class="badge @Model.RentalType.BadgeClass()">
+                        <i class="bi bi-@Model.RentalType.IconName()"></i> @Model.RentalType.DisplayName()
+                    </span>
+                </div>
                 <div class="card-body">
                     <div class="mb-2">
-                        <label class="form-label">Giờ trả phòng chuẩn: 12:00 · dự kiến @Model.ExpectedCheckOut.ToString("dd/MM/yyyy")</label>
+                        <label class="form-label">
+                            @if (Model.RentalType == RentalType.Hourly)
+                            {
+                                @* Thuê theo giờ không có giờ trả dự kiến — giờ nhập ở ô dưới chính là giờ chốt tiền. *@
+                                @:Nhận lúc @Model.ActualCheckIn.ToString("HH:mm dd/MM") · giờ trả quyết định số tiền
+                            }
+                            else if (Model.RentalType == RentalType.Overnight)
+                            {
+                                @:Gói qua đêm kết thúc @Model.ExpectedCheckOut.ToString("HH:mm dd/MM")
+                            }
+                            else
+                            {
+                                @:Giờ trả phòng chuẩn: 12:00 · dự kiến @Model.ExpectedCheckOut.ToString("dd/MM/yyyy")
+                            }
+                        </label>
                         <input asp-for="ActualCheckOut" type="datetime-local" class="form-control" />
                     </div>
+
+                    @*
+                        Thuê theo giờ là hình thức duy nhất mà tiền phòng đổi theo giờ bấm nút, nên
+                        phải nói rõ ngay tại đây sẽ tính mấy giờ và vì sao — khách hỏi thì lễ tân
+                        đọc thẳng câu này, không phải tự nhẩm lại quy tắc làm tròn.
+                    *@
+                    @if (Model.RentalType == RentalType.Hourly)
+                    {
+                        <div class="alert alert-info py-2 small mb-2">
+                            <div class="fw-semibold">
+                                Tính @Model.BilledHours giờ — tiền phòng @Model.RecalculatedRoomCharge.ToString("N0") ₫
+                            </div>
+                            @if (Model.HourRoundingNote is not null)
+                            {
+                                <div>@Model.HourRoundingNote</div>
+                            }
+                            <div class="text-muted">Đổi giờ trả ở trên rồi bấm tiếp tục, hệ thống tính lại theo giờ vừa nhập.</div>
+                        </div>
+                    }
+
                     @if (Model.LateSurchargeAmount > 0 || Model.ExtraNightsFromLate > 0)
                     {
                         <div class="alert alert-warning py-2 small mb-2">
@@ -39,11 +78,21 @@
                             @(Model.ExtraNightsFromLate > 0 ? "(tính thêm 1 đêm)" : "")
                         </div>
                     }
+
+                    @if (Model.RentalType == RentalType.Daily)
+                    {
+                        <div class="form-text mb-2">
+                            Trả sớm hơn ngày đã đặt vẫn tính đủ @Model.PlannedNights đêm (BR-13).
+                        </div>
+                    }
+
                     @if (Model.IsAdmin)
                     {
                         <div class="form-check">
                             <input asp-for="WaiveLateSurcharge" class="form-check-input" />
-                            <label asp-for="WaiveLateSurcharge" class="form-check-label">Miễn phụ thu trễ giờ</label>
+                            <label asp-for="WaiveLateSurcharge" class="form-check-label">
+                                @(Model.RentalType == RentalType.Overnight ? "Miễn phụ thu quá gói" : "Miễn phụ thu trễ giờ")
+                            </label>
                         </div>
                     }
                 </div>

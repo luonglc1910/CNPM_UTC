@@ -35,17 +35,51 @@
         <div class="col-lg-6">
             <div class="card">
                 <div class="card-header">Thời gian</div>
-                <div class="card-body row g-2">
-                    <div class="col-6">
-                        <label asp-for="CheckInDate" class="form-label">Ngày đến <span class="text-danger">*</span></label>
-                        <input asp-for="CheckInDate" type="date" class="form-control" />
-                        <span asp-validation-for="CheckInDate" class="text-danger small"></span>
+                <div class="card-body">
+                    @*
+                        Hình thức thuê đứng trước cặp ô thời gian vì nó quyết định luôn kiểu của
+                        hai ô đó (BR-13): theo ngày nhập ngày, theo giờ nhập ngày + giờ, qua đêm
+                        chỉ chọn đêm rồi hệ thống tự đặt hai mốc giờ.
+                    *@
+                    <div class="mb-3">
+                        <label class="form-label d-block">Hình thức thuê <span class="text-danger">*</span></label>
+                        <div class="btn-group w-100" role="group">
+                            @foreach (var type in new[] { RentalType.Daily, RentalType.Hourly, RentalType.Overnight })
+                            {
+                                var id = $"rental{type}";
+                                <input type="radio" class="btn-check js-rental" name="RentalType" id="@id"
+                                       value="@((int)type)" autocomplete="off" checked="@(Model.RentalType == type)" />
+                                <label class="btn btn-outline-secondary" for="@id">
+                                    <i class="bi bi-@type.IconName()"></i> @type.DisplayName()
+                                </label>
+                            }
+                        </div>
                     </div>
-                    <div class="col-6">
-                        <label asp-for="CheckOutDate" class="form-label">Ngày đi <span class="text-danger">*</span></label>
-                        <input asp-for="CheckOutDate" type="date" class="form-control" />
-                        <span asp-validation-for="CheckOutDate" class="text-danger small"></span>
+
+                    <div class="row g-2">
+                        <div class="col-6" id="checkInCol">
+                            <label for="CheckInDate" class="form-label" id="checkInLabel">Ngày đến <span class="text-danger">*</span></label>
+                            @*
+                                Không dùng asp-for cho hai ô này: tag helper sẽ định dạng lại giá trị
+                                theo kiểu ô và cắt mất phần giờ mỗi lần chuyển sang thuê theo giờ.
+                            *@
+                            <input type="date" class="form-control" id="CheckInDate" name="CheckInDate"
+                                   data-date="@Model.CheckInDate.ToString("yyyy-MM-dd")"
+                                   data-datetime="@Model.CheckInDate.ToString("yyyy-MM-ddTHH:mm")"
+                                   value="@Model.CheckInDate.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="CheckInDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6" id="checkOutCol">
+                            <label for="CheckOutDate" class="form-label" id="checkOutLabel">Ngày đi <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="CheckOutDate" name="CheckOutDate"
+                                   data-date="@Model.CheckOutDate.ToString("yyyy-MM-dd")"
+                                   data-datetime="@Model.CheckOutDate.ToString("yyyy-MM-ddTHH:mm")"
+                                   value="@Model.CheckOutDate.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="CheckOutDate" class="text-danger small"></span>
+                        </div>
                     </div>
+
+                    <div class="form-text mt-2" id="rentalHint"></div>
                 </div>
             </div>
         </div>

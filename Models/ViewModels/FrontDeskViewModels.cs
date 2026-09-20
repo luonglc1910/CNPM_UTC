@@ -225,6 +225,21 @@ public class CheckOutViewModel
     public int PlannedNights { get; set; }
     public bool IsAdmin { get; set; }
 
+    /// <summary>Hình thức thuê của lượt ở — BR-13. Quyết định phần tiền phòng hiện trên màn này.</summary>
+    public RentalType RentalType { get; set; }
+
+    /// <summary>Số giờ sẽ đưa lên hóa đơn nếu chốt vào giờ đang hiện — chỉ thuê theo giờ.</summary>
+    public int BilledHours { get; set; }
+
+    /// <summary>
+    /// Câu giải thích cách quy đổi giờ, ví dụ "Ở 2 giờ 35 phút — lẻ 35 phút quá 20 phút nên tính 3 giờ".
+    /// Chỉ có khi phần lẻ bị làm tròn lên; khách hỏi thì lễ tân có sẵn câu trả lời.
+    /// </summary>
+    public string? HourRoundingNote { get; set; }
+
+    /// <summary>Tiền phòng tính lại theo giờ trả đang hiện — thuê theo giờ.</summary>
+    public decimal RecalculatedRoomCharge { get; set; }
+
     // Điều kiện BR-08
     public bool IsInspected { get; set; }
     public bool IsFolioLocked { get; set; }

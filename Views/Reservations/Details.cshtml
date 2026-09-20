@@ -47,7 +47,7 @@
             <div class="table-responsive">
                 <table class="table mb-0">
                     <thead class="table-light">
-                        <tr><th>Loại</th><th>Phòng</th><th class="text-center">Khách</th><th class="text-end">Giá/đêm</th><th class="text-end">Thành tiền</th></tr>
+                        <tr><th>Loại</th><th>Phòng</th><th class="text-center">Khách</th><th class="text-end">Đơn giá</th><th class="text-end">Thành tiền</th></tr>
                     </thead>
                     <tbody>
                     @foreach (var line in Model.Rooms)
@@ -56,7 +56,8 @@
                             <td>@line.RoomTypeName</td>
                             <td>@(line.RoomNumber ?? "— xếp sau —")</td>
                             <td class="text-center">@line.Adults NL@(line.Children > 0 ? $" + {line.Children} TE" : "")</td>
-                            <td class="text-end">@line.PricePerNight.ToString("N0") ₫</td>
+                            @* Cột đơn giá phải nói theo hình thức thuê của đơn, không phải lúc nào cũng là giá đêm. *@
+                            <td class="text-end text-nowrap">@line.UnitText</td>
                             <td class="text-end">@line.LineTotal.ToString("N0") ₫</td>
                         </tr>
                     }
@@ -76,7 +77,14 @@
                     <dt class="col-5">Khách đứng tên</dt><dd class="col-7">@Model.GuestName</dd>
                     <dt class="col-5">Liên hệ</dt><dd class="col-7">@Model.PhoneNumber</dd>
                     <dt class="col-5">Giấy tờ</dt><dd class="col-7">@(string.IsNullOrEmpty(Model.IdNumber) ? "—" : Model.IdNumber)</dd>
-                    <dt class="col-5">Nhận / Trả</dt><dd class="col-7">@r.CheckInDate.ToString("dd/MM/yyyy") → @r.CheckOutDate.ToString("dd/MM/yyyy") (@r.Nights đêm)</dd>
+                    <dt class="col-5">Hình thức</dt>
+                    <dd class="col-7">
+                        <span class="badge @r.RentalType.BadgeClass()">
+                            <i class="bi bi-@r.RentalType.IconName()"></i> @r.RentalType.DisplayName()
+                        </span>
+                    </dd>
+                    <dt class="col-5">Nhận / Trả</dt>
+                    <dd class="col-7">@r.RentalType.SpanText(r.CheckInDate, r.CheckOutDate, r.Nights, r.Hours)</dd>
                     @if (!string.IsNullOrWhiteSpace(r.SpecialRequests))
                     {
                         <dt class="col-5">Yêu cầu</dt><dd class="col-7">@r.SpecialRequests</dd>

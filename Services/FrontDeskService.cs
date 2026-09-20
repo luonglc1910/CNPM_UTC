@@ -259,8 +259,14 @@ public class FrontDeskService : IFrontDeskService
             .FirstOrDefaultAsync();
 
         var settings = await _settings.GetPricingSettingsAsync();
-        var nights = _pricing.CountNights(reservation.CheckInDate, reservation.CheckOutDate);
         var actualCheckIn = form.ActualCheckIn;
+
+        // Khoảng thuê lấy thẳng từ đơn: đơn đã chốt hình thức và hai mốc đầy đủ lúc lập (BR-13),
+        // nên ở đây không quy đổi lại, chỉ đọc ra để biết tính tiền theo đêm hay theo giờ.
+        var period = new RentalPeriod(
+            reservation.RentalType, reservation.CheckInDate, reservation.CheckOutDate,
+            reservation.Nights, reservation.Hours);
+        var nights = reservation.Nights;
 
         // Kiểm tra phòng chọn trước khi mở transaction.
         var pickedRoomIds = new HashSet<int>();
@@ -312,9 +318,18 @@ public class FrontDeskService : IFrontDeskService
                     RoomId = room.Id,
                     PrimaryGuestId = reservation.PrimaryGuestId,
                     ActualCheckIn = actualCheckIn,
-                    ExpectedCheckOut = reservation.CheckOutDate,
+                    // Thuê theo giờ: mốc tạm bám theo giờ nhận thật chứ không theo mốc ghi trên đơn,
+                    // vì khách nhận muộn hơn dự kiến là chuyện thường và mốc trên đơn khi đó đã qua.
+                    ExpectedCheckOut = reservation.RentalType == RentalType.Hourly
+                        ? actualCheckIn.AddHours(1)
+                        : reservation.CheckOutDate,
+                    RentalType = reservation.RentalType,
                     PricePerNight = rr.PricePerNight,
+                    PriceFirstHour = rr.PriceFirstHour,
+                    PriceExtraHour = rr.PriceExtraHour,
+                    PriceOvernight = rr.PriceOvernight,
                     Nights = nights,
+                    BilledHours = reservation.Hours,
                     Status = StayStatus.CheckedIn
                 };
                 _db.Stays.Add(stay);
@@ -336,9 +351,15 @@ public class FrontDeskService : IFrontDeskService
                 _db.Folios.Add(folio);
                 await _db.SaveChangesAsync();
 
-                AddRoomChargeLine(folio.Id, rr.RoomType.Name, rr.PricePerNight, nights, actualCheckIn);
-                AddEarlyCheckInSurcharge(folio.Id, actualCheckIn, rr.PricePerNight, settings);
-                AddExtraGuestSurcharge(folio.Id, line.Adults + line.Children, rr.RoomType, nights, actualCheckIn);
+                AddRoomChargeLine(folio.Id, rr.RoomType.Name, rr, period, actualCheckIn);
+
+                // Phụ thu nhận sớm và thêm người đều tính trên nền "một đêm" — chỉ có nghĩa với
+                // thuê theo ngày. Gói qua đêm có giờ mở cố định, thuê giờ thì trả tiền đúng số giờ ở.
+                if (period.Type == RentalType.Daily)
+                {
+                    AddEarlyCheckInSurcharge(folio.Id, actualCheckIn, rr.PricePerNight, settings);
+                    AddExtraGuestSurcharge(folio.Id, line.Adults + line.Children, rr.RoomType, nights, actualCheckIn);
+                }
 
                 room.Status = RoomStatus.Occupied;
             }
@@ -549,7 +570,8 @@ public class FrontDeskService : IFrontDeskService
 
         var oldRoom = stay.Room;
         var oldPrice = stay.PricePerNight;
-        var newPrice = form.WaivePriceDifference && isAdmin ? oldPrice : newRoom.RoomType.BasePricePerNight;
+        var keepOldPrice = form.WaivePriceDifference && isAdmin;
+        var newPrice = keepOldPrice ? oldPrice : newRoom.RoomType.BasePricePerNight;
 
         await _tx.ExecuteAsync(async () =>
         {
@@ -569,6 +591,15 @@ public class FrontDeskService : IFrontDeskService
             // Các đêm còn lại theo giá phòng mới: cập nhật giá/đêm của Stay cho các thao tác sau.
             stay.RoomId = newRoom.Id;
             stay.PricePerNight = newPrice;
+
+            // Đổi sang loại phòng khác thì cả ba bảng giá đều đổi theo — BR-13. Bỏ sót phần này
+            // thì một lượt thuê giờ chuyển lên phòng VIP vẫn bị tính theo giá giờ của phòng cũ.
+            if (!keepOldPrice)
+            {
+                stay.PriceFirstHour = newRoom.RoomType.PriceFirstHour;
+                stay.PriceExtraHour = newRoom.RoomType.PriceExtraHour;
+                stay.PriceOvernight = newRoom.RoomType.PriceOvernight;
+            }
 
             oldRoom.Status = RoomStatus.Dirty;
             newRoom.Status = RoomStatus.Occupied;
@@ -613,6 +644,16 @@ public class FrontDeskService : IFrontDeskService
             return ServiceResult.Fail("Không tìm thấy lượt lưu trú đang mở.");
         }
 
+        // Gia hạn là khái niệm của thuê theo ngày. Thuê giờ ở thêm bao lâu thì lúc trả phòng
+        // hệ thống tính lại đúng số giờ, gói qua đêm ở quá giờ thì thu phụ thu theo giờ — cả hai
+        // đều không cần và không hiểu được thao tác "thêm một đêm" (BR-13).
+        if (stay.RentalType != RentalType.Daily)
+        {
+            return ServiceResult.Fail(
+                $"Lượt thuê {stay.RentalType.DisplayName().ToLowerInvariant()} không gia hạn theo đêm. "
+                + "Khách ở thêm thì cứ để, lúc trả phòng hệ thống tính đúng phần ở thêm.");
+        }
+
         if (form.NewCheckOut.Date <= stay.ExpectedCheckOut.Date)
         {
             return ServiceResult.Fail("Ngày đi mới phải muộn hơn ngày đi hiện tại.", nameof(form.NewCheckOut));
@@ -627,6 +668,7 @@ public class FrontDeskService : IFrontDeskService
 
         var extraNights = _pricing.CountNights(stay.ExpectedCheckOut, form.NewCheckOut);
         var price = isAdmin && form.ExtraNightPrice > 0 ? form.ExtraNightPrice : stay.PricePerNight;
+        var extendSettings = await _settings.GetPricingSettingsAsync();
 
         await _tx.ExecuteAsync(async () =>
         {
@@ -642,7 +684,9 @@ public class FrontDeskService : IFrontDeskService
                 ChargedAt = DateTime.Now
             });
 
-            stay.ExpectedCheckOut = form.NewCheckOut.Date;
+            // Giữ giờ trả chuẩn thay vì để rơi về 00:00 — từ BR-13 mọi mốc thời gian đều mang giờ thật,
+            // để nó về nửa đêm thì lượt ở này trông như đã kết thúc từ hôm trước.
+            stay.ExpectedCheckOut = form.NewCheckOut.Date.Add(extendSettings.StandardCheckOutTime.ToTimeSpan());
             stay.Nights += extraNights;
 
             _audit.Log("ExtendStay", nameof(Stay), stay.Id.ToString(),
@@ -670,14 +714,7 @@ public class FrontDeskService : IFrontDeskService
 
         var settings = await _settings.GetPricingSettingsAsync();
         var now = DateTime.Now;
-
-        // Phụ thu trả trễ CHỈ áp dụng khi trả đúng ngày hoặc sau ngày ExpectedCheckOut.
-        // Nếu trả SỚM hơn ngày dự kiến thì không có phụ thu dù giờ có muộn.
-        SurchargeLine? late = null;
-        if (now.Date >= stay.ExpectedCheckOut.Date)
-        {
-            late = _pricing.LateCheckOutSurcharge(TimeOnly.FromDateTime(now), stay.PricePerNight, settings);
-        }
+        var preview = ComputeCheckOutCharges(stay, now, settings);
 
         var summary = await _billing.ComputeFolioSummaryAsync(stayId) ?? new BillingFolioSummary();
 
@@ -689,15 +726,73 @@ public class FrontDeskService : IFrontDeskService
             ActualCheckIn = stay.ActualCheckIn,
             ExpectedCheckOut = stay.ExpectedCheckOut,
             PlannedNights = stay.Nights,
+            RentalType = stay.RentalType,
+            BilledHours = preview.Hours,
+            HourRoundingNote = preview.RoundingNote,
+            RecalculatedRoomCharge = preview.RoomCharge,
             IsAdmin = isAdmin,
             IsInspected = stay.IsInspected,
             IsFolioLocked = stay.Folio?.IsLocked ?? false,
             ActualCheckOut = now,
-            LateSurchargeDescription = late?.Description,
-            LateSurchargeAmount = late?.Amount ?? 0m,
-            ExtraNightsFromLate = late?.ExtraNights ?? 0,
+            LateSurchargeDescription = preview.Surcharge?.Description,
+            LateSurchargeAmount = preview.Surcharge?.Amount ?? 0m,
+            ExtraNightsFromLate = preview.Surcharge?.ExtraNights ?? 0,
             Summary = summary
         };
+    }
+
+    /// <summary>Tiền phòng và phụ thu của một lượt ở nếu chốt vào thời điểm đưa vào — BR-13.</summary>
+    private sealed record CheckOutCharges(
+        decimal RoomCharge, int Hours, string? RoundingNote, SurchargeLine? Surcharge);
+
+    /// <summary>
+    /// Một chỗ duy nhất quyết định tiền lúc trả phòng, dùng chung cho màn xem trước và lúc chốt thật.
+    /// Tách ra vì trước đây hai đường đi tính phụ thu riêng và đã có lần lệch nhau.
+    /// </summary>
+    private CheckOutCharges ComputeCheckOutCharges(Stay stay, DateTime actualCheckOut, PricingSettings settings)
+    {
+        switch (stay.RentalType)
+        {
+            case RentalType.Hourly:
+            {
+                var count = _pricing.CountHours(stay.ActualCheckIn, actualCheckOut, settings);
+                var charge = _pricing.HourlyRoomCharge(stay.PriceFirstHour, stay.PriceExtraHour, count.Hours);
+
+                var note = count.RoundedUp
+                    ? $"Ở {count.SpanText} — lẻ {count.OddMinutes} phút quá {settings.HourlyGraceMinutes} phút nên tính tròn {count.Hours} giờ."
+                    : null;
+
+                // Thuê giờ không có giờ trả chuẩn nên không có khái niệm trả trễ.
+                return new CheckOutCharges(charge, count.Hours, note, null);
+            }
+
+            case RentalType.Overnight:
+            {
+                // Gói qua đêm đã trả tiền phẳng từ lúc nhận; ở quá giờ đóng gói thì thu thêm theo giờ.
+                var over = _pricing.OvernightOverstaySurcharge(
+                    stay.ExpectedCheckOut, actualCheckOut, stay.PriceExtraHour, settings);
+
+                var overHours = over is null
+                    ? 0
+                    : _pricing.CountHours(stay.ExpectedCheckOut, actualCheckOut, settings).Hours;
+
+                return new CheckOutCharges(stay.PriceOvernight, overHours, null, over);
+            }
+
+            default:
+            {
+                // BR-13: thuê theo ngày mà ra sớm thì vẫn tính đủ số đêm đã đặt — tiền phòng không đổi.
+                var charge = _pricing.RoomCharge(stay.PricePerNight, stay.Nights);
+
+                // Phụ thu trả trễ chỉ áp dụng khi trả đúng ngày hoặc sau ngày dự kiến;
+                // trả sớm hơn thì giờ muộn cũng không phải là trễ.
+                var late = actualCheckOut.Date >= stay.ExpectedCheckOut.Date
+                    ? _pricing.LateCheckOutSurcharge(TimeOnly.FromDateTime(actualCheckOut), stay.PricePerNight, settings)
+                    : null;
+
+                return new CheckOutCharges(charge, 0, null, late);
+            }
+        }
     }
 
     public async Task<ServiceResult> CheckOutAsync(CheckOutViewModel form, int employeeId, bool isAdmin)
@@ -719,37 +814,51 @@ public class FrontDeskService : IFrontDeskService
         var settings = await _settings.GetPricingSettingsAsync();
         var actualCheckOut = form.ActualCheckOut;
 
+        var charges = ComputeCheckOutCharges(stay, actualCheckOut, settings);
+
         await _tx.ExecuteAsync(async () =>
         {
-            // Trả sớm: tính lại theo số đêm thực ở nếu chỉ có 1 dòng tiền phòng.
-            var actualNights = _pricing.CountNights(stay.ActualCheckIn, actualCheckOut);
             var roomLines = stay.Folio!.Items.Where(i => i.ItemType == FolioItemType.Room && !i.IsVoided).ToList();
-            if (actualNights < stay.Nights && roomLines.Count == 1)
+
+            // Thuê theo giờ: lúc nhận phòng mới chỉ tạm tính theo số giờ khách báo, giờ mới biết
+            // thật sự ở bao lâu — viết lại dòng tiền phòng thay vì cộng thêm một dòng chênh lệch,
+            // để khách đọc hóa đơn thấy đúng một dòng khớp với thời gian đã ở.
+            if (stay.RentalType == RentalType.Hourly && roomLines.Count == 1)
             {
                 var rl = roomLines[0];
-                rl.Quantity = actualNights;
-                rl.Amount = rl.UnitPrice * actualNights;
-                stay.Nights = actualNights;
+                var roomTypeName = stay.Room.RoomType.Name;
+
+                rl.Description = $"{roomTypeName} — theo giờ, {charges.Hours} giờ "
+                    + $"({HourlyBreakdown(stay.PriceFirstHour, stay.PriceExtraHour, charges.Hours)})";
+                rl.Quantity = 1;
+                rl.UnitPrice = charges.RoomCharge;
+                rl.Amount = charges.RoomCharge;
+
+                stay.BilledHours = charges.Hours;
             }
 
-            // Phụ thu trả trễ (BR-03): CHỈ áp dụng khi trả đúng ngày hoặc sau ngày ExpectedCheckOut.
-            // Trả SỚM hơn ngày dự kiến → không phụ thu dù giờ có muộn.
-            if (!(form.WaiveLateSurcharge && isAdmin) && actualCheckOut.Date >= stay.ExpectedCheckOut.Date)
+            // Thuê theo ngày: BR-13 bỏ hẳn việc hạ số đêm khi khách ra sớm — đã đặt mấy đêm thì
+            // trả tiền đủ mấy đêm. Gói qua đêm cũng là gói phẳng, không tính lại.
+
+            // Phụ thu lúc trả phòng: trả trễ với thuê ngày, quá gói với qua đêm; Admin miễn được.
+            if (charges.Surcharge is not null && !(form.WaiveLateSurcharge && isAdmin))
             {
-                var late = _pricing.LateCheckOutSurcharge(TimeOnly.FromDateTime(actualCheckOut), stay.PricePerNight, settings);
-                if (late is not null)
+                var line = charges.Surcharge;
+                _db.FolioItems.Add(new FolioItem
                 {
-                    _db.FolioItems.Add(new FolioItem
-                    {
-                        FolioId = stay.Folio.Id,
-                        ItemType = late.ExtraNights > 0 ? FolioItemType.Room : FolioItemType.Surcharge,
-                        SurchargeType = late.ExtraNights > 0 ? SurchargeType.None : SurchargeType.LateCheckOut,
-                        Description = late.Description,
-                        Quantity = 1,
-                        UnitPrice = late.Amount,
-                        Amount = late.Amount,
-                        ChargedAt = DateTime.Now
-                    });
+                    FolioId = stay.Folio.Id,
+                    ItemType = line.ExtraNights > 0 ? FolioItemType.Room : FolioItemType.Surcharge,
+                    SurchargeType = line.ExtraNights > 0 ? SurchargeType.None : line.Type,
+                    Description = line.Description,
+                    Quantity = 1,
+                    UnitPrice = line.Amount,
+                    Amount = line.Amount,
+                    ChargedAt = DateTime.Now
+                });
+
+                if (stay.RentalType == RentalType.Overnight)
+                {
+                    stay.BilledHours = charges.Hours;
                 }
             }
 
@@ -759,7 +868,7 @@ public class FrontDeskService : IFrontDeskService
             stay.Folio.LockedBy = employeeId;
 
             _audit.Log("CheckOutLockFolio", nameof(Stay), stay.Id.ToString(),
-                newValue: $"Trả phòng {actualCheckOut:dd/MM/yyyy HH:mm}, khóa folio");
+                newValue: $"Trả phòng {actualCheckOut:dd/MM/yyyy HH:mm} ({stay.RentalType.DisplayName()}), khóa folio");
             await _db.SaveChangesAsync();
         });
 
@@ -768,17 +877,54 @@ public class FrontDeskService : IFrontDeskService
 
     // ---------- Helpers ----------
 
-    private void AddRoomChargeLine(int folioId, string roomTypeName, decimal price, int nights, DateTime chargedAt)
-        => _db.FolioItems.Add(new FolioItem
+    /// <summary>
+    /// Dòng tiền phòng mở đầu folio — BR-13. Ba hình thức cho ba cách đọc khác nhau:
+    /// theo ngày là giá đêm × số đêm, qua đêm là một gói phẳng, theo giờ là tạm tính theo số giờ
+    /// dự kiến và sẽ được tính lại đúng lúc trả phòng.
+    /// </summary>
+    private void AddRoomChargeLine(
+        int folioId, string roomTypeName, ReservationRoom rr, RentalPeriod period, DateTime chargedAt)
+    {
+        var amount = _pricing.RoomChargeFor(period, rr.PricePerNight,
+            rr.PriceFirstHour, rr.PriceExtraHour, rr.PriceOvernight);
+
+        // Thuê theo giờ là dòng một đơn vị chứ không phải "3 × đơn giá": chia 160.000 cho 3 giờ
+        // ra 53.333,33, nhân ngược lại thành 159.999,99 — lệch với chính cột thành tiền bên cạnh.
+        // Số giờ và cách bổ giá nằm trong phần mô tả, cột số lượng × đơn giá luôn ra đúng tổng.
+        var (description, quantity, unitPrice) = period.Type switch
+        {
+            RentalType.Hourly => (
+                $"{roomTypeName} — theo giờ, tạm tính {period.Hours} giờ "
+                    + $"({HourlyBreakdown(rr.PriceFirstHour, rr.PriceExtraHour, period.Hours)})",
+                1,
+                amount),
+            RentalType.Overnight => (
+                $"{roomTypeName} — gói qua đêm {period.CheckIn:HH\\:mm} → {period.CheckOut:HH\\:mm}",
+                1,
+                rr.PriceOvernight),
+            _ => (
+                $"{roomTypeName} × {period.Nights} đêm",
+                period.Nights,
+                rr.PricePerNight)
+        };
+
+        _db.FolioItems.Add(new FolioItem
         {
             FolioId = folioId,
             ItemType = FolioItemType.Room,
-            Description = $"{roomTypeName} × {nights} đêm",
-            Quantity = nights,
-            UnitPrice = price,
-            Amount = price * nights,
+            Description = description,
+            Quantity = quantity,
+            UnitPrice = unitPrice,
+            Amount = amount,
             ChargedAt = chargedAt
         });
+    }
+
+    /// <summary>Cách đọc tiền phòng theo giờ: "giờ đầu 120.000 + 2 × 20.000 ₫" — BR-13.</summary>
+    private static string HourlyBreakdown(decimal priceFirstHour, decimal priceExtraHour, int hours)
+        => hours <= 1
+            ? $"giờ đầu {priceFirstHour:N0} ₫"
+            : $"giờ đầu {priceFirstHour:N0} + {hours - 1} × {priceExtraHour:N0} ₫";
 
     private void AddEarlyCheckInSurcharge(int folioId, DateTime actualCheckIn, decimal price, PricingSettings settings)
     {

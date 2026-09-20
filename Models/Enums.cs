@@ -101,7 +101,27 @@ public enum SurchargeType
     LateCheckOut = 2,
     ExtraGuest = 3,
     ExtraBed = 4,
+
+    /// <summary>Gói qua đêm trả sau giờ kết thúc gói — tính theo giờ, BR-13.</summary>
+    OvernightOverstay = 5,
+
     Other = 9
+}
+
+/// <summary>
+/// Hình thức thuê phòng — BR-13. Quyết định cách tính tiền phòng và ý nghĩa của
+/// cặp giờ đến/đi, nên phải chốt ngay từ lúc lập đơn chứ không đổi được giữa chừng.
+/// </summary>
+public enum RentalType
+{
+    /// <summary>Theo ngày: nhận 14:00, trả 12:00 hôm sau; ra sớm vẫn tính đủ số đêm đã đặt.</summary>
+    Daily = 1,
+
+    /// <summary>Theo giờ: tính giờ đầu + các giờ tiếp theo, chốt lúc trả phòng.</summary>
+    Hourly = 2,
+
+    /// <summary>Qua đêm: gói phẳng 22:00 hôm nay → 10:00 hôm sau.</summary>
+    Overnight = 3
 }
 
 /// <summary>Trạng thái hóa đơn — REQUIREMENTS mục 4.3.</summary>

@@ -1,12 +1,13 @@
 ﻿@model RoomChartViewModel
 @{
-    ViewData["Title"] = "Sơ đồ phòng theo ngày";
+    ViewData["Title"] = "Tình trạng phòng theo ngày";
 
     string CellClass(RoomChartCellKind kind) => kind switch
     {
         RoomChartCellKind.Occupied => "chart-occupied",
         RoomChartCellKind.Reserved => "chart-reserved",
         RoomChartCellKind.Blocked => "chart-blocked",
+        RoomChartCellKind.Hourly => "chart-hourly",
         _ => "chart-free"
     };
 }
@@ -54,6 +55,7 @@
         <span class="status-legend-item"><span class="status-legend-swatch" style="background: #f3faf6; box-shadow: inset 0 0 0 1px var(--st-available)"></span> Trống</span>
         <span class="status-legend-item"><span class="status-legend-swatch" style="background: var(--st-reserved)"></span> Đã đặt</span>
         <span class="status-legend-item"><span class="status-legend-swatch" style="background: var(--st-occupied)"></span> Đang ở</span>
+        <span class="status-legend-item"><span class="status-legend-swatch chart-hourly-swatch"></span> Thuê theo giờ</span>
         <span class="status-legend-item"><span class="status-legend-swatch" style="background: var(--st-maintenance)"></span> Không khai thác</span>
     </div>
     <span class="text-muted small">
@@ -112,7 +114,22 @@ else
                             else
                             {
                                 <td class="room-chart-cell @CellClass(seg.Kind)" colspan="@seg.Span" title="@seg.Tooltip">
-                                    @if (seg.ReservationId is int rid)
+                                    @if (seg.Kind == RoomChartCellKind.Hourly)
+                                    {
+                                        @*
+                                            Lưới này mỗi ô là một đêm nên không vẽ được từng khung giờ.
+                                            Ô chỉ nói có mấy lượt; khung giờ nằm ở tooltip, còn bấm vào
+                                            thì mở danh sách đơn của đúng ngày đó.
+                                        *@
+                                        <a class="room-chart-band"
+                                           asp-action="Index"
+                                           asp-route-CustomFilter="true"
+                                           asp-route-CheckInFrom="@seg.Date.ToString("yyyy-MM-dd")"
+                                           asp-route-CheckInTo="@seg.Date.ToString("yyyy-MM-dd")">
+                                            @seg.HourlyCount lượt giờ
+                                        </a>
+                                    }
+                                    else if (seg.ReservationId is int rid)
                                     {
                                         <a class="room-chart-band" asp-action="Details" asp-route-id="@rid">
                                             @seg.GuestName

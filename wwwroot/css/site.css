@@ -912,6 +912,32 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--st-maintenance);
 }
 
+/* Thuê theo giờ chiếm một phần ngày chứ không trọn đêm (BR-13). Nền kẻ sọc để mắt phân biệt
+   ngay với ô đặc của đơn theo ngày — cùng một màu đặc sẽ làm người xem tưởng phòng đã kín đêm đó. */
+.chart-hourly {
+  background: repeating-linear-gradient(
+    135deg,
+    #fff6e6,
+    #fff6e6 6px,
+    #ffe9c7 6px,
+    #ffe9c7 12px
+  );
+}
+
+.chart-hourly .room-chart-band {
+  background: var(--st-occupied);
+}
+
+.chart-hourly-swatch {
+  background: repeating-linear-gradient(
+    135deg,
+    #fff6e6,
+    #fff6e6 3px,
+    var(--st-occupied) 3px,
+    var(--st-occupied) 6px
+  );
+}
+
 /* Ô trống là đích bấm để tạo đơn, nên phải phủ kín ô chứ không chỉ là chữ. */
 .room-chart-link {
   display: block;

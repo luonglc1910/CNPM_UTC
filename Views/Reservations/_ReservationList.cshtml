@@ -72,9 +72,10 @@ else
                     <tr>
                         <th>Mã đơn</th>
                         <th>Khách</th>
+                        <th>Hình thức</th>
                         <th>Đến</th>
                         <th>Đi</th>
-                        <th class="text-center">Đêm</th>
+                        <th class="text-center">Thời lượng</th>
                         <th class="text-center">Phòng</th>
                         <th class="text-end">Dự kiến</th>
                         <th class="text-end">Đã cọc</th>
@@ -88,9 +89,44 @@ else
                     <tr>
                         <td><code>@r.Code</code></td>
                         <td>@r.GuestName<br /><span class="text-muted small">@r.PhoneNumber</span></td>
-                        <td class="text-nowrap">@r.CheckInDate.ToString("dd/MM/yyyy")</td>
-                        <td class="text-nowrap">@r.CheckOutDate.ToString("dd/MM/yyyy")</td>
-                        <td class="text-center">@r.Nights</td>
+                        <td class="text-nowrap">
+                            <span class="badge @r.RentalType.BadgeClass()">
+                                <i class="bi bi-@r.RentalType.IconName()"></i> @r.RentalType.DisplayName()
+                            </span>
+                        </td>
+                        @*
+                            Thuê theo giờ và qua đêm chỉ đọc được khi có giờ; thuê theo ngày mà hiện
+                            giờ thì cột dài ra vô ích vì giờ luôn là giờ chuẩn.
+                        *@
+                        <td class="text-nowrap">
+                            @(r.RentalType == RentalType.Daily
+                                ? r.CheckInDate.ToString("dd/MM/yyyy")
+                                : r.CheckInDate.ToString("HH:mm dd/MM"))
+                        </td>
+                        @* Đơn thuê giờ chưa có giờ đi — in một mốc tạm ở đây thì lễ tân sẽ tưởng
+                           đó là hạn khách phải trả phòng và đi nhắc khách sai. *@
+                        <td class="text-nowrap">
+                            @if (r.RentalType == RentalType.Hourly)
+                            {
+                                <span class="text-muted">khi trả phòng</span>
+                            }
+                            else if (r.RentalType == RentalType.Daily)
+                            {
+                                @r.CheckOutDate.ToString("dd/MM/yyyy")
+                            }
+                            else
+                            {
+                                @r.CheckOutDate.ToString("HH:mm dd/MM")
+                            }
+                        </td>
+                        <td class="text-center text-nowrap">
+                            @(r.RentalType switch
+                            {
+                                RentalType.Hourly => "tính theo giờ ở",
+                                RentalType.Overnight => "1 đêm",
+                                _ => $"{r.Nights} đêm"
+                            })
+                        </td>
                         <td class="text-center">@r.RoomCount <span class="text-muted small">@r.RoomTypeSummary</span></td>
                         <td class="text-end">@r.EstimatedTotal.ToString("N0") ₫</td>
                         <td class="text-end">@r.DepositPaid.ToString("N0") ₫</td>

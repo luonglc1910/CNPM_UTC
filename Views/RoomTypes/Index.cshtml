@@ -63,6 +63,8 @@ else
                         <th>Tên loại phòng</th>
                         <th class="text-center">Sức chứa</th>
                         <th class="text-end">Giá / đêm</th>
+                        <th class="text-end">Qua đêm</th>
+                        <th class="text-end">Theo giờ</th>
                         <th class="text-end">Phí thêm người</th>
                         <th class="text-center">Số phòng</th>
                         <th class="text-center">Trạng thái</th>
@@ -77,6 +79,13 @@ else
                         <td>@item.Name</td>
                         <td class="text-center">@item.StandardCapacity / @item.MaxCapacity</td>
                         <td class="text-end">@item.BasePricePerNight.ToString("N0") ₫</td>
+                        <td class="text-end">@item.PriceOvernight.ToString("N0") ₫</td>
+                        @* Hai con số dính nhau vì chúng chỉ có nghĩa khi đọc cùng nhau:
+                           giờ đầu rồi mới tới giá mỗi giờ sau đó. *@
+                        <td class="text-end text-nowrap">
+                            @item.PriceFirstHour.ToString("N0") ₫
+                            <span class="text-muted">+ @item.PriceExtraHour.ToString("N0") ₫/giờ</span>
+                        </td>
                         <td class="text-end">@item.ExtraGuestFeePerNight.ToString("N0") ₫</td>
                         <td class="text-center">@item.ActiveRoomCount</td>
                         <td class="text-center">

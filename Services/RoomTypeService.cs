@@ -57,6 +57,9 @@ public class RoomTypeService : IRoomTypeService
                 MaxCapacity = t.MaxCapacity,
                 BasePricePerNight = t.BasePricePerNight,
                 ExtraGuestFeePerNight = t.ExtraGuestFeePerNight,
+                PriceFirstHour = t.PriceFirstHour,
+                PriceExtraHour = t.PriceExtraHour,
+                PriceOvernight = t.PriceOvernight,
                 ActiveRoomCount = t.Rooms.Count(r => r.IsActive),
                 IsActive = t.IsActive
             });
@@ -82,6 +85,9 @@ public class RoomTypeService : IRoomTypeService
             BasePricePerNight = entity.BasePricePerNight,
             ExtraGuestFeePerNight = entity.ExtraGuestFeePerNight,
             ExtraBedFeePerNight = entity.ExtraBedFeePerNight,
+            PriceFirstHour = entity.PriceFirstHour,
+            PriceExtraHour = entity.PriceExtraHour,
+            PriceOvernight = entity.PriceOvernight,
             SelectedAmenities = SplitAmenities(entity.Amenities),
             Description = entity.Description,
             IsActive = entity.IsActive
@@ -112,6 +118,9 @@ public class RoomTypeService : IRoomTypeService
             BasePricePerNight = form.BasePricePerNight,
             ExtraGuestFeePerNight = form.ExtraGuestFeePerNight,
             ExtraBedFeePerNight = form.ExtraBedFeePerNight,
+            PriceFirstHour = form.PriceFirstHour,
+            PriceExtraHour = form.PriceExtraHour,
+            PriceOvernight = form.PriceOvernight,
             Amenities = JoinAmenities(form.SelectedAmenities),
             Description = form.Description?.Trim(),
             IsActive = true
@@ -143,7 +152,7 @@ public class RoomTypeService : IRoomTypeService
         }
 
         // Mã loại phòng không sửa được sau khi tạo (SCR-A02) — bỏ qua giá trị gửi lên.
-        var oldPrice = entity.BasePricePerNight;
+        var oldPrices = PriceSummary(entity);
 
         entity.Name = form.Name.Trim();
         entity.StandardCapacity = form.StandardCapacity;
@@ -151,16 +160,21 @@ public class RoomTypeService : IRoomTypeService
         entity.BasePricePerNight = form.BasePricePerNight;
         entity.ExtraGuestFeePerNight = form.ExtraGuestFeePerNight;
         entity.ExtraBedFeePerNight = form.ExtraBedFeePerNight;
+        entity.PriceFirstHour = form.PriceFirstHour;
+        entity.PriceExtraHour = form.PriceExtraHour;
+        entity.PriceOvernight = form.PriceOvernight;
         entity.Amenities = JoinAmenities(form.SelectedAmenities);
         entity.Description = form.Description?.Trim();
         entity.IsActive = form.IsActive;
 
-        // BR-11: mọi lần sửa giá đều phải ghi lại giá cũ → giá mới.
-        if (oldPrice != entity.BasePricePerNight)
+        // BR-11: mọi lần sửa giá đều phải ghi lại giá cũ → giá mới. Từ BR-13 một loại phòng có
+        // bốn mức giá, nên ghi cả cụm chứ không chỉ giá đêm — sửa giá giờ cũng là sửa giá.
+        var newPrices = PriceSummary(entity);
+        if (oldPrices != newPrices)
         {
             _audit.Log("ChangeRoomTypePrice", nameof(RoomType), entity.Id.ToString(),
-                oldValue: $"{oldPrice:N0} ₫/đêm",
-                newValue: $"{entity.BasePricePerNight:N0} ₫/đêm");
+                oldValue: oldPrices,
+                newValue: newPrices);
         }
 
         // Giảm sức chứa tối đa xuống dưới số khách đang thực ở: cảnh báo nhưng vẫn lưu,
@@ -235,4 +249,9 @@ public class RoomTypeService : IRoomTypeService
         => string.IsNullOrWhiteSpace(amenities)
             ? new List<string>()
             : amenities.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+
+    /// <summary>Cả bốn mức giá của một loại phòng trong một dòng, dùng cho nhật ký BR-11.</summary>
+    private static string PriceSummary(RoomType t)
+        => $"{t.BasePricePerNight:N0} ₫/đêm · {t.PriceFirstHour:N0} ₫ giờ đầu · "
+           + $"{t.PriceExtraHour:N0} ₫ giờ tiếp · {t.PriceOvernight:N0} ₫ qua đêm";
 }

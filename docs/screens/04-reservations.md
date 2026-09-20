@@ -91,7 +91,7 @@ Nút **Chọn đặt** chuyển sang SCR-C04 mang theo sẵn ngày, loại phòn
 
 ---
 
-## SCR-C03 — Sơ đồ phòng theo ngày
+## SCR-C03 — Tình trạng phòng theo ngày
 
 | | |
 |---|---|
@@ -112,6 +112,11 @@ Phòng │ 20/09 │ 21/09 │ 22/09 │ 23/09 │ ...
 - Mỗi ô màu theo trạng thái; một đơn nhiều đêm vẽ thành **một dải liền** để dễ nhìn khoảng trống.
 - Di chuột lên dải → tooltip: mã đơn, khách, số khách, trạng thái.
 - Nhấp vào ô trống → mở nhanh SCR-C04 với phòng và ngày đã điền sẵn.
+- **Thuê theo giờ (BR-13)** nằm gọn trong một ngày nên không chiếm trọn đêm nào. Lưới mỗi ô là
+  một đêm, không vẽ được từng khung giờ, nên ngày đó hiện ô **kẻ sọc** với nhãn *"N lượt giờ"*;
+  tooltip liệt kê từng khung giờ kèm tên khách, nhấp vào mở danh sách đơn của đúng ngày đó.
+  Ô kẻ sọc **không bao giờ gộp** sang ngày khác vì số lượt là của riêng từng ngày.
+- **Qua đêm** chiếm trọn đêm của ngày mở gói nên vẽ như đơn theo ngày bình thường.
 
 ### Ghi chú
 Sơ đồ này cũng là chỗ nhìn nhanh lịch dọn phòng: ô vừa kết thúc một dải đặt phòng chính là
@@ -134,10 +139,20 @@ phòng sắp chuyển sang `Dirty`.
 - Nếu chưa có: nút **Tạo khách mới** mở hộp thoại nhập nhanh (họ tên, giấy tờ, SĐT bắt buộc).
 - Khách trong danh sách hạn chế → cảnh báo đỏ (SCR-B05).
 
-**Khối 2 — Thời gian & phòng**
-- Ngày đến `*`, ngày đi `*`, hệ thống tự tính **số đêm** (BR-02).
+**Khối 2 — Hình thức thuê, thời gian & phòng**
+- **Hình thức thuê** `*` là trường đầu tiên — ba lựa chọn **Theo ngày / Theo giờ / Qua đêm**
+  (BR-13). Nó quyết định luôn kiểu của hai ô thời gian bên dưới, nên phải chọn trước.
+- Ô thời gian đổi theo hình thức:
+
+| Hình thức | Ô nhập | Giá trị hệ thống lưu |
+|---|---|---|
+| Theo ngày | Ngày đến `*`, ngày đi `*` | ngày đến + giờ nhận chuẩn → ngày đi + giờ trả chuẩn; tính **số đêm** (BR-02) |
+| Theo giờ | **Chỉ giờ đến** `*` (ngày + giờ) | giờ đến đúng như nhập; **không có ô giờ đi** — giờ đi là giờ khách thật sự trả phòng |
+| Qua đêm | **Đêm ngày** `*` | 22:00 ngày đó → 10:00 hôm sau, hai mốc lấy từ cấu hình |
+
 - Bảng dòng phòng, **thêm được nhiều dòng** (FR-C03): mỗi dòng gồm loại phòng · phòng cụ thể
   (chọn hoặc để hệ thống xếp sau) · số người lớn · số trẻ em · giá/đêm (tự điền, Admin sửa được).
+  Giá giờ và giá qua đêm lấy thẳng từ bảng giá loại phòng, không có ô nhập tay.
 - Mỗi lần thêm/đổi dòng, hệ thống kiểm tra lại xung đột (BR-06) ngay trên giao diện.
 
 **Khối 3 — Thông tin đơn**
@@ -148,13 +163,17 @@ phòng sắp chuyển sang `Dirty`.
 **Khối 4 — Tiền (chỉ hiển thị, tính tự động)**
 | Dòng | Cách tính |
 |---|---|
-| Tiền phòng | Σ (giá/đêm × số đêm) của các dòng phòng |
-| Phụ thu thêm người dự kiến | Theo BR-03 nếu vượt sức chứa chuẩn |
-| **Tổng dự kiến** | Tổng hai dòng trên (chưa VAT — VAT chốt ở hóa đơn) |
-| Mức cọc đề xuất | Theo cấu hình (mặc định tiền 1 đêm) |
+| Tiền phòng — theo ngày | Σ (giá/đêm × số đêm) của các dòng phòng |
+| Tiền phòng — qua đêm | Σ giá gói qua đêm của các dòng phòng |
+| Tiền phòng — theo giờ | Chỉ là **mức tối thiểu một giờ** (giá giờ đầu); số thật chốt lúc trả phòng |
+| Phụ thu thêm người dự kiến | Theo BR-03 nếu vượt sức chứa chuẩn — chỉ áp cho thuê theo ngày |
+| **Tổng dự kiến** | Tổng các dòng trên (chưa VAT — VAT chốt ở hóa đơn) |
+
+> Tính năng **đặt cọc đã bị vô hiệu** — `BuildDepositFormAsync`/`TakeDepositAsync` trả về rỗng,
+> màn hình SCR-C07 không còn dùng. Bảng `Deposits` giữ lại để đọc dữ liệu cũ.
 
 ### Kiểm tra khi lưu
-1. Ngày đi > ngày đến.
+1. Theo ngày: ngày đi > ngày đến. Theo giờ và qua đêm: không có ô ngày đi nên không kiểm.
 2. Có ít nhất một dòng phòng.
 3. Số khách mỗi dòng ≤ sức chứa tối đa của loại phòng → nếu vượt thì **chặn**.
 4. Không có phòng nào bị trùng lịch (BR-06) — kiểm tra lại ở server, **không tin giao diện**,

@@ -23,6 +23,15 @@ public class PricingSettings
     public decimal LateCheckOutTier2Rate { get; init; }
     public int LateCheckOutFullNightHour { get; init; } = 18;
 
+    /// <summary>Giờ mở gói qua đêm — BR-13.</summary>
+    public int OvernightStartHour { get; init; } = 22;
+
+    /// <summary>Giờ kết thúc gói qua đêm, sáng hôm sau — BR-13.</summary>
+    public int OvernightEndHour { get; init; } = 10;
+
+    /// <summary>Phút lẻ được bỏ qua khi tính giờ; lẻ quá mức này mới lên một giờ — BR-13.</summary>
+    public int HourlyGraceMinutes { get; init; } = 20;
+
     public int DepositNights { get; init; } = 1;
     public int HoldUntilHour { get; init; } = 18;
     public decimal CancelFeeOver48hRate { get; init; }
@@ -42,6 +51,54 @@ public class SurchargeLine
     public int ExtraNights { get; init; }
 
     public string Description { get; init; } = string.Empty;
+}
+
+/// <summary>
+/// Kết quả quy đổi khoảng thời gian ở thành số giờ tính tiền — BR-13.
+/// Giữ lại phần phút lẻ và cờ đã-làm-tròn-lên để màn hình trả phòng giải thích được với khách
+/// vì sao hóa đơn ghi 3 giờ trong khi khách chỉ ở 2 giờ 35 phút.
+/// </summary>
+/// <param name="Hours">Số giờ đưa vào hóa đơn, tối thiểu 1.</param>
+/// <param name="TotalMinutes">Tổng số phút ở thực tế.</param>
+/// <param name="OddMinutes">Số phút lẻ ngoài các giờ tròn.</param>
+/// <param name="RoundedUp">Phần lẻ đã vượt mức bỏ qua nên bị tính thêm một giờ.</param>
+public record HourCount(int Hours, int TotalMinutes, int OddMinutes, bool RoundedUp)
+{
+    /// <summary>Khoảng thời gian ở dạng "2 giờ 35 phút", để ghép vào câu giải thích.</summary>
+    public string SpanText
+    {
+        get
+        {
+            var h = TotalMinutes / 60;
+            var m = TotalMinutes % 60;
+            if (h == 0)
+            {
+                return $"{m} phút";
+            }
+
+            return m == 0 ? $"{h} giờ" : $"{h} giờ {m} phút";
+        }
+    }
+}
+
+/// <summary>
+/// Khoảng thời gian thuê đã chuẩn hóa theo hình thức — BR-13.
+///
+/// Người dùng nhập mỗi hình thức một kiểu (ngày, ngày+giờ, hoặc chỉ ngày của đêm), còn phần
+/// còn lại của hệ thống chỉ muốn biết hai mốc <see cref="CheckIn"/>/<see cref="CheckOut"/> đầy đủ.
+/// Quy đổi tập trung ở một chỗ để tra phòng trống, sơ đồ phòng và tính tiền không lệch nhau.
+/// </summary>
+/// <param name="Nights">Số đêm; thuê theo giờ là 0, qua đêm luôn là 1.</param>
+/// <param name="Hours">Số giờ dự kiến; chỉ thuê theo giờ mới khác 0.</param>
+public record RentalPeriod(RentalType Type, DateTime CheckIn, DateTime CheckOut, int Nights, int Hours)
+{
+    /// <summary>Mô tả khoảng thuê để in lên dòng tiền phòng và màn hình chi tiết.</summary>
+    public string SpanText => Type switch
+    {
+        RentalType.Hourly => $"từ {CheckIn:HH\\:mm dd/MM}, tính giờ khi trả phòng",
+        RentalType.Overnight => $"qua đêm {CheckIn:HH\\:mm dd/MM} → {CheckOut:HH\\:mm dd/MM}",
+        _ => $"{Nights} đêm"
+    };
 }
 
 /// <summary>Kết quả tổng hợp folio/hóa đơn — BR-04.</summary>
@@ -85,6 +142,39 @@ public interface IPricingService
 
     decimal RoomCharge(decimal pricePerNight, int nights);
 
+    /// <summary>
+    /// Quy đổi khoảng thời gian ở thành số giờ tính tiền — BR-13.
+    /// Phần lẻ từ <see cref="PricingSettings.HourlyGraceMinutes"/> phút trở xuống thì bỏ,
+    /// quá mức đó mới lên một giờ. Ở dưới một giờ vẫn tính tròn một giờ.
+    /// </summary>
+    HourCount CountHours(DateTime from, DateTime to, PricingSettings s);
+
+    /// <summary>Tiền phòng thuê theo giờ: giờ đầu một giá, mỗi giờ tiếp theo một giá — BR-13.</summary>
+    decimal HourlyRoomCharge(decimal priceFirstHour, decimal priceExtraHour, int hours);
+
+    /// <summary>
+    /// Khung giờ của một gói qua đêm tính từ ngày mở gói — BR-13.
+    /// Mặc định 22:00 ngày đó đến 10:00 hôm sau; hai mốc lấy từ cấu hình.
+    /// </summary>
+    (DateTime Start, DateTime End) OvernightWindow(DateTime night, PricingSettings s);
+
+    /// <summary>
+    /// Chuẩn hóa cặp thời điểm người dùng nhập thành khoảng thuê đầy đủ — BR-13.
+    /// Trả về câu lỗi tiếng Việt thay vì ném ngoại lệ, để tầng trên gắn thẳng vào ModelState.
+    /// </summary>
+    (RentalPeriod? Period, string? Error) ResolvePeriod(
+        RentalType type, DateTime rawCheckIn, DateTime rawCheckOut, PricingSettings s);
+
+    /// <summary>Tiền phòng của cả khoảng thuê, chọn đúng bảng giá theo hình thức — BR-13.</summary>
+    decimal RoomChargeFor(RentalPeriod period, decimal pricePerNight,
+        decimal priceFirstHour, decimal priceExtraHour, decimal priceOvernight);
+
+    /// <summary>
+    /// Phụ thu ở quá giờ kết thúc gói qua đêm, tính theo giờ với cùng luật làm tròn — BR-13.
+    /// Trả null nếu trả phòng đúng giờ hoặc sớm hơn.
+    /// </summary>
+    SurchargeLine? OvernightOverstaySurcharge(DateTime packageEnd, DateTime actualCheckOut, decimal priceExtraHour, PricingSettings s);
+
     /// <summary>Phụ thu nhận phòng sớm theo giờ nhận thực tế; null nếu nhận đúng giờ chuẩn trở đi — BR-03.</summary>
     SurchargeLine? EarlyCheckInSurcharge(TimeOnly actualCheckIn, decimal pricePerNight, PricingSettings s);
 
@@ -116,6 +206,127 @@ public class PricingService : IPricingService
 
     public decimal RoomCharge(decimal pricePerNight, int nights)
         => pricePerNight * nights;
+
+    public HourCount CountHours(DateTime from, DateTime to, PricingSettings s)
+    {
+        var totalMinutes = (int)Math.Round((to - from).TotalMinutes, MidpointRounding.AwayFromZero);
+        if (totalMinutes < 0)
+        {
+            totalMinutes = 0;
+        }
+
+        var whole = totalMinutes / 60;
+        var odd = totalMinutes % 60;
+
+        // Lẻ đúng bằng mức bỏ qua thì vẫn bỏ — "dưới 20 phút làm tròn xuống" hiểu theo nghĩa
+        // 20 phút chưa phải là "quá 20 phút".
+        var grace = s.HourlyGraceMinutes < 0 ? 0 : s.HourlyGraceMinutes;
+        var hours = odd > grace ? whole + 1 : whole;
+
+        var roundedUp = hours > whole;
+
+        // Ghé chưa đầy một giờ vẫn phải trả tiền giờ đầu, nhưng đó không phải là làm tròn lên
+        // theo nghĩa của cờ này — không có gì để giải thích với khách.
+        if (hours < 1)
+        {
+            hours = 1;
+        }
+
+        return new HourCount(hours, totalMinutes, odd, roundedUp);
+    }
+
+    public decimal HourlyRoomCharge(decimal priceFirstHour, decimal priceExtraHour, int hours)
+    {
+        if (hours < 1)
+        {
+            hours = 1;
+        }
+
+        return priceFirstHour + priceExtraHour * (hours - 1);
+    }
+
+    public (DateTime Start, DateTime End) OvernightWindow(DateTime night, PricingSettings s)
+    {
+        var start = night.Date.AddHours(s.OvernightStartHour);
+        var end = night.Date.AddDays(1).AddHours(s.OvernightEndHour);
+        return (start, end);
+    }
+
+    public (RentalPeriod? Period, string? Error) ResolvePeriod(
+        RentalType type, DateTime rawCheckIn, DateTime rawCheckOut, PricingSettings s)
+    {
+        switch (type)
+        {
+            case RentalType.Hourly:
+            {
+                // Bỏ phần giây: ô datetime-local chỉ cho tới phút, giữ giây chỉ làm hóa đơn
+                // lệch một giờ ở sát ngưỡng làm tròn mà không ai giải thích được.
+                var checkIn = TrimToMinute(rawCheckIn);
+
+                // Thuê theo giờ không có giờ đi: khách ở bao lâu thì lúc trả phòng mới biết, và đó
+                // chính là điểm khác của hình thức này. Giá trị lưu ở đây chỉ là mốc tạm một giờ —
+                // đúng bằng mức tối thiểu phải trả — để phần chống trùng lịch và lưới tình trạng
+                // phòng vẫn có hai đầu mà so sánh. Số thật được chốt ở màn trả phòng.
+                var provisionalEnd = checkIn.AddHours(1);
+
+                return (new RentalPeriod(type, checkIn, provisionalEnd, Nights: 0, Hours: 1), null);
+            }
+
+            case RentalType.Overnight:
+            {
+                // Chỉ phần ngày của ô "đêm ngày" có nghĩa; hai mốc giờ do cấu hình quyết định.
+                var (start, end) = OvernightWindow(rawCheckIn, s);
+                return (new RentalPeriod(type, start, end, Nights: 1, Hours: 0), null);
+            }
+
+            default:
+            {
+                if (rawCheckOut.Date <= rawCheckIn.Date)
+                {
+                    return (null, "Ngày đi phải sau ngày đến.");
+                }
+
+                // Gắn giờ chuẩn vào hai mốc thay vì để 00:00 — nếu không, một lượt thuê theo giờ
+                // buổi sáng sẽ bị coi là đụng lịch với đơn trả phòng trưa hôm đó.
+                var checkIn = rawCheckIn.Date.Add(s.StandardCheckInTime.ToTimeSpan());
+                var checkOut = rawCheckOut.Date.Add(s.StandardCheckOutTime.ToTimeSpan());
+                var nights = CountNights(rawCheckIn, rawCheckOut);
+
+                return (new RentalPeriod(RentalType.Daily, checkIn, checkOut, nights, Hours: 0), null);
+            }
+        }
+    }
+
+    public decimal RoomChargeFor(RentalPeriod period, decimal pricePerNight,
+        decimal priceFirstHour, decimal priceExtraHour, decimal priceOvernight)
+        => period.Type switch
+        {
+            RentalType.Hourly => HourlyRoomCharge(priceFirstHour, priceExtraHour, period.Hours),
+            RentalType.Overnight => priceOvernight,
+            _ => RoomCharge(pricePerNight, period.Nights)
+        };
+
+    private static DateTime TrimToMinute(DateTime value)
+        => new(value.Year, value.Month, value.Day, value.Hour, value.Minute, 0, value.Kind);
+
+    public SurchargeLine? OvernightOverstaySurcharge(
+        DateTime packageEnd, DateTime actualCheckOut, decimal priceExtraHour, PricingSettings s)
+    {
+        if (actualCheckOut <= packageEnd)
+        {
+            return null;
+        }
+
+        var over = CountHours(packageEnd, actualCheckOut, s);
+        var amount = priceExtraHour * over.Hours;
+
+        return new SurchargeLine
+        {
+            Type = SurchargeType.OvernightOverstay,
+            Amount = amount,
+            Description = $"Quá gói qua đêm {over.SpanText} (sau {packageEnd:HH\\:mm}) — tính {over.Hours} giờ × {priceExtraHour:N0} ₫"
+        };
+    }
 
     public SurchargeLine? EarlyCheckInSurcharge(TimeOnly actualCheckIn, decimal pricePerNight, PricingSettings s)
     {
