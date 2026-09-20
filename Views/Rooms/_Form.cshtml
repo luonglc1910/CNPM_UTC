@@ -1,0 +1,90 @@
+@model RoomFormViewModel
+@* Form dùng chung cho Thêm và Sửa phòng — SCR-A04. *@
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+<input type="hidden" asp-for="Id" />
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <label asp-for="RoomNumber" class="form-label">Số phòng <span class="text-danger">*</span></label>
+        <input asp-for="RoomNumber" class="form-control" placeholder="VD: 201" autofocus />
+        <div class="form-text">Duy nhất trong toàn khách sạn.</div>
+        <span asp-validation-for="RoomNumber" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Floor" class="form-label">Tầng <span class="text-danger">*</span></label>
+        <input asp-for="Floor" class="form-control" type="number" min="0" />
+        <span asp-validation-for="Floor" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="RoomTypeId" class="form-label">Loại phòng <span class="text-danger">*</span></label>
+        <select asp-for="RoomTypeId" asp-items="Model.RoomTypeOptions" class="form-select">
+            <option value="">-- Chọn loại phòng --</option>
+        </select>
+        <span asp-validation-for="RoomTypeId" class="text-danger small"></span>
+    </div>
+
+    @if (!Model.IsEdit)
+    {
+        <div class="col-md-4">
+            <label asp-for="Status" class="form-label">Trạng thái ban đầu</label>
+            <select asp-for="Status" class="form-select">
+                <option value="@((int)RoomStatus.Available)">@RoomStatus.Available.ToDisplayName()</option>
+                <option value="@((int)RoomStatus.Dirty)">@RoomStatus.Dirty.ToDisplayName()</option>
+                <option value="@((int)RoomStatus.Maintenance)">@RoomStatus.Maintenance.ToDisplayName()</option>
+            </select>
+            <div class="form-text">Phòng mới xây hoặc đang hoàn thiện thì chọn Bảo trì.</div>
+        </div>
+    }
+
+    <div class="col-12">
+        <label asp-for="Notes" class="form-label"></label>
+        <input asp-for="Notes" class="form-control" placeholder="VD: phòng góc, view hồ" />
+        <span asp-validation-for="Notes" class="text-danger small"></span>
+    </div>
+
+    @if (Model.IsEdit)
+    {
+        <div class="col-12">
+            <div class="alert alert-info mb-0 small">
+                <i class="bi bi-info-circle"></i>
+                Trạng thái phòng không sửa ở đây — dùng chức năng <strong>Đổi trạng thái</strong> (SCR-A05)
+                để bắt buộc ghi lý do và lưu nhật ký.
+            </div>
+        </div>
+    }
+
+    @if (Model.AffectedReservations.Count > 0)
+    {
+        <div class="col-12">
+            <div class="alert alert-warning mb-0">
+                <div class="fw-semibold mb-1">
+                    <i class="bi bi-exclamation-triangle"></i>
+                    Phòng này còn @Model.AffectedReservations.Count đơn đặt trong tương lai:
+                </div>
+                <ul class="mb-2 small">
+                    @foreach (var code in Model.AffectedReservations)
+                    {
+                        <li>@code</li>
+                    }
+                </ul>
+                <div class="form-check">
+                    <input asp-for="ConfirmRoomTypeChange" class="form-check-input" />
+                    <label asp-for="ConfirmRoomTypeChange" class="form-check-label">
+                        Tôi vẫn muốn đổi loại phòng và sẽ xếp lại phòng cho các đơn trên.
+                    </label>
+                </div>
+            </div>
+        </div>
+    }
+</div>
+
+<div class="mt-4 d-flex gap-2">
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg"></i> @(Model.IsEdit ? "Cập nhật" : "Thêm phòng")
+    </button>
+    <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+</div>

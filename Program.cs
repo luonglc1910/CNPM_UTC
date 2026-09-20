@@ -24,6 +24,10 @@ builder.Services.AddScoped<IAuditService, AuditService>();
 // Menu trái hỏi dịch vụ này để biết mục nào được hiện — xem Security/ScreenAccess.cs.
 builder.Services.AddScoped<IScreenAccess, ScreenAccess>();
 
+// Nghiệp vụ danh mục.
+builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
+
 // Giữ nguyên ký tự tiếng Việt trong HTML thay vì mã hóa thành &#x...;
 builder.Services.Configure<WebEncoderOptions>(options =>
     options.TextEncoderSettings = new TextEncoderSettings(UnicodeRanges.All));

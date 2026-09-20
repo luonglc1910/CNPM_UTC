@@ -1,9 +1,186 @@
+@model RoomIndexViewModel
 @{
     ViewData["Title"] = "Phòng";
+    var isAdmin = User.IsInRole(Roles.Admin);
+
+    // Giữ nguyên bộ lọc khi bấm chuyển chế độ hiển thị.
+    var switchQuery = new Dictionary<string, string?>(
+        Context.Request.Query.ToDictionary(q => q.Key, q => (string?)q.Value.ToString()),
+        StringComparer.OrdinalIgnoreCase);
 }
 
-<div class="d-flex justify-content-end mb-3">
-    <a class="btn btn-primary" asp-action="Create">Thêm phòng</a>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+        <input type="hidden" name="view" value="@Model.View" />
+        <div>
+            <label asp-for="Keyword" class="form-label mb-1 small text-muted"></label>
+            <input asp-for="Keyword" class="form-control form-control-sm" style="width: 130px" placeholder="VD: 201" />
+        </div>
+        <div>
+            <label asp-for="Floor" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="Floor" asp-items="Model.FloorOptions" class="form-select form-select-sm">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div>
+            <label asp-for="RoomTypeId" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="RoomTypeId" asp-items="Model.RoomTypeOptions" class="form-select form-select-sm">
+                <option value="">Tất cả</option>
+            </select>
+        </div>
+        <div>
+            <label asp-for="Status" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="Status" class="form-select form-select-sm">
+                <option value="">Tất cả</option>
+                @foreach (var s in Enum.GetValues<RoomStatus>())
+                {
+                    <option value="@((int)s)" selected="@(Model.Status == s)">@s.ToDisplayName()</option>
+                }
+            </select>
+        </div>
+        <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-search"></i> Lọc</button>
+        @if (Model.HasFilter)
+        {
+            <a class="btn btn-link btn-sm" asp-action="Index" asp-route-view="@Model.View">Bỏ lọc</a>
+        }
+    </form>
+
+    <div class="d-flex gap-2">
+        <div class="btn-group btn-group-sm" role="group">
+            @{
+                switchQuery["view"] = "table";
+                var tableUrl = Url.Action(null, null, switchQuery);
+                switchQuery["view"] = "grid";
+                var gridUrl = Url.Action(null, null, switchQuery);
+            }
+            <a class="btn @(Model.IsGrid ? "btn-outline-secondary" : "btn-secondary")" href="@tableUrl">
+                <i class="bi bi-list-ul"></i> Bảng
+            </a>
+            <a class="btn @(Model.IsGrid ? "btn-secondary" : "btn-outline-secondary")" href="@gridUrl">
+                <i class="bi bi-grid-3x3-gap"></i> Lưới theo tầng
+            </a>
+        </div>
+        @if (isAdmin)
+        {
+            <a class="btn btn-primary btn-sm" asp-action="Create"><i class="bi bi-plus-lg"></i> Thêm phòng</a>
+        }
+    </div>
 </div>
 
-<partial name="_Placeholder" model="@("Danh sách phòng theo tầng, loại phòng và trạng thái (sẵn sàng / bảo trì).")" />
+@* Chú thích màu trạng thái — 00-conventions.md mục 6. *@
+<div class="d-flex flex-wrap gap-2 mb-3 small">
+    @foreach (var s in Enum.GetValues<RoomStatus>())
+    {
+        <span class="badge @s.ToBadgeClass()">@s.ToDisplayName()</span>
+    }
+</div>
+
+@if (Model.Results.TotalItems == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        @if (Model.HasFilter)
+        {
+            <p class="mb-0">Không có phòng nào khớp bộ lọc.</p>
+        }
+        else
+        {
+            <p class="mb-1">Chưa có phòng nào.</p>
+            @if (isAdmin)
+            {
+                <p class="mb-0 small">Nhấn <strong>Thêm phòng</strong> để bắt đầu.</p>
+            }
+        }
+    </div></div>
+}
+else if (Model.IsGrid)
+{
+    @foreach (var floorGroup in Model.AllForGrid.GroupBy(r => r.Floor).OrderBy(g => g.Key))
+    {
+        <h2 class="h6 text-muted mt-3">Tầng @floorGroup.Key</h2>
+        <div class="d-flex flex-wrap gap-2">
+            @foreach (var room in floorGroup.OrderBy(r => r.RoomNumber))
+            {
+                <div class="card" style="width: 150px">
+                    <div class="card-body p-2 text-center">
+                        <div class="fw-semibold">@room.RoomNumber</div>
+                        <div class="small text-muted text-truncate" title="@room.RoomTypeName">@room.RoomTypeName</div>
+                        <div class="my-1"><partial name="_RoomStatusBadge" model="room.Status" /></div>
+                        @if (!string.IsNullOrWhiteSpace(room.CurrentGuestName))
+                        {
+                            <div class="small text-truncate" title="@room.CurrentGuestName">
+                                <i class="bi bi-person"></i> @room.CurrentGuestName
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(room.StatusNote))
+                        {
+                            <div class="small text-danger text-truncate" title="@room.StatusNote">@room.StatusNote</div>
+                        }
+                        <a class="btn btn-sm btn-outline-secondary mt-2 w-100"
+                           asp-action="UpdateStatus" asp-route-id="@room.Id">Đổi trạng thái</a>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Số phòng</th>
+                        <th class="text-center">Tầng</th>
+                        <th>Loại phòng</th>
+                        <th class="text-end">Giá / đêm</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th>Khách đang ở</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var room in Model.Results.Items)
+                {
+                    <tr>
+                        <td class="fw-semibold">@room.RoomNumber</td>
+                        <td class="text-center">@room.Floor</td>
+                        <td>@room.RoomTypeName</td>
+                        <td class="text-end">@room.PricePerNight.ToString("N0") ₫</td>
+                        <td class="text-center">
+                            <partial name="_RoomStatusBadge" model="room.Status" />
+                            @if (!string.IsNullOrWhiteSpace(room.StatusNote))
+                            {
+                                <div class="small text-muted">@room.StatusNote</div>
+                            }
+                        </td>
+                        <td>
+                            @if (room.CurrentStayId is not null)
+                            {
+                                <a asp-controller="FrontDesk" asp-action="Stay" asp-route-id="@room.CurrentStayId">
+                                    @room.CurrentGuestName
+                                </a>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary" asp-action="UpdateStatus" asp-route-id="@room.Id"
+                               title="Đổi trạng thái"><i class="bi bi-arrow-repeat"></i></a>
+                            @if (isAdmin)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@room.Id"
+                                   title="Sửa"><i class="bi bi-pencil"></i></a>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" />
+}

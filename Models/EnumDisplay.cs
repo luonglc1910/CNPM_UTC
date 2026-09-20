@@ -1,0 +1,41 @@
+namespace HotelManagement.Web.Models;
+
+/// <summary>
+/// Nhãn tiếng Việt và màu hiển thị cho các enum nghiệp vụ.
+/// Bảng màu trạng thái phòng theo docs/screens/00-conventions.md mục 6.
+/// </summary>
+public static class EnumDisplay
+{
+    public static string ToDisplayName(this RoomStatus status) => status switch
+    {
+        RoomStatus.Available => "Trống",
+        RoomStatus.Reserved => "Đã đặt",
+        RoomStatus.Occupied => "Đang ở",
+        RoomStatus.Dirty => "Chờ dọn",
+        RoomStatus.Maintenance => "Bảo trì",
+        RoomStatus.OutOfService => "Ngừng khai thác",
+        _ => status.ToString()
+    };
+
+    /// <summary>Lớp badge Bootstrap tương ứng màu quy ước.</summary>
+    public static string ToBadgeClass(this RoomStatus status) => status switch
+    {
+        RoomStatus.Available => "text-bg-success",
+        RoomStatus.Reserved => "text-bg-primary",
+        RoomStatus.Occupied => "text-bg-warning",
+        RoomStatus.Dirty => "text-bg-secondary",
+        RoomStatus.Maintenance => "text-bg-danger",
+        RoomStatus.OutOfService => "text-bg-dark",
+        _ => "text-bg-light"
+    };
+
+    public static string ToDisplayName(this ServiceCategory category) => category switch
+    {
+        ServiceCategory.FoodAndBeverage => "Ăn uống",
+        ServiceCategory.Minibar => "Minibar",
+        ServiceCategory.Laundry => "Giặt ủi",
+        ServiceCategory.Transport => "Thuê xe / Đưa đón",
+        ServiceCategory.Other => "Khác",
+        _ => category.ToString()
+    };
+}
