@@ -665,8 +665,16 @@ public class FrontDeskService : IFrontDeskService
             return ServiceResult.Fail("Ngày đi mới phải muộn hơn ngày đi hiện tại.", nameof(form.NewCheckOut));
         }
 
+        var extendSettings = await _settings.GetPricingSettingsAsync();
+
+        // Chốt mốc trả mới một lần rồi dùng cho cả bước kiểm phòng trống lẫn bước ghi vào Stay.
+        // Trước đây kiểm bằng .Date (00:00) mà lưu bằng .Date + giờ trả chuẩn (12:00), nên nửa
+        // buổi sáng cuối cùng không được kiểm: phòng đã có đơn khác nhận lúc 14:00 hôm trước đó
+        // vẫn lọt qua và thành đặt trùng.
+        var newCheckOut = form.NewCheckOut.Date.Add(extendSettings.StandardCheckOutTime.ToTimeSpan());
+
         var free = await _availability.IsRoomAvailableAsync(
-            stay.RoomId, stay.ExpectedCheckOut, form.NewCheckOut.Date, null, stay.Id);
+            stay.RoomId, stay.ExpectedCheckOut, newCheckOut, null, stay.Id);
         if (!free)
         {
             return ServiceResult.Fail("Phòng đã có đơn khác trong các đêm thêm — cần đổi phòng.");
@@ -674,7 +682,6 @@ public class FrontDeskService : IFrontDeskService
 
         var extraNights = _pricing.CountNights(stay.ExpectedCheckOut, form.NewCheckOut);
         var price = isAdmin && form.ExtraNightPrice > 0 ? form.ExtraNightPrice : stay.PricePerNight;
-        var extendSettings = await _settings.GetPricingSettingsAsync();
 
         await _tx.ExecuteAsync(async () =>
         {
@@ -692,7 +699,7 @@ public class FrontDeskService : IFrontDeskService
 
             // Giữ giờ trả chuẩn thay vì để rơi về 00:00 — từ BR-13 mọi mốc thời gian đều mang giờ thật,
             // để nó về nửa đêm thì lượt ở này trông như đã kết thúc từ hôm trước.
-            stay.ExpectedCheckOut = form.NewCheckOut.Date.Add(extendSettings.StandardCheckOutTime.ToTimeSpan());
+            stay.ExpectedCheckOut = newCheckOut;
             stay.Nights += extraNights;
 
             _audit.Log("ExtendStay", nameof(Stay), stay.Id.ToString(),

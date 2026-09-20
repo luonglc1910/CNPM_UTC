@@ -96,7 +96,10 @@ public class ReservationService : IReservationService
 
             if (filter.CheckInTo is not null)
             {
-                query = query.Where(r => r.CheckInDate <= filter.CheckInTo.Value.Date);
+                // Chặn trên phải là đầu ngày hôm sau: mốc nhận phòng mang giờ thật (BR-13) nên
+                // so với 00:00 của chính ngày đó sẽ cắt mất toàn bộ đơn của ngày cuối khoảng lọc.
+                var upperBound = filter.CheckInTo.Value.Date.AddDays(1);
+                query = query.Where(r => r.CheckInDate < upperBound);
             }
 
             if (filter.Status is not null)
