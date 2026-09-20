@@ -1,3 +1,4 @@
+using HotelManagement.Web.Models;
 using HotelManagement.Web.Models.ViewModels;
 using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
@@ -26,7 +27,16 @@ public class FrontDeskController : AdminControllerBase
     public async Task<IActionResult> CheckIn(int reservationId)
     {
         var vm = await _service.BuildCheckInAsync(reservationId);
-        return vm is null ? NotFound() : View(vm);
+        if (vm is not null)
+        {
+            return View(vm);
+        }
+
+        var (status, code) = await _service.GetReservationStatusAsync(reservationId);
+        return Blocked(BlockedReason.Reservation(status, "check-in", code),
+            status is null ? nameof(Index) : nameof(ReservationsController.Details),
+            status is null ? null : "Reservations",
+            status is null ? null : new { id = reservationId });
     }
 
     [HttpPost]
@@ -50,7 +60,9 @@ public class FrontDeskController : AdminControllerBase
     public async Task<IActionResult> Stay(int id)
     {
         var vm = await _service.GetStayAsync(id);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Stay(await _service.GetStayStatusAsync(id), "xem chi tiết"), nameof(Index))
+            : View(vm);
     }
 
     // SCR-D05
@@ -58,7 +70,9 @@ public class FrontDeskController : AdminControllerBase
     public async Task<IActionResult> AddGuest(int stayId)
     {
         var vm = await _service.BuildAddGuestAsync(stayId);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Stay(await _service.GetStayStatusAsync(stayId), "thêm khách"), nameof(Index))
+            : View(vm);
     }
 
     [HttpPost]
@@ -71,7 +85,9 @@ public class FrontDeskController : AdminControllerBase
             var reload = await _service.BuildAddGuestAsync(form.StayId);
             if (reload is null)
             {
-                return NotFound();
+                return Blocked(
+                    BlockedReason.Stay(await _service.GetStayStatusAsync(form.StayId), "thêm khách"),
+                    nameof(Index));
             }
 
             reload.FullName = form.FullName;
@@ -90,7 +106,9 @@ public class FrontDeskController : AdminControllerBase
     public async Task<IActionResult> ChangeRoom(int stayId)
     {
         var vm = await _service.BuildChangeRoomAsync(stayId, IsAdmin);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Stay(await _service.GetStayStatusAsync(stayId), "đổi phòng"), nameof(Index))
+            : View(vm);
     }
 
     [HttpPost]
@@ -114,7 +132,9 @@ public class FrontDeskController : AdminControllerBase
     public async Task<IActionResult> Extend(int stayId)
     {
         var vm = await _service.BuildExtendAsync(stayId, IsAdmin);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Stay(await _service.GetStayStatusAsync(stayId), "gia hạn"), nameof(Index))
+            : View(vm);
     }
 
     [HttpPost]
@@ -138,7 +158,9 @@ public class FrontDeskController : AdminControllerBase
     public async Task<IActionResult> CheckOut(int stayId)
     {
         var vm = await _service.BuildCheckOutAsync(stayId, IsAdmin);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Stay(await _service.GetStayStatusAsync(stayId), "check-out"), nameof(Index))
+            : View(vm);
     }
 
     [HttpPost]

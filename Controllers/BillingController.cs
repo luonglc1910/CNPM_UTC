@@ -1,3 +1,4 @@
+using HotelManagement.Web.Models;
 using HotelManagement.Web.Models.ViewModels;
 using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
@@ -25,7 +26,9 @@ public class BillingController : AdminControllerBase
     public async Task<IActionResult> Folio(int stayId)
     {
         var vm = await _service.GetFolioAsync(stayId);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Stay(await _service.GetStayStatusAsync(stayId), "mở folio"), nameof(Index))
+            : View(vm);
     }
 
     // SCR-F03
@@ -33,7 +36,9 @@ public class BillingController : AdminControllerBase
     public async Task<IActionResult> AddCharge(int stayId)
     {
         var vm = await _service.BuildAddChargeAsync(stayId);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Stay(await _service.GetStayStatusAsync(stayId), "thêm chi phí"), nameof(Index))
+            : View(vm);
     }
 
     [HttpPost]
@@ -46,7 +51,9 @@ public class BillingController : AdminControllerBase
             var reload = await _service.BuildAddChargeAsync(form.StayId);
             if (reload is null)
             {
-                return NotFound();
+                return Blocked(
+                    BlockedReason.Stay(await _service.GetStayStatusAsync(form.StayId), "thêm chi phí"),
+                    nameof(Index));
             }
 
             reload.ItemType = form.ItemType;
@@ -93,7 +100,9 @@ public class BillingController : AdminControllerBase
     public async Task<IActionResult> Discount(int stayId)
     {
         var vm = await _service.BuildDiscountAsync(stayId, IsAdmin);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Stay(await _service.GetStayStatusAsync(stayId), "giảm giá"), nameof(Index))
+            : View(vm);
     }
 
     [HttpPost]
@@ -117,7 +126,9 @@ public class BillingController : AdminControllerBase
     public async Task<IActionResult> Payment(int stayId)
     {
         var vm = await _service.BuildPaymentAsync(stayId, CurrentEmployeeId, IsAdmin);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Stay(await _service.GetStayStatusAsync(stayId), "thanh toán"), nameof(Index))
+            : View(vm);
     }
 
     [HttpPost]
@@ -141,7 +152,9 @@ public class BillingController : AdminControllerBase
     public async Task<IActionResult> Invoice(int id)
     {
         var vm = await _service.BuildInvoiceAsync(id);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Invoice(await _service.GetInvoiceStatusAsync(id), "xem"), nameof(Index))
+            : View(vm);
     }
 
     // SCR-F07
@@ -150,7 +163,9 @@ public class BillingController : AdminControllerBase
     public async Task<IActionResult> VoidInvoice(int id)
     {
         var vm = await _service.BuildVoidAsync(id, CurrentEmployeeId);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Invoice(await _service.GetInvoiceStatusAsync(id), "hủy"), nameof(Index))
+            : View(vm);
     }
 
     [HttpPost]
@@ -175,7 +190,9 @@ public class BillingController : AdminControllerBase
     public async Task<IActionResult> Minibar(int stayId)
     {
         var vm = await _service.BuildMinibarAsync(stayId);
-        return vm is null ? NotFound() : View(vm);
+        return vm is null
+            ? Blocked(BlockedReason.Stay(await _service.GetStayStatusAsync(stayId), "kiểm minibar"), nameof(Index))
+            : View(vm);
     }
 
     [HttpPost]
