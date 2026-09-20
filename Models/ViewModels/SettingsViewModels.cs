@@ -58,6 +58,16 @@ public class CheckInOutSettings
     [Required(ErrorMessage = "Vui lòng nhập giờ trả phòng chuẩn.")]
     [RegularExpression(@"^([01]\d|2[0-3]):[0-5]\d$", ErrorMessage = "Giờ phải theo dạng HH:mm, ví dụ 12:00.")]
     public string StandardCheckOutTime { get; set; } = "12:00";
+
+    // Gói qua đêm — BR-13. Chỉ nhập giờ nguyên: gói mở 22:00 đóng 10:00 là cách khách sạn rao
+    // với khách, thêm phần phút vào chỉ làm câu quảng cáo khó đọc mà không đổi được gì trong tính tiền.
+    [Display(Name = "Giờ mở gói qua đêm")]
+    [Range(0, 23, ErrorMessage = "Mốc giờ nằm trong khoảng 0–23.")]
+    public int OvernightStartHour { get; set; } = 22;
+
+    [Display(Name = "Giờ kết thúc gói qua đêm (sáng hôm sau)")]
+    [Range(0, 23, ErrorMessage = "Mốc giờ nằm trong khoảng 0–23.")]
+    public int OvernightEndHour { get; set; } = 10;
 }
 
 /// <summary>Nhóm 3 — thuế và làm tròn, BR-04.</summary>
@@ -102,6 +112,10 @@ public class SurchargeSettings
     [Display(Name = "Trả phòng bậc 2 (% giá đêm)")]
     [Range(0, 100, ErrorMessage = "Tỷ lệ nằm trong khoảng 0–100%.")]
     public decimal LateCheckOutTier2Percent { get; set; } = 50;
+
+    [Display(Name = "Phút lẻ được bỏ qua khi tính giờ")]
+    [Range(0, 59, ErrorMessage = "Số phút bỏ qua nằm trong khoảng 0–59.")]
+    public int HourlyGraceMinutes { get; set; } = 20;
 }
 
 /// <summary>Nhóm 5 — chính sách cọc và hủy, BR-05.</summary>

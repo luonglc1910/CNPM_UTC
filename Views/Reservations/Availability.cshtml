@@ -56,6 +56,17 @@
                                 <strong>@((g.PricePerNight * Model.Nights).ToString("N0")) ₫</strong>
                                 · sức chứa chuẩn @g.StandardCapacity, tối đa @g.MaxCapacity
                             </div>
+                            @*
+                                Màn này tra theo đêm, nhưng cùng một phòng đó còn bán theo giờ và
+                                qua đêm (BR-13) — nêu luôn hai mức giá kia để lễ tân trả lời khách
+                                ngay tại đây, khỏi phải mở màn loại phòng ra tra.
+                            *@
+                            <div class="small text-muted">
+                                Hoặc <span class="badge text-bg-dark">qua đêm</span>
+                                @g.PriceOvernight.ToString("N0") ₫
+                                · <span class="badge text-bg-warning">theo giờ</span>
+                                @g.PriceFirstHour.ToString("N0") ₫ giờ đầu + @g.PriceExtraHour.ToString("N0") ₫ mỗi giờ sau
+                            </div>
                             @if (Model.Guests > g.StandardCapacity)
                             {
                                 <div class="small text-warning"><i class="bi bi-exclamation-triangle"></i> @Model.Guests khách vượt sức chứa chuẩn — sẽ phát sinh phụ thu thêm người.</div>

@@ -128,7 +128,9 @@ public class ReservationService : IReservationService
                 PhoneNumber = r.PrimaryGuest.PhoneNumber,
                 CheckInDate = r.CheckInDate,
                 CheckOutDate = r.CheckOutDate,
+                RentalType = r.RentalType,
                 Nights = r.Nights,
+                Hours = r.Hours,
                 RoomCount = r.Rooms.Count,
                 RoomTypeSummary = string.Join(", ", r.Rooms.Select(rr => rr.RoomType.Code)),
                 EstimatedTotal = r.EstimatedTotal,
@@ -167,13 +169,21 @@ public class ReservationService : IReservationService
         var available = await _availability.GetAvailableRoomsAsync(checkIn, checkOut, vm.RoomTypeId, vm.Guests);
 
         vm.Groups = available
-            .GroupBy(r => new { r.RoomTypeId, r.RoomTypeName, r.RoomTypeCode, r.PricePerNight, r.StandardCapacity, r.MaxCapacity })
+            .GroupBy(r => new
+            {
+                r.RoomTypeId, r.RoomTypeName, r.RoomTypeCode, r.PricePerNight,
+                r.PriceFirstHour, r.PriceExtraHour, r.PriceOvernight,
+                r.StandardCapacity, r.MaxCapacity
+            })
             .Select(g => new AvailabilityGroup
             {
                 RoomTypeId = g.Key.RoomTypeId,
                 RoomTypeName = g.Key.RoomTypeName,
                 RoomTypeCode = g.Key.RoomTypeCode,
                 PricePerNight = g.Key.PricePerNight,
+                PriceFirstHour = g.Key.PriceFirstHour,
+                PriceExtraHour = g.Key.PriceExtraHour,
+                PriceOvernight = g.Key.PriceOvernight,
                 StandardCapacity = g.Key.StandardCapacity,
                 MaxCapacity = g.Key.MaxCapacity,
                 AvailableRooms = g.Select(r => new AvailabilityRoomOption
@@ -201,15 +211,19 @@ public class ReservationService : IReservationService
 
         if (roomTypeId is not null)
         {
-            var price = await _db.RoomTypes.Where(t => t.Id == roomTypeId)
-                .Select(t => (decimal?)t.BasePricePerNight).FirstOrDefaultAsync() ?? 0m;
+            var prices = await _db.RoomTypes.AsNoTracking().Where(t => t.Id == roomTypeId)
+                .Select(t => new { t.BasePricePerNight, t.PriceFirstHour, t.PriceExtraHour, t.PriceOvernight })
+                .FirstOrDefaultAsync();
 
             form.Rooms.Add(new ReservationRoomInput
             {
                 RoomTypeId = roomTypeId.Value,
                 RoomId = roomId,
                 Adults = 1,
-                PricePerNight = price
+                PricePerNight = prices?.BasePricePerNight ?? 0m,
+                PriceFirstHour = prices?.PriceFirstHour ?? 0m,
+                PriceExtraHour = prices?.PriceExtraHour ?? 0m,
+                PriceOvernight = prices?.PriceOvernight ?? 0m
             });
         }
 
@@ -230,15 +244,17 @@ public class ReservationService : IReservationService
             return (prepared.Result, 0);
         }
 
-        var nights = _pricing.CountNights(form.CheckInDate, form.CheckOutDate);
+        var period = prepared.Period!;
         var confirmNow = form.ConfirmNow;
 
         var reservation = new Reservation
         {
             PrimaryGuestId = form.PrimaryGuestId,
-            CheckInDate = form.CheckInDate.Date,
-            CheckOutDate = form.CheckOutDate.Date,
-            Nights = nights,
+            RentalType = period.Type,
+            CheckInDate = period.CheckIn,
+            CheckOutDate = period.CheckOut,
+            Nights = period.Nights,
+            Hours = period.Hours,
             Status = confirmNow ? ReservationStatus.Confirmed : ReservationStatus.Draft,
             Source = form.Source,
             SpecialRequests = Trimmed(form.SpecialRequests),
@@ -259,7 +275,7 @@ public class ReservationService : IReservationService
             reservation.Code = await _numbers.NextReservationCodeAsync(DateTime.Now);
             _db.Reservations.Add(reservation);
             _audit.Log("CreateReservation", nameof(Reservation), null,
-                newValue: $"{reservation.Code} ({reservation.CheckInDate:dd/MM/yyyy}–{reservation.CheckOutDate:dd/MM/yyyy}, {reservation.Rooms.Count} phòng)");
+                newValue: $"{reservation.Code} ({period.Type.DisplayName()}, {period.SpanText}, {reservation.Rooms.Count} phòng)");
 
             // Cảnh báo khách hạn chế không tự chặn (SCR-B05); vẫn tạo đơn thì phải để lại dấu vết
             // để SCR-G04 đếm được số lần bỏ qua.
@@ -309,7 +325,8 @@ public class ReservationService : IReservationService
                 Adults = rr.Adults,
                 Children = rr.Children,
                 PricePerNight = rr.PricePerNight,
-                LineTotal = rr.PricePerNight * r.Nights
+                UnitText = RoomLineUnitText(r, rr),
+                LineTotal = RoomLineTotal(r, rr)
             }).ToList(),
             DepositPaid = 0m,
             EstimatedRemaining = r.EstimatedTotal,
@@ -339,6 +356,7 @@ public class ReservationService : IReservationService
         {
             Id = r.Id,
             PrimaryGuestId = r.PrimaryGuestId,
+            RentalType = r.RentalType,
             CheckInDate = r.CheckInDate,
             CheckOutDate = r.CheckOutDate,
             Source = r.Source,
@@ -351,7 +369,10 @@ public class ReservationService : IReservationService
                 RoomId = rr.RoomId,
                 Adults = rr.Adults,
                 Children = rr.Children,
-                PricePerNight = rr.PricePerNight
+                PricePerNight = rr.PricePerNight,
+                PriceFirstHour = rr.PriceFirstHour,
+                PriceExtraHour = rr.PriceExtraHour,
+                PriceOvernight = rr.PriceOvernight
             }).ToList()
         };
 
@@ -381,10 +402,14 @@ public class ReservationService : IReservationService
             return (prepared.Result, 0);
         }
 
+        var period = prepared.Period!;
+
         r.PrimaryGuestId = form.PrimaryGuestId;
-        r.CheckInDate = form.CheckInDate.Date;
-        r.CheckOutDate = form.CheckOutDate.Date;
-        r.Nights = _pricing.CountNights(form.CheckInDate, form.CheckOutDate);
+        r.RentalType = period.Type;
+        r.CheckInDate = period.CheckIn;
+        r.CheckOutDate = period.CheckOut;
+        r.Nights = period.Nights;
+        r.Hours = period.Hours;
         r.Source = form.Source;
         r.SpecialRequests = Trimmed(form.SpecialRequests);
         r.InternalNotes = Trimmed(form.InternalNotes);
@@ -394,7 +419,7 @@ public class ReservationService : IReservationService
         r.Rooms = prepared.Rooms;
 
         _audit.Log("UpdateReservation", nameof(Reservation), r.Id.ToString(),
-            newValue: $"{r.CheckInDate:dd/MM/yyyy}–{r.CheckOutDate:dd/MM/yyyy}, {prepared.Rooms.Count} phòng, dự kiến {r.EstimatedTotal:N0} ₫");
+            newValue: $"{period.Type.DisplayName()}, {period.SpanText}, {prepared.Rooms.Count} phòng, dự kiến {r.EstimatedTotal:N0} ₫");
 
         await _db.SaveChangesAsync();
         return (ServiceResult.Ok(message: $"Đã cập nhật đơn {r.Code}."), r.Id);
@@ -628,6 +653,9 @@ public class ReservationService : IReservationService
         form.RoomTypePrices = await _db.RoomTypes.AsNoTracking()
             .ToDictionaryAsync(t => t.Id, t => t.BasePricePerNight);
 
+        form.OvernightStartHour = await _settings.GetIntAsync(SystemSettingKeys.OvernightStartHour);
+        form.OvernightEndHour = await _settings.GetIntAsync(SystemSettingKeys.OvernightEndHour);
+
         if (form.PrimaryGuestId > 0)
         {
             var guest = await _db.Guests.AsNoTracking()
@@ -650,11 +678,34 @@ public class ReservationService : IReservationService
             })
             .ToListAsync();
 
+    /// <summary>
+    /// Tiền của một dòng phòng trên đơn đã lưu, theo hình thức thuê — BR-13.
+    /// Với thuê theo giờ đây là mức tối thiểu (một giờ), số thật chốt ở màn trả phòng.
+    /// </summary>
+    private static decimal RoomLineTotal(Reservation r, ReservationRoom rr) => r.RentalType switch
+    {
+        RentalType.Hourly => rr.PriceFirstHour + rr.PriceExtraHour * Math.Max(r.Hours - 1, 0),
+        RentalType.Overnight => rr.PriceOvernight,
+        _ => rr.PricePerNight * r.Nights
+    };
+
+    /// <summary>Cách đọc đơn giá của dòng phòng, ví dụ "120.000 ₫ giờ đầu + 20.000 ₫ mỗi giờ sau".</summary>
+    private static string RoomLineUnitText(Reservation r, ReservationRoom rr) => r.RentalType switch
+    {
+        // Đơn thuê giờ chưa biết ở mấy giờ, nên chỉ nêu được cách tính chứ không nêu được số giờ.
+        RentalType.Hourly => $"{rr.PriceFirstHour:N0} ₫ giờ đầu + {rr.PriceExtraHour:N0} ₫ mỗi giờ sau",
+        RentalType.Overnight => $"{rr.PriceOvernight:N0} ₫ trọn gói",
+        _ => $"{rr.PricePerNight:N0} ₫/đêm × {r.Nights}"
+    };
+
     private sealed class PreparedRooms
     {
         public ServiceResult Result { get; init; } = ServiceResult.Ok();
         public List<ReservationRoom> Rooms { get; init; } = new();
         public decimal EstimatedTotal { get; init; }
+
+        /// <summary>Khoảng thuê đã chuẩn hóa theo hình thức — BR-13. Null khi kiểm tra không qua.</summary>
+        public RentalPeriod? Period { get; init; }
     }
 
     private async Task<PreparedRooms> PrepareRoomsAsync(ReservationFormViewModel form, bool isAdmin, int? excludeReservationId)
@@ -664,9 +715,13 @@ public class ReservationService : IReservationService
             return new PreparedRooms { Result = ServiceResult.Fail("Vui lòng chọn khách đứng tên.", nameof(form.PrimaryGuestId)) };
         }
 
-        if (form.CheckOutDate.Date <= form.CheckInDate.Date)
+        var settings = await _settings.GetPricingSettingsAsync();
+        var (period, periodError) = _pricing.ResolvePeriod(
+            form.RentalType, form.CheckInDate, form.CheckOutDate, settings);
+
+        if (period is null)
         {
-            return new PreparedRooms { Result = ServiceResult.Fail("Ngày đi phải sau ngày đến.", nameof(form.CheckOutDate)) };
+            return new PreparedRooms { Result = ServiceResult.Fail(periodError!, nameof(form.CheckOutDate)) };
         }
 
         var lines = (form.Rooms ?? new List<ReservationRoomInput>())
@@ -678,9 +733,8 @@ public class ReservationService : IReservationService
             return new PreparedRooms { Result = ServiceResult.Fail("Đơn phải có ít nhất một dòng phòng.") };
         }
 
-        var checkIn = form.CheckInDate.Date;
-        var checkOut = form.CheckOutDate.Date;
-        var nights = _pricing.CountNights(checkIn, checkOut);
+        var checkIn = period.CheckIn;
+        var checkOut = period.CheckOut;
 
         var typeIds = lines.Select(l => l.RoomTypeId).Distinct().ToList();
         var types = await _db.RoomTypes.AsNoTracking()
@@ -728,10 +782,18 @@ public class ReservationService : IReservationService
             }
 
             // Giá đêm: chỉ Admin được sửa tay; lễ tân dùng giá niêm yết của loại phòng.
+            // Giá giờ và giá qua đêm luôn lấy theo bảng giá — không có ô nhập tay trên form.
             var price = isAdmin && line.PricePerNight > 0 ? line.PricePerNight : type.BasePricePerNight;
 
-            var extraGuest = _pricing.ExtraGuestSurcharge(guests, type.StandardCapacity, type.ExtraGuestFeePerNight, nights);
-            estimatedTotal += price * nights + (extraGuest?.Amount ?? 0m);
+            var roomCharge = _pricing.RoomChargeFor(period, price,
+                type.PriceFirstHour, type.PriceExtraHour, type.PriceOvernight);
+
+            // Phụ thu thêm người tính theo đêm, nên chỉ có nghĩa với hình thức có đêm.
+            var extraGuest = period.Nights > 0
+                ? _pricing.ExtraGuestSurcharge(guests, type.StandardCapacity, type.ExtraGuestFeePerNight, period.Nights)
+                : null;
+
+            estimatedTotal += roomCharge + (extraGuest?.Amount ?? 0m);
 
             entities.Add(new ReservationRoom
             {
@@ -739,7 +801,10 @@ public class ReservationService : IReservationService
                 RoomId = line.RoomId,
                 Adults = line.Adults,
                 Children = line.Children,
-                PricePerNight = price
+                PricePerNight = price,
+                PriceFirstHour = type.PriceFirstHour,
+                PriceExtraHour = type.PriceExtraHour,
+                PriceOvernight = type.PriceOvernight
             });
         }
 
@@ -747,7 +812,8 @@ public class ReservationService : IReservationService
         {
             Result = ServiceResult.Ok(),
             Rooms = entities,
-            EstimatedTotal = estimatedTotal
+            EstimatedTotal = estimatedTotal,
+            Period = period
         };
     }
 
@@ -848,7 +914,8 @@ public class ReservationService : IReservationService
                 Start = rr.Reservation.CheckInDate,
                 End = rr.Reservation.CheckOutDate,
                 Guests = rr.Adults + rr.Children,
-                rr.Reservation.Status
+                rr.Reservation.Status,
+                rr.Reservation.RentalType
             })
             .ToListAsync();
 
@@ -864,7 +931,8 @@ public class ReservationService : IReservationService
                 GuestName = s.PrimaryGuest.FullName,
                 Start = s.ActualCheckIn,
                 End = s.ActualCheckOut ?? s.ExpectedCheckOut,
-                Guests = s.Guests.Count
+                Guests = s.Guests.Count,
+                s.RentalType
             })
             .ToListAsync();
 
@@ -882,7 +950,10 @@ public class ReservationService : IReservationService
                 var day = dates[i];
 
                 // Một đêm bị chiếm khi lượt ở bắt đầu trước hoặc trong ngày đó và kết thúc sau ngày đó.
+                // Thuê theo giờ nằm gọn trong một ngày nên không bao giờ thỏa điều kiện này —
+                // nó được xử lý riêng bên dưới, sau khi biết chắc đêm đó không có ai chiếm.
                 var stay = stays.FirstOrDefault(s => s.RoomId == room.Id
+                    && s.RentalType != RentalType.Hourly
                     && s.Start.Date <= day && s.End.Date > day);
 
                 if (stay is not null)
@@ -901,6 +972,7 @@ public class ReservationService : IReservationService
                 }
 
                 var book = booked.FirstOrDefault(b => b.RoomId == room.Id
+                    && b.RentalType != RentalType.Hourly
                     && b.Start.Date <= day && b.End.Date > day);
 
                 if (book is not null)
@@ -921,6 +993,36 @@ public class ReservationService : IReservationService
                 // Bảo trì / ngừng khai thác là trạng thái hiện tại của phòng, dữ liệu không có
                 // mốc thời gian, nên phủ toàn kỳ: sơ đồ thà báo thừa còn hơn mời bán phòng đang hỏng.
                 var blocked = room.Status is RoomStatus.Maintenance or RoomStatus.OutOfService;
+
+                if (!blocked)
+                {
+                    // Lượt thuê giờ chạm vào ngày này. Nhiều lượt trong cùng một ngày là chuyện
+                    // bình thường, nên ô chỉ đếm số lượt và liệt kê khung giờ trong tooltip.
+                    var hourlySlots = stays
+                        .Where(x => x.RoomId == room.Id && x.RentalType == RentalType.Hourly
+                            && x.Start.Date <= day && x.End.Date >= day)
+                        .Select(x => (x.Start, x.End, x.GuestName))
+                        .Concat(booked
+                            .Where(x => x.RoomId == room.Id && x.RentalType == RentalType.Hourly
+                                && x.Start.Date <= day && x.End.Date >= day)
+                            .Select(x => (x.Start, x.End, x.GuestName)))
+                        .OrderBy(x => x.Start)
+                        .ToList();
+
+                    if (hourlySlots.Count > 0)
+                    {
+                        cells[i] = new RoomChartSegment
+                        {
+                            Kind = RoomChartCellKind.Hourly,
+                            Date = day,
+                            HourlyCount = hourlySlots.Count,
+                            StatusLabel = $"{hourlySlots.Count} lượt giờ",
+                            Tooltip = string.Join(" · ", hourlySlots.Select(x =>
+                                $"{x.Start:HH\\:mm}–{x.End:HH\\:mm} {x.GuestName}"))
+                        };
+                        continue;
+                    }
+                }
 
                 cells[i] = new RoomChartSegment
                 {
@@ -964,8 +1066,11 @@ public class ReservationService : IReservationService
         {
             var last = merged.Count > 0 ? merged[merged.Count - 1] : null;
 
+            // Ô theo giờ mang số lượt của riêng từng ngày nên không bao giờ gộp: gộp lại thì
+            // một ô "2 lượt giờ" sẽ trải qua nhiều ngày và nói sai về mọi ngày trừ ngày đầu.
             var sameRun = last is not null
                 && last.Kind == cell.Kind
+                && cell.Kind != RoomChartCellKind.Hourly
                 && last.ReservationId == cell.ReservationId;
 
             if (sameRun)
@@ -983,7 +1088,9 @@ public class ReservationService : IReservationService
                 ReservationCode = cell.ReservationCode,
                 GuestName = cell.GuestName,
                 Guests = cell.Guests,
-                StatusLabel = cell.StatusLabel
+                StatusLabel = cell.StatusLabel,
+                HourlyCount = cell.HourlyCount,
+                Tooltip = cell.Tooltip
             });
         }
 
@@ -998,6 +1105,12 @@ public class ReservationService : IReservationService
             if (seg.Kind == RoomChartCellKind.Blocked)
             {
                 seg.Tooltip = seg.StatusLabel;
+                continue;
+            }
+
+            // Ô theo giờ đã có tooltip liệt kê từng khung giờ từ lúc dựng — đừng ghi đè.
+            if (seg.Kind == RoomChartCellKind.Hourly)
+            {
                 continue;
             }
 

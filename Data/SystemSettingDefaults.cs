@@ -36,6 +36,8 @@ public static class SystemSettingDefaults
         // 2. Giờ chuẩn — BR-01
         (SystemSettingKeys.StandardCheckInTime, "14:00", Groups.CheckInOut, "Giờ nhận phòng chuẩn - BR-01"),
         (SystemSettingKeys.StandardCheckOutTime, "12:00", Groups.CheckInOut, "Giờ trả phòng chuẩn - BR-01"),
+        (SystemSettingKeys.OvernightStartHour, "22", Groups.CheckInOut, "Giờ mở gói qua đêm - BR-13"),
+        (SystemSettingKeys.OvernightEndHour, "10", Groups.CheckInOut, "Giờ kết thúc gói qua đêm sáng hôm sau - BR-13"),
 
         // 3. Thuế & làm tròn — BR-04
         (SystemSettingKeys.VatRate, "0.08", Groups.Tax, "Thuế suất VAT - BR-04"),
@@ -49,6 +51,7 @@ public static class SystemSettingDefaults
         (SystemSettingKeys.LateCheckOut12To15Rate, "0.3", Groups.Surcharge, "Trả phòng bậc 1 - 30% giá đêm"),
         (SystemSettingKeys.LateCheckOutFullNightHour, "18", Groups.Surcharge, "Trả sau mốc này thì tính thêm 1 đêm"),
         (SystemSettingKeys.LateCheckOut15To18Rate, "0.5", Groups.Surcharge, "Trả phòng bậc 2 - 50% giá đêm"),
+        (SystemSettingKeys.HourlyGraceMinutes, "20", Groups.Surcharge, "Phút lẻ được bỏ qua khi tính giờ, lẻ quá mức này mới lên 1 giờ - BR-13"),
 
         // 5. Cọc & hủy — BR-05
         (SystemSettingKeys.DepositNights, "1", Groups.Cancellation, "Mức cọc đề xuất, tính theo số đêm"),

@@ -13,12 +13,25 @@ public class Reservation : BaseEntity
     public int PrimaryGuestId { get; set; }
     public Guest PrimaryGuest { get; set; } = null!;
 
-    /// <summary>Ngày nhận phòng (phần ngày; giờ chuẩn lấy từ cấu hình — BR-01).</summary>
+    /// <summary>
+    /// Hình thức thuê — BR-13. Chốt ở mức đơn: mọi phòng trong một đơn dùng chung
+    /// một hình thức, vì cặp giờ đến/đi là của cả đơn chứ không của từng dòng phòng.
+    /// </summary>
+    public RentalType RentalType { get; set; } = RentalType.Daily;
+
+    /// <summary>
+    /// Thời điểm nhận phòng — luôn có phần giờ thật, không còn là 00:00 (BR-13):
+    /// theo ngày lấy giờ chuẩn từ cấu hình, theo giờ lấy đúng giờ nhập, qua đêm lấy giờ mở gói.
+    /// Không có phần giờ thì một lượt thuê giờ buổi sáng sẽ bị coi là đụng đơn trả phòng cùng hôm đó.
+    /// </summary>
     public DateTime CheckInDate { get; set; }
     public DateTime CheckOutDate { get; set; }
 
-    /// <summary>Số đêm — BR-02. Tính khi lưu, lưu lại để báo cáo khỏi tính lại.</summary>
+    /// <summary>Số đêm — BR-02. Tính khi lưu, lưu lại để báo cáo khỏi tính lại. Thuê theo giờ luôn là 0.</summary>
     public int Nights { get; set; }
+
+    /// <summary>Số giờ dự kiến khi thuê theo giờ — BR-13. Các hình thức khác luôn là 0.</summary>
+    public int Hours { get; set; }
 
     public ReservationStatus Status { get; set; } = ReservationStatus.Draft;
     public ReservationSource Source { get; set; } = ReservationSource.Phone;

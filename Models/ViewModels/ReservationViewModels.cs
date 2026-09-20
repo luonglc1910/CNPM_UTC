@@ -14,7 +14,9 @@ public class ReservationListItem
     public string PhoneNumber { get; set; } = string.Empty;
     public DateTime CheckInDate { get; set; }
     public DateTime CheckOutDate { get; set; }
+    public RentalType RentalType { get; set; }
     public int Nights { get; set; }
+    public int Hours { get; set; }
     public int RoomCount { get; set; }
     public string RoomTypeSummary { get; set; } = string.Empty;
     public decimal EstimatedTotal { get; set; }
@@ -68,6 +70,9 @@ public class AvailabilityGroup
     public string RoomTypeName { get; set; } = string.Empty;
     public string RoomTypeCode { get; set; } = string.Empty;
     public decimal PricePerNight { get; set; }
+    public decimal PriceFirstHour { get; set; }
+    public decimal PriceExtraHour { get; set; }
+    public decimal PriceOvernight { get; set; }
     public int StandardCapacity { get; set; }
     public int MaxCapacity { get; set; }
     public int TotalRooms { get; set; }
@@ -121,6 +126,12 @@ public class ReservationRoomInput
     [Display(Name = "Giá / đêm")]
     [Range(0, double.MaxValue)]
     public decimal PricePerNight { get; set; }
+
+    // Giá hai hình thức còn lại đi kèm dòng phòng để chốt cùng lúc — BR-02, BR-13.
+    // Không hiện trên form: lấy thẳng từ bảng giá loại phòng, chỉ Admin sửa giá đêm mới có ý nghĩa.
+    public decimal PriceFirstHour { get; set; }
+    public decimal PriceExtraHour { get; set; }
+    public decimal PriceOvernight { get; set; }
 }
 
 public class ReservationFormViewModel
@@ -131,12 +142,22 @@ public class ReservationFormViewModel
     [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn khách đứng tên.")]
     public int PrimaryGuestId { get; set; }
 
-    [Display(Name = "Ngày đến")]
-    [DataType(DataType.Date)]
+    /// <summary>
+    /// Hình thức thuê — BR-13. Quyết định luôn kiểu ô nhập bên dưới, nên phải là trường
+    /// đầu tiên của form: đổi hình thức sau khi đã nhập giờ thì giờ đã nhập không còn nghĩa.
+    /// </summary>
+    [Display(Name = "Hình thức thuê")]
+    public RentalType RentalType { get; set; } = RentalType.Daily;
+
+    /// <summary>
+    /// Thời điểm đến. Không gắn <c>[DataType(DataType.Date)]</c> nữa: ô này đổi giữa
+    /// <c>date</c> và <c>datetime-local</c> theo hình thức thuê, nên phần giờ phải giữ được.
+    /// Với gói qua đêm thì chỉ phần ngày có nghĩa — giờ do hệ thống đặt.
+    /// </summary>
+    [Display(Name = "Thời điểm đến")]
     public DateTime CheckInDate { get; set; }
 
-    [Display(Name = "Ngày đi")]
-    [DataType(DataType.Date)]
+    [Display(Name = "Thời điểm đi")]
     public DateTime CheckOutDate { get; set; }
 
     [Display(Name = "Nguồn đặt")]
@@ -166,6 +187,10 @@ public class ReservationFormViewModel
 
     /// <summary>Giá đêm mặc định theo loại phòng, để JS tự điền khi chọn loại.</summary>
     public IReadOnlyDictionary<int, decimal> RoomTypePrices { get; set; } = new Dictionary<int, decimal>();
+
+    /// <summary>Giờ mở và giờ đóng gói qua đêm, để form nói rõ khung giờ khách sẽ được ở.</summary>
+    public int OvernightStartHour { get; set; } = 22;
+    public int OvernightEndHour { get; set; } = 10;
 }
 
 public class RoomPickerItem
@@ -185,6 +210,10 @@ public class ReservationRoomLine
     public int Adults { get; set; }
     public int Children { get; set; }
     public decimal PricePerNight { get; set; }
+
+    /// <summary>Đơn giá thực sự dùng để tính dòng này, theo hình thức thuê của đơn — BR-13.</summary>
+    public string UnitText { get; set; } = string.Empty;
+
     public decimal LineTotal { get; set; }
 }
 
@@ -333,7 +362,14 @@ public enum RoomChartCellKind
     Occupied = 2,
 
     /// <summary>Phòng không khai thác được cả kỳ: bảo trì hoặc ngừng khai thác.</summary>
-    Blocked = 3
+    Blocked = 3,
+
+    /// <summary>
+    /// Có lượt thuê theo giờ trong ngày này nhưng không chiếm trọn đêm — BR-13.
+    /// Lưới sơ đồ mỗi ô là một đêm nên không vẽ được từng khung giờ; ô này chỉ báo
+    /// "ngày này có người dùng phòng theo giờ" và nói rõ mấy lượt, chi tiết nằm ở tooltip.
+    /// </summary>
+    Hourly = 4
 }
 
 /// <summary>
@@ -356,6 +392,9 @@ public class RoomChartSegment
     public string? GuestName { get; set; }
     public int Guests { get; set; }
     public string? StatusLabel { get; set; }
+
+    /// <summary>Số lượt thuê theo giờ trong ngày — chỉ dùng cho ô <see cref="RoomChartCellKind.Hourly"/>.</summary>
+    public int HourlyCount { get; set; }
 
     /// <summary>Nội dung tooltip dựng sẵn ở service để view khỏi ghép chuỗi.</summary>
     public string? Tooltip { get; set; }

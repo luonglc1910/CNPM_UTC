@@ -97,6 +97,9 @@ public static class DbInitializer
             BasePricePerNight = 500_000m,
             ExtraGuestFeePerNight = 150_000m,
             ExtraBedFeePerNight = 200_000m,
+            PriceFirstHour = 120_000m,
+            PriceExtraHour = 20_000m,
+            PriceOvernight = 350_000m,
             Amenities = "Điều hòa, TV, Nóng lạnh, Wifi",
             Description = "Phòng tiêu chuẩn 2 khách"
         };
@@ -110,6 +113,9 @@ public static class DbInitializer
             BasePricePerNight = 900_000m,
             ExtraGuestFeePerNight = 200_000m,
             ExtraBedFeePerNight = 250_000m,
+            PriceFirstHour = 200_000m,
+            PriceExtraHour = 40_000m,
+            PriceOvernight = 600_000m,
             Amenities = "Điều hòa, TV, Nóng lạnh, Wifi, Minibar, Bồn tắm",
             Description = "Phòng rộng, có minibar"
         };
@@ -123,6 +129,9 @@ public static class DbInitializer
             BasePricePerNight = 1_800_000m,
             ExtraGuestFeePerNight = 300_000m,
             ExtraBedFeePerNight = 350_000m,
+            PriceFirstHour = 300_000m,
+            PriceExtraHour = 50_000m,
+            PriceOvernight = 1_200_000m,
             Amenities = "Điều hòa, Smart TV, Wifi, Minibar, Bồn tắm, Phòng khách riêng, Ban công",
             Description = "Hạng phòng cao cấp nhất"
         };

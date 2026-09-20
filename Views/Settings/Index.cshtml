@@ -102,6 +102,29 @@
                             <input asp-for="CheckInOut.StandardCheckOutTime" class="form-control" type="time" />
                             <span asp-validation-for="CheckInOut.StandardCheckOutTime" class="text-danger small"></span>
                         </div>
+
+                        @* Gói qua đêm (BR-13) đứng cùng nhóm giờ chuẩn vì nó cũng là một cặp mốc giờ
+                           cố định của khách sạn, chỉ khác là vắt qua nửa đêm. *@
+                        <div class="col-12"><hr class="my-1" /></div>
+                        <div class="col-6">
+                            <label asp-for="CheckInOut.OvernightStartHour" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="CheckInOut.OvernightStartHour" class="form-control" type="number" min="0" max="23" step="1" />
+                                <span class="input-group-text">giờ</span>
+                            </div>
+                            <span asp-validation-for="CheckInOut.OvernightStartHour" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="CheckInOut.OvernightEndHour" class="form-label"></label>
+                            <div class="input-group">
+                                <input asp-for="CheckInOut.OvernightEndHour" class="form-control" type="number" min="0" max="23" step="1" />
+                                <span class="input-group-text">giờ</span>
+                            </div>
+                            <div class="form-text">
+                                Gói chạy @Model.CheckInOut.OvernightStartHour:00 hôm nay → @Model.CheckInOut.OvernightEndHour:00 hôm sau.
+                            </div>
+                            <span asp-validation-for="CheckInOut.OvernightEndHour" class="text-danger small"></span>
+                        </div>
                     </div>
 
                     <div class="alert alert-info small mt-3 mb-0">
@@ -249,6 +272,20 @@
                                     <td>Trả phòng trễ</td>
                                     <td>Trả sau mốc trên</td>
                                     <td><span class="badge text-bg-warning">Tính thêm 1 đêm</span></td>
+                                </tr>
+                                @* Quy tắc làm tròn giờ dùng chung cho thuê theo giờ và phụ thu quá gói
+                                   qua đêm (BR-13) — đặt trong bảng phụ thu để sửa một chỗ là xong cả hai. *@
+                                <tr>
+                                    <td>Làm tròn giờ</td>
+                                    <td>Phần lẻ quá mức này mới tính thêm một giờ</td>
+                                    <td>
+                                        <div class="input-group" style="max-width: 12rem">
+                                            <input asp-for="Surcharge.HourlyGraceMinutes" class="form-control"
+                                                   type="number" step="1" min="0" max="59" />
+                                            <span class="input-group-text">phút</span>
+                                        </div>
+                                        <span asp-validation-for="Surcharge.HourlyGraceMinutes" class="text-danger small"></span>
+                                    </td>
                                 </tr>
                                 @* Hai dòng cuối của bảng BR-03 là phí theo từng loại phòng, không phải tham số
                                    toàn hệ thống — chỉ dẫn sang đúng chỗ sửa thay vì nhân đôi dữ liệu. *@

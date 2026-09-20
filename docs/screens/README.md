@@ -70,7 +70,7 @@ Ký hiệu quyền: **A** = Admin, **L** = Lễ tân.
 |---|---|---|:-:|:-:|
 | SCR-C01 | Danh sách đơn đặt phòng | `/Reservations` | ✔ | ✔ |
 | SCR-C02 | Tra cứu phòng trống | `/Reservations/Availability` — không ở menu | ✔ | ✔ |
-| SCR-C03 | Sơ đồ phòng theo ngày | `/Reservations/RoomChart` | ✔ | ✔ |
+| SCR-C03 | Tình trạng phòng theo ngày | `/Reservations/RoomChart` | ✔ | ✔ |
 | SCR-C04 | Tạo đơn đặt phòng | `/Reservations/Create` | ✔ | ✔ |
 | SCR-C05 | Chi tiết đơn đặt phòng | `/Reservations/Details/{id}` | ✔ | ✔ |
 | SCR-C06 | Sửa đơn đặt phòng | `/Reservations/Edit/{id}` | ✔ | ✔ |

@@ -34,7 +34,7 @@ nút Ghi dịch vụ · Đổi phòng · Gia hạn.
 
 Sau khi bỏ SCR-D03, tab này không còn thao tác nào — chỉ là lưới số phòng kèm nhãn trạng thái,
 trùng hoàn toàn với SCR-E01 (bảng buồng phòng) vốn có đủ nút bắt đầu dọn / hoàn tất.
-Nhìn phòng trống theo thời gian thì dùng SCR-C03 (Sơ đồ phòng).
+Nhìn phòng trống theo thời gian thì dùng SCR-C03 (Tình trạng phòng).
 
 Thanh chỉ số đầu trang vẫn đếm đủ Trống / Đang ở / Chờ dọn / Bảo trì như cũ.
 
@@ -223,8 +223,11 @@ Số đêm thêm · giá/đêm áp dụng cho các đêm thêm · thành tiền 
    chặn và gợi ý danh sách phòng khác còn trống (khách sẽ phải đổi phòng ở SCR-D06).
 2. Giá các đêm thêm: mặc định dùng giá/đêm đã chốt của Stay; Admin sửa được, có ghi log.
 3. Thêm dòng tiền phòng tương ứng vào folio.
-4. Rút ngắn kỳ ở (trả sớm) **không làm ở màn hình này** — cứ check-out sớm ở SCR-D08,
-   hệ thống tự tính theo số đêm thực ở.
+4. Rút ngắn kỳ ở (trả sớm) **không làm ở màn hình này** và cũng **không giảm tiền**: theo BR-13,
+   thuê theo ngày mà ra sớm vẫn tính đủ số đêm đã đặt.
+5. Gia hạn **chỉ áp dụng cho thuê theo ngày**. Thuê theo giờ ở thêm bao lâu thì lúc trả phòng
+   hệ thống tính lại đúng số giờ; gói qua đêm ở quá giờ thì thu phụ thu theo giờ — cả hai đều
+   không hiểu được thao tác "thêm một đêm" nên màn hình chặn với thông báo rõ lý do.
 
 ---
 
@@ -247,22 +250,48 @@ Số đêm thêm · giá/đêm áp dụng cho các đêm thêm · thành tiền 
 
 Chưa đạt đủ điều kiện thì nút **Tiếp tục thanh toán** bị vô hiệu hóa.
 
-**Khối 2 — Chốt thời gian và phụ thu (BR-01, BR-03)**
+**Khối 2 — Chốt thời gian và phụ thu (BR-01, BR-03, BR-13)**
+
+Màn hình hiện huy hiệu hình thức thuê và đổi hẳn nội dung khối này theo hình thức đó.
+
+*Theo ngày*
 ```
 Giờ trả phòng chuẩn: 12:00
 Giờ trả thực tế:     [16:30]   ← mặc định giờ hiện tại, sửa được (có ghi log nếu sửa)
-→ Trả trễ 4 giờ 30 phút, thuộc khung 15:00–18:00
-→ Phụ thu trả phòng trễ: 50% × 1.200.000 = 600.000 ₫
+→ Trả trễ 4 giờ 30 phút
+→ Phụ thu trả phòng trễ theo cấu hình
 ```
-- Trả sau 18:00 → hệ thống **tính thêm nguyên 1 đêm** thay vì phụ thu %.
-- Trả **sớm hơn** ngày dự kiến → tính lại theo **số đêm thực ở**, dòng tiền phòng được điều chỉnh
-  giảm và hiện rõ chênh lệch.
-- Hộp kiểm **Miễn phụ thu trễ giờ** — chỉ Admin, bắt buộc lý do, ghi audit log.
+- Trả **sớm hơn** ngày dự kiến → **vẫn tính đủ số đêm đã đặt** (BR-13), không giảm tiền phòng.
+  Màn hình nói rõ "Trả sớm vẫn tính đủ N đêm".
+- Phụ thu trả trễ chỉ áp khi trả **đúng ngày hoặc sau** ngày dự kiến; trả sớm thì giờ muộn cũng
+  không phải là trễ.
+
+*Theo giờ*
+```
+Nhận lúc 08:00 21/09 · giờ trả quyết định số tiền
+Giờ trả thực tế: [10:35]
+→ Ở 2 giờ 35 phút — lẻ 35 phút quá 20 phút nên tính tròn 3 giờ
+→ Tiền phòng 120.000 + 2 × 20.000 = 160.000 ₫
+```
+- Đây là hình thức duy nhất mà **tiền phòng đổi theo giờ bấm nút**, nên dòng tiền phòng trên
+  folio được **ghi đè** chứ không cộng thêm dòng chênh lệch.
+- Không có phụ thu nhận sớm / trả trễ — hai mốc 14:00 và 12:00 vô nghĩa với thuê giờ.
+
+*Qua đêm*
+```
+Gói qua đêm kết thúc 10:00 23/09
+Giờ trả thực tế: [12:40]
+→ Quá gói 2 giờ 40 phút → tính 3 giờ × 20.000 = 60.000 ₫
+```
+- Tiền gói là một dòng phẳng, không tính lại.
+- Hộp kiểm đổi nhãn thành **Miễn phụ thu quá gói**.
+
+- Hộp kiểm **Miễn phụ thu** — chỉ Admin, ghi audit log.
 
 **Khối 3 — Tổng hợp folio**
 | Dòng | |
 |---|---|
-| Tiền phòng (số đêm thực) | |
+| Tiền phòng (theo hình thức thuê) | |
 | Dịch vụ đã dùng | Liệt kê rút gọn, liên kết sang SCR-F02 |
 | Phụ thu | Nhận sớm / trả trễ / thêm người |
 | Giảm giá | Nếu có |

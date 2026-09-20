@@ -24,11 +24,28 @@ public class Stay : BaseEntity
     public DateTime ExpectedCheckOut { get; set; }
     public DateTime? ActualCheckOut { get; set; }
 
+    /// <summary>Hình thức thuê, sao từ đơn lúc check-in — BR-13.</summary>
+    public RentalType RentalType { get; set; } = RentalType.Daily;
+
     /// <summary>Giá/đêm chốt tại thời điểm check-in, không đổi khi sửa bảng giá — BR-02.</summary>
     public decimal PricePerNight { get; set; }
 
-    /// <summary>Số đêm thực tế, chốt khi check-out; trước đó là số đêm dự kiến.</summary>
+    // Ảnh giá theo giờ và qua đêm, cũng chốt lúc check-in — BR-02, BR-13.
+    public decimal PriceFirstHour { get; set; }
+    public decimal PriceExtraHour { get; set; }
+    public decimal PriceOvernight { get; set; }
+
+    /// <summary>
+    /// Số đêm thực tế, chốt khi check-out; trước đó là số đêm dự kiến.
+    /// Thuê theo giờ luôn là 0 — số giờ nằm ở <see cref="BilledHours"/>.
+    /// </summary>
     public int Nights { get; set; }
+
+    /// <summary>
+    /// Số giờ đã tính tiền — BR-13. Thuê theo giờ: số giờ dự kiến lúc nhận, số giờ thật lúc trả.
+    /// Qua đêm: số giờ quá gói. Theo ngày: luôn 0.
+    /// </summary>
+    public int BilledHours { get; set; }
 
     public StayStatus Status { get; set; } = StayStatus.CheckedIn;
 
