@@ -214,9 +214,8 @@ trước vẫn đúng.
 
 ## 6. Làm tiếp từ đâu
 
-Nhóm A chỉ còn **SCR-A12 — Cấu hình hệ thống** (giờ chuẩn BR-01, VAT và làm tròn BR-04, phụ thu
-BR-03, chính sách cọc/hủy BR-05, hạn mức nghiệp vụ). Nên làm ngay vì toàn bộ luồng chính đọc các
-tham số này — làm sau sẽ phải quay lại sửa chỗ đã tính tiền bằng số cứng.
+~~Nhóm A chỉ còn **SCR-A12 — Cấu hình hệ thống**~~ — đã làm, xem
+[`06-system-settings.md`](06-system-settings.md). Nhóm A đã xong toàn bộ SCR-A01…A12.
 
-Sau đó: **SCR-B01…B03 — Hồ sơ khách**, rồi lát cắt dọc luồng chính
+Tiếp theo: **SCR-B01…B03 — Hồ sơ khách**, rồi lát cắt dọc luồng chính
 (tra phòng trống → đặt phòng → check-in → folio → check-out → thanh toán).

@@ -67,3 +67,6 @@ $RECYCLE.BIN/
 
 # ===== Claude Code (cấu hình cá nhân) =====
 .claude/settings.local.json
+
+# ===== File người dùng tải lên lúc chạy (logo khách sạn - SCR-A12) =====
+wwwroot/uploads/

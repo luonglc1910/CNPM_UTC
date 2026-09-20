@@ -162,7 +162,7 @@ Xem hướng dẫn chung ở [`01-authentication-authorization.md`](01-authentic
 | 5 | ~~Chưa có màn hình **Dịch vụ** (SCR-A06/A07)~~ — đã trả xong 20/09/2026 | Xem [`03-catalog-services.md`](03-catalog-services.md) |
 | 6 | ~~Chưa có màn hình **Tồn kho** (A08/A09)~~ — đã trả xong 20/09/2026 | Xem [`04-inventory.md`](04-inventory.md) |
 | 7 | ~~Chưa có màn hình **Nhân viên** (A10/A11)~~ — đã trả xong 20/09/2026 | Xem [`05-employees.md`](05-employees.md) |
-| 8 | Chưa có màn hình **Cấu hình hệ thống** (A12) | Món cuối của nhóm A |
+| 8 | ~~Chưa có màn hình **Cấu hình hệ thống** (A12)~~ — đã trả xong 20/09/2026 | Xem [`06-system-settings.md`](06-system-settings.md); nhóm A đã xong hết |
 
 ---
 

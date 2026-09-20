@@ -20,41 +20,17 @@ public static class DbInitializer
         await SeedServicesAsync(db);
     }
 
-    /// <summary>Tham số cấu hình mặc định — FR-A07, BR-01 đến BR-05.</summary>
+    /// <summary>
+    /// Tham số cấu hình mặc định — FR-A07, BR-01 đến BR-05.
+    /// Bảng giá trị nằm ở <see cref="SystemSettingDefaults"/> để dùng chung với nút
+    /// "Khôi phục mặc định" ở SCR-A12. Chỉ thêm khóa còn thiếu, không đụng khóa đã có,
+    /// nên nâng cấp phiên bản có thêm tham số mới vẫn chạy được trên DB cũ.
+    /// </summary>
     private static async Task SeedSettingsAsync(HotelDbContext db)
     {
         var existing = await db.SystemSettings.Select(s => s.Key).ToListAsync();
 
-        var defaults = new (string Key, string Value, string Group, string Description)[]
-        {
-            (SystemSettingKeys.HotelName, "Khách sạn UTC", "Hotel", "Tên khách sạn in trên hóa đơn"),
-            (SystemSettingKeys.HotelAddress, "54 Triều Khúc, Thanh Xuân, Hà Nội", "Hotel", "Địa chỉ"),
-            (SystemSettingKeys.HotelPhone, "0240 123 4567", "Hotel", "Điện thoại"),
-            (SystemSettingKeys.HotelTaxCode, "0100000000", "Hotel", "Mã số thuế"),
-
-            (SystemSettingKeys.StandardCheckInTime, "14:00", "CheckInOut", "Giờ nhận phòng chuẩn - BR-01"),
-            (SystemSettingKeys.StandardCheckOutTime, "12:00", "CheckInOut", "Giờ trả phòng chuẩn - BR-01"),
-
-            (SystemSettingKeys.VatRate, "0.08", "Tax", "Thuế suất VAT - BR-04"),
-            (SystemSettingKeys.RoundingUnit, "1000", "Tax", "Đơn vị làm tròn tổng tiền - BR-04"),
-
-            (SystemSettingKeys.EarlyCheckInBefore09Rate, "0.5", "Surcharge", "Nhận phòng trước 09:00 - 50% giá đêm"),
-            (SystemSettingKeys.EarlyCheckIn09To14Rate, "0.3", "Surcharge", "Nhận phòng 09:00-14:00 - 30% giá đêm"),
-            (SystemSettingKeys.LateCheckOut12To15Rate, "0.3", "Surcharge", "Trả phòng 12:00-15:00 - 30% giá đêm"),
-            (SystemSettingKeys.LateCheckOut15To18Rate, "0.5", "Surcharge", "Trả phòng 15:00-18:00 - 50% giá đêm"),
-
-            (SystemSettingKeys.HoldUntilHour, "18", "Cancellation", "Giờ hết hạn giữ chỗ đơn chưa cọc - BR-05"),
-            (SystemSettingKeys.CancelFeeOver48hRate, "0", "Cancellation", "Hủy trước 48 giờ - hoàn 100% cọc"),
-            (SystemSettingKeys.CancelFee24To48hRate, "0.5", "Cancellation", "Hủy 24-48 giờ - thu 50% cọc"),
-            (SystemSettingKeys.CancelFeeUnder24hRate, "1", "Cancellation", "Hủy dưới 24 giờ hoặc no-show - thu 100% cọc"),
-
-            (SystemSettingKeys.ReceptionistMaxDiscountAmount, "200000", "Limit", "Hạn mức giảm giá của lễ tân theo số tiền"),
-            (SystemSettingKeys.ReceptionistMaxDiscountRate, "0.1", "Limit", "Hạn mức giảm giá của lễ tân theo tỷ lệ"),
-            (SystemSettingKeys.LoyalGuestStayThreshold, "3", "Limit", "Số lần lưu trú để được gắn nhãn khách quen"),
-            (SystemSettingKeys.ChildAgeLimit, "12", "Limit", "Tuổi tối đa tính là trẻ em, không thu phụ thu thêm người")
-        };
-
-        var missing = defaults
+        var missing = SystemSettingDefaults.All
             .Where(d => !existing.Contains(d.Key))
             .Select(d => new SystemSetting
             {

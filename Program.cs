@@ -4,6 +4,7 @@ using HotelManagement.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.WebEncoders;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
@@ -29,6 +30,7 @@ builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<ISettingsService, SettingsService>();
 
 // Đối chiếu cookie đăng nhập với bản ghi nhân viên ở mỗi request — xem Security/EmployeeCookieEvents.cs.
 builder.Services.AddScoped<EmployeeCookieEvents>();
@@ -90,6 +92,18 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// File người dùng tải lên lúc chạy (logo khách sạn — SCR-A12) không nằm trong manifest của
+// MapStaticAssets vốn chỉ biết những file có sẵn lúc build, nên phải phục vụ bằng middleware
+// tĩnh riêng. Chỉ mở đúng thư mục uploads, không mở cả wwwroot lần nữa.
+var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
+Directory.CreateDirectory(uploadsPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
+
 app.UseRouting();
 
 app.UseAuthentication();
