@@ -1,0 +1,172 @@
+@model ShiftIndexViewModel
+@{
+    ViewData["Title"] = "Ca làm việc";
+    var t = Model.OpenShiftTotals;
+}
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        @if (Model.OpenShift is null)
+        {
+            <div class="card">
+                <div class="card-header">Mở ca làm việc</div>
+                <div class="card-body">
+                    <div class="alert alert-warning d-flex align-items-center gap-2">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>Bạn chưa mở ca làm việc. Mọi giao dịch thu tiền đều bị khóa (BR-10).</span>
+                    </div>
+
+                    <form method="post" asp-action="Open">
+                        @Html.AntiForgeryToken()
+                        <div class="mb-3">
+                            <label asp-for="OpenForm.OpeningCash" class="form-label">
+                                Quỹ tiền mặt đầu ca (₫) <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="OpenForm.OpeningCash" class="form-control" type="number" min="0" step="1000" autofocus />
+                            <span asp-validation-for="OpenForm.OpeningCash" class="text-danger small"></span>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-in-right"></i> Mở ca
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="card-header d-flex justify-content-between align-items-center">
+                    <span>
+                        Ca #@Model.OpenShift.Id
+                        <span class="badge @Model.OpenShift.Status.ToBadgeClass() ms-1">@Model.OpenShift.Status.ToDisplayName()</span>
+                    </span>
+                    <span class="text-muted small">Mở lúc @Model.OpenShift.OpenedAt.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+                <div class="card-body">
+                    <table class="table table-sm mb-4">
+                        <tbody>
+                            <tr><td>Quỹ đầu ca</td><td class="text-end">@t!.OpeningCash.ToString("N0") ₫</td></tr>
+                            <tr><td>Thu tiền mặt</td><td class="text-end">@t.CashIn.ToString("N0") ₫</td></tr>
+                            <tr><td>Hoàn tiền mặt</td><td class="text-end text-danger">@t.CashRefund.ToString("N0") ₫</td></tr>
+                            <tr class="table-light fw-semibold">
+                                <td>Tiền mặt phải có</td><td class="text-end">@t.ExpectedCash.ToString("N0") ₫</td>
+                            </tr>
+                            <tr><td>Thu chuyển khoản</td><td class="text-end">@t.BankTransferIn.ToString("N0") ₫</td></tr>
+                            <tr><td>Thu thẻ</td><td class="text-end">@t.CardIn.ToString("N0") ₫</td></tr>
+                            <tr>
+                                <td class="text-muted small">Số giao dịch / Số hóa đơn</td>
+                                <td class="text-end text-muted small">@t.PaymentCount / @t.InvoiceCount</td>
+                            </tr>
+                        </tbody>
+                    </table>
+
+                    <h6>Đóng ca</h6>
+                    <form method="post" asp-action="Close">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" asp-for="CloseForm.ShiftId" />
+                        <input type="hidden" id="expectedCash" value="@t.ExpectedCash" />
+
+                        <div class="mb-3">
+                            <label asp-for="CloseForm.CountedCash" class="form-label">
+                                Tiền mặt đếm thực tế (₫) <span class="text-danger">*</span>
+                            </label>
+                            <input asp-for="CloseForm.CountedCash" id="countedCash" class="form-control" type="number" min="0" step="1000" />
+                        </div>
+
+                        <div class="alert alert-secondary py-2" id="differenceBox">
+                            Chênh lệch so với sổ sách: <strong id="differenceValue">0 ₫</strong>
+                            <span class="d-block small text-muted">Chênh lệch khác 0 thì bắt buộc nhập lý do (BR-10).</span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="CloseForm.DifferenceReason" class="form-label">Lý do chênh lệch</label>
+                            <textarea asp-for="CloseForm.DifferenceReason" class="form-control" rows="2"></textarea>
+                            <span asp-validation-for="CloseForm.DifferenceReason" class="text-danger small"></span>
+                        </div>
+
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-box-arrow-left"></i> Đóng ca
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">@(Model.IsAdmin ? "Các ca gần đây" : "Ca của bạn")</div>
+            @if (Model.RecentShifts.Count == 0)
+            {
+                <div class="card-body text-center text-muted py-4">
+                    <p class="mb-0">Chưa có ca làm việc nào.</p>
+                </div>
+            }
+            else
+            {
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ca</th>
+                                @if (Model.IsAdmin)
+                                {
+                                    <th>Nhân viên</th>
+                                }
+                                <th>Mở</th>
+                                <th>Trạng thái</th>
+                                <th class="text-end">Chênh lệch</th>
+                                <th></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var s in Model.RecentShifts)
+                        {
+                            <tr>
+                                <td>#@s.Id</td>
+                                @if (Model.IsAdmin)
+                                {
+                                    <td>@s.EmployeeName</td>
+                                }
+                                <td class="text-nowrap small">@s.OpenedAt.ToString("dd/MM HH:mm")</td>
+                                <td><span class="badge @s.Status.ToBadgeClass()">@s.Status.ToDisplayName()</span></td>
+                                <td class="text-end @(s.CashDifference is < 0 ? "text-danger" : "")">
+                                    @(s.CashDifference is null ? "—" : $"{s.CashDifference:N0} ₫")
+                                </td>
+                                <td class="text-end">
+                                    <a class="btn btn-sm btn-outline-secondary" asp-action="Report" asp-route-id="@s.Id" title="Báo cáo ca">
+                                        <i class="bi bi-file-earmark-text"></i>
+                                    </a>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            }
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    @if (Model.OpenShift is not null)
+    {
+        <script>
+            (function () {
+                const expected = Number(document.getElementById('expectedCash').value) || 0;
+                const counted = document.getElementById('countedCash');
+                const out = document.getElementById('differenceValue');
+                const box = document.getElementById('differenceBox');
+                function update() {
+                    const diff = (Number(counted.value) || 0) - expected;
+                    out.textContent = diff.toLocaleString('vi-VN') + ' ₫';
+                    box.classList.toggle('alert-danger', diff !== 0);
+                    box.classList.toggle('alert-secondary', diff === 0);
+                }
+                counted.addEventListener('input', update);
+                update();
+            })();
+        </script>
+    }
+}

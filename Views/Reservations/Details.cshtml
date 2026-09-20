@@ -1,9 +1,127 @@
+@model ReservationDetailsViewModel
 @{
-    ViewData["Title"] = "Chi tiết đơn đặt phòng";
+    ViewData["Title"] = $"Đơn {Model.Reservation.Code}";
+    var r = Model.Reservation;
 }
 
-<div class="d-flex justify-content-end mb-3">
-    <a class="btn btn-primary" asp-action="Index">Quay lại</a>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h5 class="mb-0"><code>@r.Code</code> <span class="badge @r.Status.ToBadgeClass()">@r.Status.ToDisplayName()</span></h5>
+        <span class="text-muted small">Tạo bởi @Model.CreatedByName · @r.CreatedAt.ToString("dd/MM/yyyy HH:mm") · Nguồn: @r.Source.ToDisplayName()</span>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        @if (Model.CanEdit)
+        {
+            <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@r.Id"><i class="bi bi-pencil"></i> Sửa</a>
+        }
+        @if (Model.CanTakeDeposit)
+        {
+            <a class="btn btn-outline-primary" asp-action="Deposit" asp-route-id="@r.Id"><i class="bi bi-cash-coin"></i> Thu cọc</a>
+        }
+        @if (Model.CanCheckIn)
+        {
+            <a class="btn btn-primary" asp-controller="FrontDesk" asp-action="CheckIn" asp-route-reservationId="@r.Id"><i class="bi bi-box-arrow-in-right"></i> Check-in</a>
+        }
+        @if (Model.CanCancel)
+        {
+            <a class="btn btn-outline-danger" asp-action="Cancel" asp-route-id="@r.Id"><i class="bi bi-x-circle"></i> Hủy</a>
+        }
+        @if (Model.CanMarkNoShow)
+        {
+            <form method="post" asp-action="MarkNoShow" asp-route-id="@r.Id" class="d-inline"
+                  onsubmit="return confirm('Đánh dấu No-show đơn @r.Code? Thu 100% tiền cọc.');">
+                <button type="submit" class="btn btn-outline-danger"><i class="bi bi-person-x"></i> No-show</button>
+            </form>
+        }
+        <a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a>
+    </div>
 </div>
 
-<partial name="_Placeholder" model="@("Thông tin chi tiết đơn đặt phòng, kèm thao tác sửa, hủy và check-in.")" />
+@if (Model.GuestBlacklisted)
+{
+    <div class="alert alert-danger py-2"><i class="bi bi-exclamation-octagon"></i> Khách đứng tên đang trong danh sách hạn chế.</div>
+}
+@if (r.Status == ReservationStatus.Confirmed && r.HoldUntil is not null && Model.DepositPaid == 0)
+{
+    <div class="alert alert-warning py-2"><i class="bi bi-clock"></i> Đơn chưa cọc — hết hạn giữ chỗ lúc @r.HoldUntil.Value.ToString("dd/MM/yyyy HH:mm") (BR-05).</div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">Phòng đã đặt</div>
+            <div class="table-responsive">
+                <table class="table mb-0">
+                    <thead class="table-light">
+                        <tr><th>Loại</th><th>Phòng</th><th class="text-center">Khách</th><th class="text-end">Giá/đêm</th><th class="text-end">Thành tiền</th></tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var line in Model.Rooms)
+                    {
+                        <tr>
+                            <td>@line.RoomTypeName</td>
+                            <td>@(line.RoomNumber ?? "— xếp sau —")</td>
+                            <td class="text-center">@line.Adults NL@(line.Children > 0 ? $" + {line.Children} TE" : "")</td>
+                            <td class="text-end">@line.PricePerNight.ToString("N0") ₫</td>
+                            <td class="text-end">@line.LineTotal.ToString("N0") ₫</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        @if (Model.Deposits.Count > 0)
+        {
+            <div class="card mt-3">
+                <div class="card-header">Lịch sử thu cọc</div>
+                <div class="table-responsive">
+                    <table class="table mb-0">
+                        <thead class="table-light"><tr><th>Thời điểm</th><th class="text-end">Số tiền</th><th>Trạng thái</th></tr></thead>
+                        <tbody>
+                        @foreach (var d in Model.Deposits)
+                        {
+                            <tr>
+                                <td>@d.ReceivedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                                <td class="text-end">@d.Amount.ToString("N0") ₫</td>
+                                <td>@d.Status</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">Thông tin</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5">Khách đứng tên</dt><dd class="col-7">@Model.GuestName</dd>
+                    <dt class="col-5">Liên hệ</dt><dd class="col-7">@Model.PhoneNumber</dd>
+                    <dt class="col-5">Giấy tờ</dt><dd class="col-7">@(string.IsNullOrEmpty(Model.IdNumber) ? "—" : Model.IdNumber)</dd>
+                    <dt class="col-5">Nhận / Trả</dt><dd class="col-7">@r.CheckInDate.ToString("dd/MM/yyyy") → @r.CheckOutDate.ToString("dd/MM/yyyy") (@r.Nights đêm)</dd>
+                    @if (!string.IsNullOrWhiteSpace(r.SpecialRequests))
+                    {
+                        <dt class="col-5">Yêu cầu</dt><dd class="col-7">@r.SpecialRequests</dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        <div class="card mt-3">
+            <div class="card-header">Tiền</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr><td>Tổng dự kiến</td><td class="text-end">@r.EstimatedTotal.ToString("N0") ₫</td></tr>
+                        <tr><td>Đã cọc</td><td class="text-end">@Model.DepositPaid.ToString("N0") ₫</td></tr>
+                        <tr class="fw-semibold"><td>Còn lại dự kiến</td><td class="text-end">@Model.EstimatedRemaining.ToString("N0") ₫</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

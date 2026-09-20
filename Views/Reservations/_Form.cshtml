@@ -1,0 +1,160 @@
+@model ReservationFormViewModel
+@{
+    var isAdmin = User.IsInRole(Roles.Admin);
+}
+
+@* Form dùng chung cho Tạo (SCR-C04) và Sửa (SCR-C06). Không đặt asp-action để POST về đúng URL
+   hiện tại (Create hoặc Edit/{id}). *@
+<form method="post">
+    <input type="hidden" asp-for="Id" />
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">Khách đứng tên</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label asp-for="PrimaryGuestId" class="form-label">Khách <span class="text-danger">*</span></label>
+                        <select asp-for="PrimaryGuestId" asp-items="Model.GuestOptions" class="form-select">
+                            <option value="">— Chọn khách —</option>
+                        </select>
+                        <span asp-validation-for="PrimaryGuestId" class="text-danger small"></span>
+                    </div>
+                    @if (Model.PrimaryGuestBlacklisted)
+                    {
+                        <div class="alert alert-danger py-2 small mb-2"><i class="bi bi-exclamation-octagon"></i> Khách này đang trong danh sách hạn chế.</div>
+                    }
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Guests" asp-action="Create" target="_blank">
+                        <i class="bi bi-person-plus"></i> Tạo khách mới
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card">
+                <div class="card-header">Thời gian</div>
+                <div class="card-body row g-2">
+                    <div class="col-6">
+                        <label asp-for="CheckInDate" class="form-label">Ngày đến <span class="text-danger">*</span></label>
+                        <input asp-for="CheckInDate" type="date" class="form-control" />
+                        <span asp-validation-for="CheckInDate" class="text-danger small"></span>
+                    </div>
+                    <div class="col-6">
+                        <label asp-for="CheckOutDate" class="form-label">Ngày đi <span class="text-danger">*</span></label>
+                        <input asp-for="CheckOutDate" type="date" class="form-control" />
+                        <span asp-validation-for="CheckOutDate" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Phòng</span>
+            <button type="button" id="addRoom" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Thêm phòng</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0" id="roomLines">
+                <thead class="table-light">
+                    <tr>
+                        <th style="min-width: 200px">Loại phòng</th>
+                        <th style="min-width: 160px">Phòng</th>
+                        <th style="width: 110px">Người lớn</th>
+                        <th style="width: 110px">Trẻ em</th>
+                        <th style="width: 160px">Giá / đêm</th>
+                        <th style="width: 48px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @for (var i = 0; i < Model.Rooms.Count; i++)
+                {
+                    var line = Model.Rooms[i];
+                    <tr>
+                        <td>
+                            <select name="Rooms[@i].RoomTypeId" class="form-select form-select-sm js-roomtype">
+                                <option value="">— Chọn loại —</option>
+                                @foreach (var opt in Model.RoomTypeOptions)
+                                {
+                                    <option value="@opt.Value" selected="@(opt.Value == line.RoomTypeId.ToString())">@opt.Text</option>
+                                }
+                            </select>
+                        </td>
+                        <td>
+                            <select name="Rooms[@i].RoomId" class="form-select form-select-sm js-room">
+                                <option value="">— Xếp sau —</option>
+                                @foreach (var room in Model.AllRooms.Where(r => r.RoomTypeId == line.RoomTypeId))
+                                {
+                                    <option value="@room.RoomId" selected="@(line.RoomId == room.RoomId)">@room.RoomNumber (tầng @room.Floor)</option>
+                                }
+                            </select>
+                        </td>
+                        <td><input name="Rooms[@i].Adults" value="@line.Adults" type="number" min="1" class="form-control form-control-sm" /></td>
+                        <td><input name="Rooms[@i].Children" value="@line.Children" type="number" min="0" class="form-control form-control-sm" /></td>
+                        <td><input name="Rooms[@i].PricePerNight" value="@line.PricePerNight" type="number" min="0" step="1000" class="form-control form-control-sm js-price" readonly="@(!isAdmin)" /></td>
+                        <td><button type="button" class="btn btn-sm btn-outline-danger js-remove"><i class="bi bi-trash"></i></button></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer small text-muted">
+            Giá/đêm tự điền theo loại phòng. @(isAdmin ? "Admin có thể sửa giá tay." : "Chỉ Admin sửa được giá.")
+            Bỏ trống ô Phòng để hệ thống xếp phòng khi check-in.
+        </div>
+    </div>
+
+    <div class="card mt-3">
+        <div class="card-header">Thông tin đơn</div>
+        <div class="card-body row g-3">
+            <div class="col-md-4">
+                <label asp-for="Source" class="form-label">Nguồn đặt</label>
+                <select asp-for="Source" class="form-select">
+                    @foreach (var s in Enum.GetValues<ReservationSource>())
+                    {
+                        <option value="@((int)s)" selected="@(Model.Source == s)">@s.ToDisplayName()</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="SpecialRequests" class="form-label">Yêu cầu đặc biệt</label>
+                <input asp-for="SpecialRequests" class="form-control" placeholder="Phòng tầng cao, giường đôi, nôi em bé..." />
+            </div>
+            <div class="col-12">
+                <label asp-for="InternalNotes" class="form-label">Ghi chú nội bộ</label>
+                <textarea asp-for="InternalNotes" class="form-control" rows="2"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+        <button type="submit" name="ConfirmNow" value="true" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Lưu và xác nhận</button>
+        <button type="submit" name="ConfirmNow" value="false" class="btn btn-outline-secondary">Lưu nháp</button>
+        <a class="btn btn-outline-secondary ms-auto" asp-action="Index">Hủy</a>
+    </div>
+</form>
+
+<template id="rowTemplate">
+    <tr>
+        <td>
+            <select name="Rooms[__INDEX__].RoomTypeId" class="form-select form-select-sm js-roomtype">
+                <option value="">— Chọn loại —</option>
+                @foreach (var opt in Model.RoomTypeOptions)
+                {
+                    <option value="@opt.Value">@opt.Text</option>
+                }
+            </select>
+        </td>
+        <td>
+            <select name="Rooms[__INDEX__].RoomId" class="form-select form-select-sm js-room">
+                <option value="">— Xếp sau —</option>
+            </select>
+        </td>
+        <td><input name="Rooms[__INDEX__].Adults" value="1" type="number" min="1" class="form-control form-control-sm" /></td>
+        <td><input name="Rooms[__INDEX__].Children" value="0" type="number" min="0" class="form-control form-control-sm" /></td>
+        <td><input name="Rooms[__INDEX__].PricePerNight" value="0" type="number" min="0" step="1000" class="form-control form-control-sm js-price" readonly="@(!isAdmin)" /></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger js-remove"><i class="bi bi-trash"></i></button></td>
+    </tr>
+</template>

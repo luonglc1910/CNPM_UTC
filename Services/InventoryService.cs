@@ -27,6 +27,18 @@ public interface IInventoryService
 
     /// <summary>Đổ lại ô chọn dịch vụ khi form phải hiện lại vì có lỗi.</summary>
     Task<IReadOnlyList<SelectListItem>> GetStockedServiceOptionsAsync();
+
+    /// <summary>
+    /// Trừ tồn cho một lần bán dịch vụ — BR-12. Chặn khi hết tồn trừ khi bật cả cờ riêng của dịch vụ
+    /// lẫn công tắc tổng cho bán âm. Dịch vụ không quản lý kho thì bỏ qua (trả Ok, không sinh phiếu).
+    /// KHÔNG gọi SaveChanges — nằm chung transaction với dòng folio bên gọi (SCR-F03, SCR-E02).
+    /// </summary>
+    Task<ServiceResult> SellAsync(int hotelServiceId, int quantity, int? folioItemId);
+
+    /// <summary>
+    /// Hoàn tồn khi hủy một dòng dịch vụ có kho — BR-12, FR-E03. KHÔNG gọi SaveChanges.
+    /// </summary>
+    Task<ServiceResult> ReturnStockAsync(int hotelServiceId, int quantity, int? folioItemId, string reason);
 }
 
 /// <inheritdoc />
@@ -34,11 +46,13 @@ public class InventoryService : IInventoryService
 {
     private readonly HotelDbContext _db;
     private readonly IAuditService _audit;
+    private readonly ISettingsReader _settings;
 
-    public InventoryService(HotelDbContext db, IAuditService audit)
+    public InventoryService(HotelDbContext db, IAuditService audit, ISettingsReader settings)
     {
         _db = db;
         _audit = audit;
+        _settings = settings;
     }
 
     // ---------- SCR-A08: bảng tồn + lịch sử ----------
@@ -256,6 +270,84 @@ public class InventoryService : IInventoryService
                 Text = $"{s.Code} — {s.Name} (tồn {s.StockQuantity} {s.Unit})"
             })
             .ToListAsync();
+
+    // ---------- Bán / hoàn tồn (dùng ở tầng thu ngân & buồng phòng) ----------
+
+    public async Task<ServiceResult> SellAsync(int hotelServiceId, int quantity, int? folioItemId)
+    {
+        if (quantity <= 0)
+        {
+            return ServiceResult.Fail("Số lượng bán phải lớn hơn 0.");
+        }
+
+        var service = await _db.HotelServices.FirstOrDefaultAsync(s => s.Id == hotelServiceId);
+        if (service is null)
+        {
+            return ServiceResult.Fail("Không tìm thấy dịch vụ.");
+        }
+
+        // Dịch vụ không quản lý kho thì không có tồn để trừ, nhưng vẫn bán được bình thường.
+        if (!service.IsStockManaged)
+        {
+            return ServiceResult.Ok();
+        }
+
+        if (service.StockQuantity < quantity)
+        {
+            var allowGlobal = await _settings.GetBoolAsync(SystemSettingKeys.AllowSellWhenOutOfStock);
+            if (!(service.AllowNegativeStock && allowGlobal))
+            {
+                return ServiceResult.Fail(
+                    $"Dịch vụ {service.Code} chỉ còn {service.StockQuantity} {service.Unit}, không đủ để bán {quantity}.");
+            }
+        }
+
+        service.StockQuantity -= quantity;
+
+        _db.InventoryTransactions.Add(new InventoryTransaction
+        {
+            HotelServiceId = service.Id,
+            Type = InventoryTransactionType.Sale,
+            Quantity = -quantity,
+            StockAfter = service.StockQuantity,
+            FolioItemId = folioItemId
+        });
+
+        return ServiceResult.Ok();
+    }
+
+    public async Task<ServiceResult> ReturnStockAsync(int hotelServiceId, int quantity, int? folioItemId, string reason)
+    {
+        if (quantity <= 0)
+        {
+            return ServiceResult.Fail("Số lượng hoàn phải lớn hơn 0.");
+        }
+
+        var service = await _db.HotelServices.FirstOrDefaultAsync(s => s.Id == hotelServiceId);
+        if (service is null)
+        {
+            return ServiceResult.Fail("Không tìm thấy dịch vụ.");
+        }
+
+        if (!service.IsStockManaged)
+        {
+            return ServiceResult.Ok();
+        }
+
+        service.StockQuantity += quantity;
+
+        _db.InventoryTransactions.Add(new InventoryTransaction
+        {
+            HotelServiceId = service.Id,
+            Type = InventoryTransactionType.Return,
+            Quantity = quantity,
+            StockAfter = service.StockQuantity,
+            FolioItemId = folioItemId,
+            Reason = string.IsNullOrWhiteSpace(reason) ? null : reason.Trim()
+        });
+
+        return ServiceResult.Ok();
+    }
 
     /// <summary>Ba điều kiện chung của cả nhập kho lẫn điều chỉnh.</summary>
     private static ServiceResult? ValidateStockedService(HotelService? service)

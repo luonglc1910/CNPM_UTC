@@ -1,5 +1,85 @@
+@model BillingIndexViewModel
 @{
-    ViewData["Title"] = "Hóa đơn";
+    ViewData["Title"] = "Thu ngân";
+    var isAdmin = User.IsInRole(Roles.Admin);
 }
 
-<partial name="_Placeholder" model="@("Danh sách bảng kê (folio) đang mở và hóa đơn đã xuất.")" />
+<ul class="nav nav-tabs mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(Model.IsInvoiceTab ? "" : "active")" asp-action="Index" asp-route-tab="@BillingIndexViewModel.OpenTab">
+            <i class="bi bi-receipt-cutoff"></i> Folio đang mở
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.IsInvoiceTab ? "active" : "")" asp-action="Index" asp-route-tab="@BillingIndexViewModel.InvoiceTab">
+            <i class="bi bi-receipt"></i> Hóa đơn đã chốt
+        </a>
+    </li>
+</ul>
+
+<form method="get" class="d-flex gap-2 mb-3">
+    <input type="hidden" name="tab" value="@Model.Tab" />
+    <input name="Keyword" value="@Model.Keyword" class="form-control form-control-sm" style="max-width: 260px" placeholder="Số HĐ / số phòng / tên khách" />
+    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-search"></i> Lọc</button>
+</form>
+
+@if (!Model.IsInvoiceTab)
+{
+    <div class="card"><div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th>Folio</th><th>Phòng</th><th>Khách</th><th>Vào</th><th class="text-end">Tạm tính</th><th class="text-end">Đã cọc</th><th class="text-end">Số dư</th><th></th><th class="text-end">Thao tác</th></tr></thead>
+            <tbody>
+            @foreach (var f in Model.OpenFolios.Items)
+            {
+                <tr>
+                    <td><code>@f.FolioCode</code></td>
+                    <td><strong>@f.RoomNumber</strong></td>
+                    <td>@f.GuestName</td>
+                    <td>@f.ActualCheckIn.ToString("dd/MM HH:mm")</td>
+                    <td class="text-end">@f.SubTotal.ToString("N0") ₫</td>
+                    <td class="text-end">@f.DepositApplied.ToString("N0") ₫</td>
+                    <td class="text-end">@f.BalanceDue.ToString("N0") ₫</td>
+                    <td>@(f.IsLocked ? Html.Raw("<span class='badge text-bg-secondary'>Đã khóa</span>") : "")</td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-secondary" asp-action="Folio" asp-route-stayId="@f.StayId">Folio</a>
+                        <a class="btn btn-sm btn-outline-primary" asp-action="Payment" asp-route-stayId="@f.StayId">Thanh toán</a>
+                    </td>
+                </tr>
+            }
+            @if (Model.OpenFolios.TotalItems == 0) { <tr><td colspan="9" class="text-center text-muted py-4">Không có folio đang mở.</td></tr> }
+            </tbody>
+        </table>
+    </div></div>
+    <partial name="_Pager" model="@((Model.OpenFolios.Page, Model.OpenFolios.TotalPages, Model.OpenFolios.TotalItems))" />
+}
+else
+{
+    <div class="card"><div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+            <thead class="table-light"><tr><th>Số hóa đơn</th><th>Ngày chốt</th><th>Phòng</th><th>Khách</th><th class="text-end">Tổng</th><th class="text-end">VAT</th><th>Trạng thái</th><th class="text-end">Thao tác</th></tr></thead>
+            <tbody>
+            @foreach (var i in Model.Invoices.Items)
+            {
+                <tr>
+                    <td><code>@i.InvoiceNo</code></td>
+                    <td>@i.IssuedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                    <td>@i.RoomNumber</td>
+                    <td>@i.GuestName</td>
+                    <td class="text-end">@i.TotalAmount.ToString("N0") ₫</td>
+                    <td class="text-end">@i.TaxAmount.ToString("N0") ₫</td>
+                    <td><span class="badge @i.Status.ToBadgeClass()">@i.Status.ToDisplayName()</span></td>
+                    <td class="text-end text-nowrap">
+                        <a class="btn btn-sm btn-outline-secondary" asp-action="Invoice" asp-route-id="@i.Id"><i class="bi bi-eye"></i></a>
+                        @if (isAdmin && i.Status != InvoiceStatus.Void)
+                        {
+                            <a class="btn btn-sm btn-outline-danger" asp-action="VoidInvoice" asp-route-id="@i.Id"><i class="bi bi-x-octagon"></i></a>
+                        }
+                    </td>
+                </tr>
+            }
+            @if (Model.Invoices.TotalItems == 0) { <tr><td colspan="8" class="text-center text-muted py-4">Chưa có hóa đơn.</td></tr> }
+            </tbody>
+        </table>
+    </div></div>
+    <partial name="_Pager" model="@((Model.Invoices.Page, Model.Invoices.TotalPages, Model.Invoices.TotalItems))" />
+}

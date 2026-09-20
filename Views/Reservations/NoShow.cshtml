@@ -1,0 +1,62 @@
+@model NoShowListViewModel
+@{
+    ViewData["Title"] = "Đơn quá hạn / No-show";
+}
+
+<div class="alert alert-secondary small">
+    Đơn <strong>Đã xác nhận</strong> có ngày đến ≤ hôm nay và đã quá giờ hết hạn giữ chỗ mà khách chưa check-in.
+    Hệ thống không tự chuyển No-show — cần người xác nhận (BR-05).
+</div>
+
+@if (Model.Items.Count == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        <p class="mb-0">Không có đơn nào quá hạn giữ chỗ.</p>
+    </div></div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã đơn</th>
+                        <th>Khách</th>
+                        <th>SĐT</th>
+                        <th>Ngày đến</th>
+                        <th>Hết hạn giữ</th>
+                        <th>Phòng</th>
+                        <th class="text-end">Quá hạn</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var it in Model.Items)
+                {
+                    <tr>
+                        <td><a asp-action="Details" asp-route-id="@it.Id"><code>@it.Code</code></a></td>
+                        <td>@it.GuestName</td>
+                        <td>@it.PhoneNumber</td>
+                        <td class="text-nowrap">@it.CheckInDate.ToString("dd/MM/yyyy")</td>
+                        <td class="text-nowrap">@(it.HoldUntil?.ToString("dd/MM HH:mm"))</td>
+                        <td>@it.RoomSummary</td>
+                        <td class="text-end text-danger">@Math.Round(it.HoursOverdue) giờ</td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-primary" asp-controller="FrontDesk" asp-action="CheckIn" asp-route-reservationId="@it.Id" title="Check-in muộn"><i class="bi bi-box-arrow-in-right"></i></a>
+                            <form method="post" asp-action="ExtendHold" asp-route-id="@it.Id" class="d-inline">
+                                <input type="hidden" name="hours" value="6" />
+                                <button type="submit" class="btn btn-sm btn-outline-secondary" title="Gia hạn giữ chỗ 6 giờ"><i class="bi bi-clock-history"></i></button>
+                            </form>
+                            <form method="post" asp-action="MarkNoShow" asp-route-id="@it.Id" class="d-inline"
+                                  onsubmit="return confirm('Đánh dấu No-show đơn @it.Code? Thu 100% cọc (@it.DepositPaid.ToString("N0") ₫).');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Đánh dấu No-show"><i class="bi bi-person-x"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

@@ -1,5 +1,100 @@
+@model OccupancyReportViewModel
 @{
     ViewData["Title"] = "Công suất phòng";
 }
 
-<partial name="_Placeholder" model="@("Tỷ lệ lấp đầy phòng theo ngày / tháng.")" />
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-sm-4">
+                <label asp-for="From" class="form-label">Từ ngày</label>
+                <input asp-for="From" type="date" class="form-control" />
+            </div>
+            <div class="col-sm-4">
+                <label asp-for="To" class="form-label">Đến ngày</label>
+                <input asp-for="To" type="date" class="form-control" />
+            </div>
+            <div class="col-sm-4">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Xem báo cáo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body py-3">
+            <div class="text-muted small">Phòng khai thác được</div>
+            <div class="fs-4 fw-semibold">@Model.UsableRooms</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100 border-primary"><div class="card-body py-3">
+            <div class="text-muted small">Công suất bình quân</div>
+            <div class="fs-4 fw-semibold text-primary">@Model.AverageRate.ToString("P1")</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body py-3">
+            <div class="text-muted small">Phòng-đêm đã bán</div>
+            <div class="fs-4 fw-semibold">@Model.SoldRoomNights</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card h-100"><div class="card-body py-3">
+            <div class="text-muted small">Phòng-đêm khả dụng</div>
+            <div class="fs-4 fw-semibold">@Model.CapacityRoomNights</div>
+        </div></div>
+    </div>
+</div>
+
+<p class="text-muted small">
+    Khoảng @Model.From.ToString("dd/MM/yyyy") → @Model.To.ToString("dd/MM/yyyy").
+    Mẫu số là số phòng còn khai thác được (loại phòng ngừng khai thác — FR-G03).
+</p>
+
+@if (Model.Truncated)
+{
+    <div class="alert alert-warning small"><i class="bi bi-exclamation-triangle"></i> Khoảng ngày quá dài, chỉ hiển thị 366 ngày đầu.</div>
+}
+
+@if (Model.UsableRooms == 0)
+{
+    <div class="alert alert-secondary">Chưa có phòng nào đang khai thác để tính công suất.</div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Ngày</th>
+                        <th class="text-center">Phòng có khách</th>
+                        <th class="text-center">Phòng khai thác</th>
+                        <th class="text-end">Công suất</th>
+                        <th style="width: 30%"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    var pct = (int)Math.Round(r.Rate * 100);
+                    <tr>
+                        <td class="text-nowrap">@r.Date.ToString("dd/MM/yyyy")</td>
+                        <td class="text-center">@r.OccupiedRooms</td>
+                        <td class="text-center">@r.UsableRooms</td>
+                        <td class="text-end fw-semibold">@r.Rate.ToString("P0")</td>
+                        <td>
+                            <div class="progress" style="height: 0.75rem">
+                                <div class="progress-bar @(pct >= 85 ? "bg-danger" : pct >= 60 ? "bg-warning" : "bg-success")"
+                                     role="progressbar" style="width: @(pct)%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}

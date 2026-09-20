@@ -1,0 +1,73 @@
+@model StayDetailViewModel
+@{
+    ViewData["Title"] = $"Lưu trú — Phòng {Model.RoomNumber}";
+    var s = Model.Summary;
+}
+
+<div class="d-flex flex-wrap gap-2 mb-3">
+    @if (Model.Stay.Status == StayStatus.CheckedIn)
+    {
+        <a class="btn btn-outline-primary" asp-controller="Billing" asp-action="AddCharge" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-cup-straw"></i> Ghi dịch vụ</a>
+        <a class="btn btn-outline-secondary" asp-action="AddGuest" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-person-plus"></i> Thêm khách</a>
+        <a class="btn btn-outline-secondary" asp-action="ChangeRoom" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-arrow-left-right"></i> Đổi phòng</a>
+        <a class="btn btn-outline-secondary" asp-action="Extend" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-calendar-plus"></i> Gia hạn</a>
+        <a class="btn btn-outline-secondary" asp-controller="Billing" asp-action="Folio" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-receipt"></i> Folio</a>
+        <a class="btn btn-primary ms-auto" asp-action="CheckOut" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-box-arrow-left"></i> Check-out</a>
+    }
+    else
+    {
+        <span class="badge text-bg-success align-self-center">Đã trả phòng</span>
+    }
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">Phòng &amp; khách</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-4">Phòng</dt><dd class="col-sm-8">@Model.RoomNumber (@Model.RoomTypeName)</dd>
+                    <dt class="col-sm-4">Giá/đêm đã chốt</dt><dd class="col-sm-8">@Model.Stay.PricePerNight.ToString("N0") ₫</dd>
+                    <dt class="col-sm-4">Vào</dt><dd class="col-sm-8">@Model.Stay.ActualCheckIn.ToString("dd/MM/yyyy HH:mm")</dd>
+                    <dt class="col-sm-4">Đi dự kiến</dt><dd class="col-sm-8">@Model.Stay.ExpectedCheckOut.ToString("dd/MM/yyyy") (@Model.Stay.Nights đêm)</dd>
+                    <dt class="col-sm-4">Khách ở cùng</dt>
+                    <dd class="col-sm-8">
+                        <ul class="mb-0 ps-3">@foreach (var g in Model.Guests) { <li>@g</li> }</ul>
+                    </dd>
+                </dl>
+            </div>
+        </div>
+        @if (Model.History.Count > 0)
+        {
+            <div class="card mt-3">
+                <div class="card-header">Lịch sử</div>
+                <ul class="list-group list-group-flush">
+                    @foreach (var h in Model.History)
+                    {
+                        <li class="list-group-item small">@h.At.ToString("dd/MM HH:mm") — @h.Description</li>
+                    }
+                </ul>
+            </div>
+        }
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">Tạm tính folio</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr><td>Tiền phòng</td><td class="text-end">@s.RoomCharge.ToString("N0") ₫</td></tr>
+                        <tr><td>Dịch vụ</td><td class="text-end">@s.ServiceCharge.ToString("N0") ₫</td></tr>
+                        <tr><td>Phụ thu</td><td class="text-end">@s.SurchargeAmount.ToString("N0") ₫</td></tr>
+                        <tr><td>Giảm giá</td><td class="text-end">-@s.DiscountAmount.ToString("N0") ₫</td></tr>
+                        <tr><td>VAT</td><td class="text-end">@s.TaxAmount.ToString("N0") ₫</td></tr>
+                        <tr class="fw-semibold"><td>Tổng</td><td class="text-end">@s.Total.ToString("N0") ₫</td></tr>
+                        <tr><td>Đã cọc</td><td class="text-end">-@s.DepositApplied.ToString("N0") ₫</td></tr>
+                        <tr class="table-light fw-semibold"><td>Số dư phải thu</td><td class="text-end">@s.BalanceDue.ToString("N0") ₫</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>

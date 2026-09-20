@@ -1,0 +1,40 @@
+@model MinibarViewModel
+@{
+    ViewData["Title"] = $"Kiểm phòng &amp; minibar — Phòng {Model.RoomNumber}";
+}
+
+<div class="row"><div class="col-lg-8">
+    <div class="card"><div class="card-body">
+        @if (Model.AlreadyInspected)
+        {
+            <div class="alert alert-success py-2 small">Phòng này đã được kiểm. Lưu lại sẽ ghi thêm mặt hàng mới (nếu có).</div>
+        }
+        <p class="small text-muted">Nhập số lượng khách đã dùng cho từng mặt hàng minibar. Lưu sẽ đẩy vào folio, trừ tồn kho và đánh dấu đã kiểm phòng (BR-08, BR-12). Không dùng gì thì để 0 và vẫn bấm Lưu để xác nhận đã kiểm.</p>
+        <form method="post" asp-action="Minibar">
+            <input type="hidden" asp-for="StayId" />
+            <table class="table align-middle">
+                <thead class="table-light"><tr><th>Mặt hàng</th><th class="text-end">Đơn giá</th><th class="text-center">Tồn</th><th style="width: 120px">Đã dùng</th></tr></thead>
+                <tbody>
+                @for (var i = 0; i < Model.Lines.Count; i++)
+                {
+                    var l = Model.Lines[i];
+                    <tr>
+                        <td>
+                            @l.ServiceName <span class="text-muted small">(@l.Unit)</span>
+                            <input type="hidden" name="Lines[@i].HotelServiceId" value="@l.HotelServiceId" />
+                        </td>
+                        <td class="text-end">@l.UnitPrice.ToString("N0") ₫</td>
+                        <td class="text-center">@l.StockQuantity</td>
+                        <td><input name="Lines[@i].Quantity" value="0" type="number" min="0" max="@l.StockQuantity" class="form-control form-control-sm" /></td>
+                    </tr>
+                }
+                @if (Model.Lines.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-3">Chưa có mặt hàng minibar (dịch vụ nhóm Minibar có quản lý kho).</td></tr> }
+                </tbody>
+            </table>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Xác nhận đã kiểm phòng</button>
+                <a class="btn btn-outline-secondary" asp-controller="FrontDesk" asp-action="CheckOut" asp-route-stayId="@Model.StayId">Quay lại check-out</a>
+            </div>
+        </form>
+    </div></div>
+</div></div>

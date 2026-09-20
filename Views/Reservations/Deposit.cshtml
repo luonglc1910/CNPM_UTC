@@ -1,0 +1,72 @@
+@model DepositFormViewModel
+@{
+    ViewData["Title"] = $"Thu cọc — {Model.ReservationCode}";
+}
+
+<div class="row">
+    <div class="col-lg-6">
+        <div class="card">
+            <div class="card-header">Thu tiền cọc — đơn <code>@Model.ReservationCode</code> (@Model.GuestName)</div>
+            <div class="card-body">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr><td>Tổng dự kiến</td><td class="text-end">@Model.EstimatedTotal.ToString("N0") ₫</td></tr>
+                        <tr><td>Đã cọc</td><td class="text-end">@Model.AlreadyPaid.ToString("N0") ₫</td></tr>
+                        <tr class="fw-semibold"><td>Mức đề xuất</td><td class="text-end">@Model.SuggestedAmount.ToString("N0") ₫</td></tr>
+                    </tbody>
+                </table>
+
+                @if (!Model.HasOpenShift)
+                {
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Bạn chưa mở ca làm việc — không thu tiền được (BR-10).
+                        <a class="btn btn-sm btn-primary ms-2" asp-controller="Shifts" asp-action="Index">Mở ca làm việc</a>
+                    </div>
+                }
+                else
+                {
+                    <form method="post" asp-action="Deposit">
+                        <input type="hidden" asp-for="ReservationId" />
+                        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                        <div class="mb-3">
+                            <label asp-for="Amount" class="form-label">Số tiền cọc <span class="text-danger">*</span></label>
+                            <input asp-for="Amount" type="number" min="1" step="1000" class="form-control" autofocus />
+                            <span asp-validation-for="Amount" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Method" class="form-label">Phương thức <span class="text-danger">*</span></label>
+                            <select asp-for="Method" class="form-select">
+                                @foreach (var m in Enum.GetValues<PaymentMethod>())
+                                {
+                                    <option value="@((int)m)" selected="@(Model.Method == m)">@m.ToDisplayName()</option>
+                                }
+                            </select>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="TransactionRef" class="form-label">Mã giao dịch <span class="text-muted small">(bắt buộc với CK/Thẻ)</span></label>
+                            <input asp-for="TransactionRef" class="form-control" />
+                            <span asp-validation-for="TransactionRef" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Notes" class="form-label">Ghi chú</label>
+                            <input asp-for="Notes" class="form-control" />
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary"><i class="bi bi-cash-coin"></i> Thu cọc</button>
+                            <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.ReservationId">Hủy</a>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

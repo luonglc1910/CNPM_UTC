@@ -1,5 +1,138 @@
+@model RevenueReportViewModel
 @{
     ViewData["Title"] = "Báo cáo doanh thu";
+
+    string PeriodLabel(RevenuePeriod p) => p switch
+    {
+        RevenuePeriod.Day => "Ngày",
+        RevenuePeriod.Month => "Tháng",
+        RevenuePeriod.Year => "Năm",
+        _ => p.ToString()
+    };
 }
 
-<partial name="_Placeholder" model="@("Tổng doanh thu theo khoảng thời gian, phân theo tiền phòng và dịch vụ.")" />
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-sm-3">
+                <label asp-for="From" class="form-label">Từ ngày</label>
+                <input asp-for="From" type="date" class="form-control" />
+            </div>
+            <div class="col-sm-3">
+                <label asp-for="To" class="form-label">Đến ngày</label>
+                <input asp-for="To" type="date" class="form-control" />
+            </div>
+            <div class="col-sm-3">
+                <label asp-for="Period" class="form-label">Gộp theo</label>
+                <select asp-for="Period" class="form-select">
+                    @foreach (var p in Enum.GetValues<RevenuePeriod>())
+                    {
+                        <option value="@((int)p)" selected="@(Model.Period == p)">@PeriodLabel(p)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-sm-3">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Xem báo cáo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-6 col-lg">
+        <div class="card h-100"><div class="card-body py-3">
+            <div class="text-muted small">Tiền phòng</div>
+            <div class="fs-5 fw-semibold">@Model.Total.Room.ToString("N0") ₫</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="card h-100"><div class="card-body py-3">
+            <div class="text-muted small">Dịch vụ</div>
+            <div class="fs-5 fw-semibold">@Model.Total.Service.ToString("N0") ₫</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="card h-100"><div class="card-body py-3">
+            <div class="text-muted small">Phụ thu</div>
+            <div class="fs-5 fw-semibold">@Model.Total.Surcharge.ToString("N0") ₫</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="card h-100"><div class="card-body py-3">
+            <div class="text-muted small">Phí hủy</div>
+            <div class="fs-5 fw-semibold">@Model.Total.Cancellation.ToString("N0") ₫</div>
+        </div></div>
+    </div>
+    <div class="col-6 col-lg">
+        <div class="card h-100 border-primary"><div class="card-body py-3">
+            <div class="text-muted small">Doanh thu thuần</div>
+            <div class="fs-5 fw-semibold text-primary">@Model.Total.Net.ToString("N0") ₫</div>
+        </div></div>
+    </div>
+</div>
+
+<p class="text-muted small">
+    Khoảng @Model.From.ToString("dd/MM/yyyy") → @Model.To.ToString("dd/MM/yyyy").
+    @Model.InvoiceCount hóa đơn đã chốt · Tổng gồm VAT: <strong>@Model.GrossSettled.ToString("N0") ₫</strong>
+    (VAT @Model.Total.Vat.ToString("N0") ₫). Doanh thu thuần = phòng + dịch vụ + phụ thu − giảm giá + phí hủy.
+</p>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        <p class="mb-0">Không có doanh thu nào trong khoảng đã chọn.</p>
+    </div></div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Kỳ</th>
+                        <th class="text-end">Tiền phòng</th>
+                        <th class="text-end">Dịch vụ</th>
+                        <th class="text-end">Phụ thu</th>
+                        <th class="text-end">Giảm giá</th>
+                        <th class="text-end">Phí hủy</th>
+                        <th class="text-end">Thuần</th>
+                        <th style="width: 20%">Tỷ trọng</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var r in Model.Rows)
+                {
+                    var pct = Model.MaxNet == 0 ? 0 : (int)(r.Net / Model.MaxNet * 100);
+                    <tr>
+                        <td class="text-nowrap">@r.Label</td>
+                        <td class="text-end">@r.Room.ToString("N0")</td>
+                        <td class="text-end">@r.Service.ToString("N0")</td>
+                        <td class="text-end">@r.Surcharge.ToString("N0")</td>
+                        <td class="text-end text-danger">@r.Discount.ToString("N0")</td>
+                        <td class="text-end">@r.Cancellation.ToString("N0")</td>
+                        <td class="text-end fw-semibold">@r.Net.ToString("N0")</td>
+                        <td>
+                            <div class="progress" style="height: 0.75rem">
+                                <div class="progress-bar" role="progressbar" style="width: @(pct)%"></div>
+                            </div>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+                <tfoot class="table-light fw-semibold">
+                    <tr>
+                        <td>Tổng cộng</td>
+                        <td class="text-end">@Model.Total.Room.ToString("N0")</td>
+                        <td class="text-end">@Model.Total.Service.ToString("N0")</td>
+                        <td class="text-end">@Model.Total.Surcharge.ToString("N0")</td>
+                        <td class="text-end text-danger">@Model.Total.Discount.ToString("N0")</td>
+                        <td class="text-end">@Model.Total.Cancellation.ToString("N0")</td>
+                        <td class="text-end">@Model.Total.Net.ToString("N0")</td>
+                        <td></td>
+                    </tr>
+                </tfoot>
+            </table>
+        </div>
+    </div>
+}
