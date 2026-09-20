@@ -51,6 +51,7 @@ builder.Services.AddScoped<IBillingService, BillingService>();
 builder.Services.AddScoped<IFrontDeskService, FrontDeskService>();
 builder.Services.AddScoped<IHousekeepingService, HousekeepingService>();
 builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
 
 // Đối chiếu cookie đăng nhập với bản ghi nhân viên ở mỗi request — xem Security/EmployeeCookieEvents.cs.
 builder.Services.AddScoped<EmployeeCookieEvents>();

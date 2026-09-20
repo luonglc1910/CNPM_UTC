@@ -764,6 +764,48 @@ h1, h2, h3, h4, h5, h6 {
   font-weight: 500;
 }
 
+/* Dong chu nho duoi con so: don vi, ti le, hoac cau nhac. */
+.stat-foot {
+  margin-top: 0.35rem;
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+  line-height: 1.35;
+}
+
+/* O so lieu bam duoc o Tong quan: moi con so dan thang sang man xu ly viec do. */
+.stat-card-link {
+  text-decoration: none;
+  color: inherit;
+  transition: border-color 0.12s ease, background-color 0.12s ease;
+}
+
+.stat-card-link:hover {
+  color: inherit;
+  border-color: var(--rule-strong);
+  background: #fafcfb;
+}
+
+.stat-card-link:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+/* Con so viec ton. Bang 0 thi lam mo di: mat phai luot qua duoc nhung dong
+   khong con gi de lam, chi dung lai o nhung dong co so khac 0. */
+.pending-count {
+  flex-shrink: 0;
+  min-width: 2.25rem;
+  text-align: center;
+  font-size: 1.125rem;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--fg-faint);
+}
+
+.pending-count.has-work {
+  color: var(--st-maintenance);
+}
+
 /* ============================ Sơ đồ phòng ============================
    SCR-C03. Ma trận phòng × ngày; một lượt đặt vẽ thành một dải liền nhờ colspan,
    nên mắt bắt được khoảng trống giữa hai đơn thay vì phải đếm từng ô.        */

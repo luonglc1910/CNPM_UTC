@@ -1,34 +1,115 @@
+@model DashboardViewModel
 @{
     ViewData["Title"] = "Tổng quan";
 }
 
+@*
+    Chỉ con số và việc cần xử lý. Hai bảng khách đến / khách đi nằm ở SCR-D01 (bảng điều
+    khiển lễ tân) cùng với nút Check-in / Check-out — nhân bản sang đây chỉ tạo ra hai chỗ
+    phải sửa mỗi khi nghiệp vụ đổi. Mỗi con số ở đây bấm được, dẫn thẳng sang màn xử lý.
+*@
+
 <div class="row g-3 mb-4">
-    <div class="col-6 col-xl-3">
-        <div class="stat-card stat-card-empty">
-            <div class="stat-label">Phòng trống</div>
-            <div class="stat-value">—</div>
-        </div>
+    <div class="col-6 col-lg-3">
+        <a class="stat-card stat-card-link d-block" asp-controller="Housekeeping" asp-action="Index">
+            <div class="stat-label"><i class="bi bi-door-open"></i> Phòng trống</div>
+            <div class="stat-value">@Model.AvailableRooms</div>
+        </a>
     </div>
-    <div class="col-6 col-xl-3">
-        <div class="stat-card stat-card-empty">
-            <div class="stat-label">Đang lưu trú</div>
-            <div class="stat-value">—</div>
-        </div>
+    <div class="col-6 col-lg-3">
+        <a class="stat-card stat-card-link d-block" asp-controller="FrontDesk" asp-action="Index">
+            <div class="stat-label"><i class="bi bi-person-fill"></i> Đang ở</div>
+            <div class="stat-value">@Model.OccupiedRooms</div>
+            <div class="stat-foot">Lấp đầy @Model.OccupancyRate.ToString("P0") / @Model.UsableRooms phòng</div>
+        </a>
     </div>
-    <div class="col-6 col-xl-3">
-        <div class="stat-card stat-card-empty">
-            <div class="stat-label">Nhận phòng hôm nay</div>
-            <div class="stat-value">—</div>
-        </div>
+    <div class="col-6 col-lg-3">
+        <a class="stat-card stat-card-link d-block" asp-controller="Housekeeping" asp-action="Index">
+            <div class="stat-label"><i class="bi bi-stars"></i> Chờ dọn</div>
+            <div class="stat-value">@Model.DirtyRooms</div>
+        </a>
     </div>
-    @* TODO SCR-S04: khi dashboard đọc số liệu thật, Admin thấy doanh thu toàn khách sạn
-       còn Lễ tân chỉ thấy doanh thu ca của mình. *@
-    <div class="col-6 col-xl-3">
-        <div class="stat-card stat-card-empty">
-            <div class="stat-label">Doanh thu hôm nay</div>
-            <div class="stat-value">—</div>
+    <div class="col-6 col-lg-3">
+        <a class="stat-card stat-card-link d-block" asp-controller="Housekeeping" asp-action="Index">
+            <div class="stat-label"><i class="bi bi-tools"></i> Bảo trì</div>
+            <div class="stat-value">@Model.MaintenanceRooms</div>
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-4">
+        <a class="stat-card stat-card-link d-block" asp-controller="FrontDesk" asp-action="Index">
+            <div class="stat-label"><i class="bi bi-box-arrow-in-right"></i> Khách đến hôm nay</div>
+            <div class="stat-value">@Model.ArrivalsToday</div>
+            <div class="stat-foot">Mở bảng lễ tân để check-in</div>
+        </a>
+    </div>
+    <div class="col-6 col-lg-4">
+        <a class="stat-card stat-card-link d-block" asp-controller="FrontDesk" asp-action="Index">
+            <div class="stat-label"><i class="bi bi-box-arrow-right"></i> Khách đi hôm nay</div>
+            <div class="stat-value">@Model.DeparturesToday</div>
+            <div class="stat-foot">Mở bảng lễ tân để check-out</div>
+        </a>
+    </div>
+    <div class="col-12 col-lg-4">
+        @*
+            Lễ tân chỉ thấy phần thu trong ca của mình — lọc theo CashierShiftId ngay trong
+            truy vấn. Nhãn phải nói đúng phạm vi đang hiện, nếu không người xem sẽ tưởng
+            con số này là của cả khách sạn.
+        *@
+        <div class="stat-card">
+            <div class="stat-label">
+                <i class="bi bi-cash-stack"></i>
+                @(Model.RevenueIsWholeHotel ? "Doanh thu hôm nay" : "Doanh thu ca của bạn")
+            </div>
+            <div class="stat-value">@Model.RevenueToday.ToString("N0") ₫</div>
+            @if (Model.RevenueIsWholeHotel)
+            {
+                <div class="stat-foot">Toàn khách sạn, hóa đơn đã chốt trong ngày</div>
+            }
+            else if (!Model.HasOpenShift)
+            {
+                <div class="stat-foot text-danger">
+                    Chưa mở ca —
+                    <a asp-controller="Shifts" asp-action="Index">mở ca</a> để bắt đầu ghi nhận
+                </div>
+            }
+            else
+            {
+                <div class="stat-foot">Chỉ tính hóa đơn chốt trong ca đang mở của bạn</div>
+            }
         </div>
     </div>
 </div>
 
-<partial name="_Placeholder" model="@("Số liệu tổng quan sẽ được lấy từ Database khi triển khai nghiệp vụ.")" />
+<div class="card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-list-check"></i> Việc cần xử lý</span>
+        @if (Model.TotalPending == 0)
+        {
+            <span class="badge text-bg-success">Không còn việc tồn</span>
+        }
+        else
+        {
+            <span class="badge text-bg-warning">@Model.TotalPending việc</span>
+        }
+    </div>
+    <div class="list-group list-group-flush">
+        @foreach (var w in Model.PendingWork)
+        {
+            <a class="list-group-item list-group-item-action d-flex align-items-center gap-3"
+               asp-controller="@w.Controller" asp-action="@w.Action" asp-all-route-data="w.RouteValues">
+                <span class="pending-count @(w.Count > 0 ? "has-work" : "")">@w.Count</span>
+                <span class="flex-grow-1">
+                    <span class="d-block"><i class="bi bi-@w.Icon"></i> @w.Label</span>
+                    @if (w.Hint is not null)
+                    {
+                        <span class="text-muted small">@w.Hint</span>
+                    }
+                </span>
+                <i class="bi bi-chevron-right text-muted"></i>
+            </a>
+        }
+    </div>
+</div>
