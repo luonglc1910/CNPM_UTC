@@ -1,4 +1,4 @@
-﻿using HotelManagement.Web.Data;
+using HotelManagement.Web.Data;
 using HotelManagement.Web.Models;
 using HotelManagement.Web.Models.Entities;
 using HotelManagement.Web.Models.ViewModels;
@@ -134,11 +134,46 @@ public class FrontDeskService : IFrontDeskService
             .Select(r => r.Status)
             .ToListAsync();
 
+        // Đã check-in hôm nay
+        var checkedInToday = await _db.Stays.AsNoTracking()
+            .Include(s => s.Room)
+            .Include(s => s.PrimaryGuest)
+            .Where(s => s.ActualCheckIn.Date == today)
+            .OrderBy(s => s.ActualCheckIn)
+            .Select(s => new CheckedInTodayItem
+            {
+                StayId = s.Id,
+                RoomNumber = s.Room.RoomNumber,
+                GuestName = s.PrimaryGuest.FullName,
+                ActualCheckIn = s.ActualCheckIn,
+                ExpectedCheckOut = s.ExpectedCheckOut
+            })
+            .ToListAsync();
+
+        // Đã check-out hôm nay
+        var checkedOutToday = await _db.Stays.AsNoTracking()
+            .Include(s => s.Room)
+            .Include(s => s.PrimaryGuest)
+            .Where(s => s.Status == StayStatus.CheckedOut && s.ActualCheckOut != null && s.ActualCheckOut.Value.Date == today)
+            .OrderBy(s => s.ActualCheckOut)
+            .Select(s => new CheckedOutTodayItem
+            {
+                StayId = s.Id,
+                RoomNumber = s.Room.RoomNumber,
+                GuestName = s.PrimaryGuest.FullName,
+                ActualCheckIn = s.ActualCheckIn,
+                ActualCheckOut = s.ActualCheckOut!.Value,
+                Nights = s.Nights
+            })
+            .ToListAsync();
+
         return new FrontDeskDashboardViewModel
         {
             Arrivals = arrivals,
             Departures = departures.OrderBy(d => d.RoomNumber).ToList(),
             InHouse = inHouse.OrderBy(i => i.RoomNumber).ToList(),
+            CheckedInToday = checkedInToday,
+            CheckedOutToday = checkedOutToday,
             AvailableCount = rooms.Count(s => s == RoomStatus.Available),
             OccupiedCount = rooms.Count(s => s == RoomStatus.Occupied),
             DirtyCount = rooms.Count(s => s == RoomStatus.Dirty),
@@ -629,7 +664,15 @@ public class FrontDeskService : IFrontDeskService
 
         var settings = await _settings.GetPricingSettingsAsync();
         var now = DateTime.Now;
-        var late = _pricing.LateCheckOutSurcharge(TimeOnly.FromDateTime(now), stay.PricePerNight, settings);
+
+        // Phụ thu trả trễ CHỈ áp dụng khi trả đúng ngày hoặc sau ngày ExpectedCheckOut.
+        // Nếu trả SỚM hơn ngày dự kiến thì không có phụ thu dù giờ có muộn.
+        SurchargeLine? late = null;
+        if (now.Date >= stay.ExpectedCheckOut.Date)
+        {
+            late = _pricing.LateCheckOutSurcharge(TimeOnly.FromDateTime(now), stay.PricePerNight, settings);
+        }
+
         var summary = await _billing.ComputeFolioSummaryAsync(stayId) ?? new BillingFolioSummary();
 
         return new CheckOutViewModel
@@ -683,8 +726,9 @@ public class FrontDeskService : IFrontDeskService
                 stay.Nights = actualNights;
             }
 
-            // Phụ thu trả trễ (BR-03), trừ khi Admin miễn.
-            if (!(form.WaiveLateSurcharge && isAdmin))
+            // Phụ thu trả trễ (BR-03): CHỈ áp dụng khi trả đúng ngày hoặc sau ngày ExpectedCheckOut.
+            // Trả SỚM hơn ngày dự kiến → không phụ thu dù giờ có muộn.
+            if (!(form.WaiveLateSurcharge && isAdmin) && actualCheckOut.Date >= stay.ExpectedCheckOut.Date)
             {
                 var late = _pricing.LateCheckOutSurcharge(TimeOnly.FromDateTime(actualCheckOut), stay.PricePerNight, settings);
                 if (late is not null)

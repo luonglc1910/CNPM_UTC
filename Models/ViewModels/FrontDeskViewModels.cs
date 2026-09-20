@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using HotelManagement.Web.Models.Entities;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -39,11 +39,36 @@ public class InHouseItem
     public DateTime ExpectedCheckOut { get; set; }
 }
 
+public class CheckedInTodayItem
+{
+    public int StayId { get; set; }
+    public string RoomNumber { get; set; } = string.Empty;
+    public string GuestName { get; set; } = string.Empty;
+    public DateTime ActualCheckIn { get; set; }
+    public DateTime ExpectedCheckOut { get; set; }
+}
+
+public class CheckedOutTodayItem
+{
+    public int StayId { get; set; }
+    public string RoomNumber { get; set; } = string.Empty;
+    public string GuestName { get; set; } = string.Empty;
+    public DateTime ActualCheckIn { get; set; }
+    public DateTime ActualCheckOut { get; set; }
+    public int Nights { get; set; }
+}
+
 public class FrontDeskDashboardViewModel
 {
     public IReadOnlyList<ArrivalItem> Arrivals { get; set; } = new List<ArrivalItem>();
     public IReadOnlyList<DepartureItem> Departures { get; set; } = new List<DepartureItem>();
     public IReadOnlyList<InHouseItem> InHouse { get; set; } = new List<InHouseItem>();
+
+    /// <summary>Đã check-in trong ngày hôm nay.</summary>
+    public IReadOnlyList<CheckedInTodayItem> CheckedInToday { get; set; } = new List<CheckedInTodayItem>();
+
+    /// <summary>Đã check-out trong ngày hôm nay.</summary>
+    public IReadOnlyList<CheckedOutTodayItem> CheckedOutToday { get; set; } = new List<CheckedOutTodayItem>();
 
     public int AvailableCount { get; set; }
     public int OccupiedCount { get; set; }

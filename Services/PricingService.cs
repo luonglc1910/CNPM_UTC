@@ -140,38 +140,27 @@ public class PricingService : IPricingService
 
     public SurchargeLine? LateCheckOutSurcharge(TimeOnly actualCheckOut, decimal pricePerNight, PricingSettings s)
     {
-        // Trả đúng giờ chuẩn hoặc sớm hơn thì không có phụ thu trả trễ.
+        // Trả đúng giờ chuẩn hoặc sớm hơn thì không có phụ thu.
         if (actualCheckOut <= s.StandardCheckOutTime)
         {
             return null;
         }
 
-        var tier1End = new TimeOnly(s.LateCheckOutTier1EndHour, 0);
-        var fullNight = new TimeOnly(s.LateCheckOutFullNightHour, 0);
+        // Tính số giờ trả trễ (làm tròn lên — ví dụ: 12:01 → 1 giờ, 13:30 → 2 giờ).
+        var lateMinutes = (actualCheckOut - s.StandardCheckOutTime).TotalMinutes;
+        var hoursLate = (int)Math.Ceiling(lateMinutes / 60.0);
 
-        // Trả sau mốc cuối: tính thêm hẳn một đêm thay vì phụ thu theo %.
-        if (actualCheckOut >= fullNight)
-        {
-            return new SurchargeLine
-            {
-                Type = SurchargeType.LateCheckOut,
-                Amount = pricePerNight,
-                ExtraNights = 1,
-                Description = $"Trả phòng sau {fullNight:HH\\:mm} — tính thêm 1 đêm"
-            };
-        }
-
-        var (rate, label) = actualCheckOut < tier1End
-            ? (s.LateCheckOutTier1Rate, $"Trả trễ {s.StandardCheckOutTime:HH\\:mm}–{tier1End:HH\\:mm}")
-            : (s.LateCheckOutTier2Rate, $"Trả trễ {tier1End:HH\\:mm}–{fullNight:HH\\:mm}");
+        const decimal RatePerHour = 200_000m;
+        var amount = RatePerHour * hoursLate;
 
         return new SurchargeLine
         {
             Type = SurchargeType.LateCheckOut,
-            Amount = pricePerNight * rate,
-            Description = $"{label} ({rate:P0} giá đêm)"
+            Amount = amount,
+            Description = $"Trả trễ {hoursLate} giờ × 200.000 ₫/giờ (sau {s.StandardCheckOutTime:HH\\:mm})"
         };
     }
+
 
     public SurchargeLine? ExtraGuestSurcharge(int totalGuests, int standardCapacity, decimal feePerGuestPerNight, int nights)
     {
