@@ -115,12 +115,17 @@ quyết định cả cách nhập thời gian lẫn cách tính tiền phòng.
 
 | | Theo ngày | Theo giờ | Qua đêm |
 |---|---|---|---|
-| Người dùng nhập | ngày đến + ngày đi | **chỉ giờ đến** | chỉ đêm ngày nào |
-| Hệ thống lưu | 14:00 → 12:00 | giờ đến; giờ đi để trống | 22:00 → 10:00 hôm sau |
+| Người dùng nhập | ngày đến + ngày đi | **chỉ ngày, không nhập giờ nào** | chỉ đêm ngày nào |
+| Mốc tính tiền | 14:00 → 12:00 | **giờ check-in → giờ trả phòng** | 22:00 → 10:00 hôm sau |
 | Đơn giá | giá/đêm × số đêm | giờ đầu + (n−1) × giờ tiếp | một gói phẳng |
 | Chốt tiền lúc | lập đơn | **trả phòng** | lập đơn |
 | Ra sớm | vẫn tính đủ số đêm đã đặt | trả đúng số giờ đã ở | không áp dụng |
 | Ở quá | phụ thu trả trễ (BR-03) | không có khái niệm quá giờ | phụ thu theo giờ |
+
+Thuê theo giờ **không có mốc giờ nào do người dùng đặt ra**: đồng hồ chạy từ lúc check-in đến
+lúc trả phòng. Đơn chỉ ghi ngày, cộng một mốc kỹ thuật dài một giờ để phần chống trùng lịch
+có hai đầu mà so sánh. Màn check-in gọi ô giờ nhận phòng là **"Giờ bắt đầu tính tiền"** và cảnh
+báo rõ, vì sửa nhầm một tiếng ở đó là hóa đơn lệch một giờ.
 
 ### Quy tắc làm tròn giờ
 Phần lẻ **từ 20 phút trở xuống thì bỏ**, **quá 20 phút mới tính thêm một giờ**. Mức 20 phút nằm

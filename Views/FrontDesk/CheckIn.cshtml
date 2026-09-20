@@ -66,11 +66,35 @@
         <div class="card-body">
             <div class="row g-2 align-items-end">
                 <div class="col-sm-4">
-                    <label asp-for="ActualCheckIn" class="form-label">Giờ nhận phòng thực tế</label>
+                    <label asp-for="ActualCheckIn" class="form-label">
+                        @(Model.RentalType == RentalType.Hourly ? "Giờ bắt đầu tính tiền" : "Giờ nhận phòng thực tế")
+                    </label>
                     <input asp-for="ActualCheckIn" type="datetime-local" class="form-control" />
                 </div>
                 <div class="col-sm-8">
-                    <div class="alert alert-secondary small mb-0">Nhận trước 14:00 sẽ tự tính phụ thu nhận sớm; vượt sức chứa chuẩn tự tính phụ thu thêm người (BR-03).</div>
+                    @*
+                        Thuê theo giờ (BR-13): ô trên không chỉ là mốc ghi nhận, nó là mốc bắt đầu
+                        tính tiền. Phải nói rõ, vì lễ tân sửa nhầm một tiếng là hóa đơn lệch một giờ.
+                    *@
+                    @if (Model.RentalType == RentalType.Hourly)
+                    {
+                        <div class="alert alert-warning small mb-0">
+                            <i class="bi bi-stopwatch"></i>
+                            Đồng hồ bắt đầu chạy từ giờ này đến lúc khách trả phòng. Không có phụ thu
+                            nhận sớm hay trả trễ.
+                        </div>
+                    }
+                    else if (Model.RentalType == RentalType.Overnight)
+                    {
+                        <div class="alert alert-secondary small mb-0">
+                            Gói qua đêm tính trọn gói @Model.CheckInDate.ToString("HH:mm dd/MM")
+                            → @Model.CheckOutDate.ToString("HH:mm dd/MM"); ở quá thì thu thêm theo giờ.
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="alert alert-secondary small mb-0">Nhận trước 14:00 sẽ tự tính phụ thu nhận sớm; vượt sức chứa chuẩn tự tính phụ thu thêm người (BR-03).</div>
+                    }
                 </div>
             </div>
         </div>

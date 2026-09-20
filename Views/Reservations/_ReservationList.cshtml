@@ -98,10 +98,11 @@ else
                             Thuê theo giờ và qua đêm chỉ đọc được khi có giờ; thuê theo ngày mà hiện
                             giờ thì cột dài ra vô ích vì giờ luôn là giờ chuẩn.
                         *@
+                        @* Đơn thuê giờ không có giờ đến đã hẹn — mốc lưu chỉ là mốc kỹ thuật. *@
                         <td class="text-nowrap">
-                            @(r.RentalType == RentalType.Daily
-                                ? r.CheckInDate.ToString("dd/MM/yyyy")
-                                : r.CheckInDate.ToString("HH:mm dd/MM"))
+                            @(r.RentalType == RentalType.Overnight
+                                ? r.CheckInDate.ToString("HH:mm dd/MM")
+                                : r.CheckInDate.ToString("dd/MM/yyyy"))
                         </td>
                         @* Đơn thuê giờ chưa có giờ đi — in một mốc tạm ở đây thì lễ tân sẽ tưởng
                            đó là hạn khách phải trả phòng và đi nhắc khách sai. *@

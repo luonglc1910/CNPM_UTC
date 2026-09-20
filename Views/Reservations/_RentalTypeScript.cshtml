@@ -1,11 +1,13 @@
 @model ReservationFormViewModel
 @*
-    Đổi kiểu hai ô thời gian theo hình thức thuê (BR-13) — SCR-C04/C06.
+    Đổi nhãn và ẩn hiện ô thời gian theo hình thức thuê (BR-13) — SCR-C04/C06.
 
-    Ba hình thức cần ba kiểu nhập khác nhau nhưng vẫn phải post về đúng một cặp trường
-    CheckInDate/CheckOutDate. Dựng ba cặp ô rồi ẩn hiện thì trình duyệt sẽ gửi cả ba, nên ở đây
-    chỉ có một cặp và JS đổi thuộc tính type, đồng thời đổi định dạng giá trị cho khớp
-    (date dùng yyyy-MM-dd, datetime-local dùng yyyy-MM-ddTHH:mm).
+    Cả ba hình thức chỉ nhập ngày, nhưng ý nghĩa khác nhau nên nhãn và câu giải thích phải đổi
+    theo: theo ngày cần cả ngày đến lẫn ngày đi, theo giờ chỉ cần ngày (đồng hồ chạy từ lúc
+    check-in), qua đêm chỉ cần biết là đêm ngày nào.
+
+    Dựng ba cặp ô rồi ẩn hiện thì trình duyệt vẫn gửi cả ba, nên ở đây chỉ có một cặp
+    CheckInDate/CheckOutDate dùng chung.
 *@
 <script>
     (function () {
@@ -29,22 +31,6 @@
             return (value || '').slice(0, 10);
         }
 
-        // Lấy giờ theo thứ tự: giờ đang có trong ô → giờ đã lưu của đơn (data-datetime) → giờ mặc định.
-        //
-        // Nấc giữa là bắt buộc: khi mở lại một đơn thuê giờ để sửa, máy chủ dựng ô ở dạng date nên
-        // giá trị ban đầu chỉ có phần ngày. Thiếu nấc này thì 09:00 của đơn lặng lẽ thành 12:00
-        // ngay khi trang vừa tải, và người sửa không hề biết giờ đã bị đổi.
-        function toDateTime(el, fallbackHour) {
-            const value = el.value;
-            const d = datePart(value);
-            if (!d) { return ''; }
-
-            const inField = (value || '').length > 10 ? value.slice(11, 16) : null;
-            const saved = (el.dataset.datetime || '').length > 10 ? el.dataset.datetime.slice(11, 16) : null;
-
-            return d + 'T' + (inField || lastHourlyTime || saved || (pad(fallbackHour) + ':00'));
-        }
-
         function addDays(isoDate, days) {
             const d = new Date(isoDate + 'T00:00:00');
             d.setDate(d.getDate() + days);
@@ -59,31 +45,20 @@
                 + ' → ' + pad(overnightEnd) + ':00 ngày ' + next[2] + '/' + next[1];
         }
 
-        // Giờ người dùng vừa gõ ở chế độ theo giờ. Đổi sang "theo ngày" làm ô về kiểu date và mất
-        // phần giờ, nên phải nhớ lại ở đây — không thì quay lại thuê giờ là giờ vừa gõ biến mất.
-        let lastHourlyTime = null;
-
-        function rememberHourlyTime() {
-            if (checkIn.type === 'datetime-local' && (checkIn.value || '').length > 10) {
-                lastHourlyTime = checkIn.value.slice(11, 16);
-            }
-        }
-
         function apply(type) {
-            rememberHourlyTime();
 
             // Tính giá trị mới TRƯỚC khi đổi type. Trình duyệt xóa sạch value ngay khi kiểu ô đổi
             // (giá trị cũ không hợp lệ với kiểu mới), nên đọc sau khi đổi thì chỉ còn chuỗi rỗng
             // và ô mất luôn ngày giờ đang có.
             if (type === HOURLY) {
-                // Không có ô giờ đi: thuê theo giờ thì giờ đi là giờ khách thật sự trả phòng,
-                // biết trước được thì đã không phải là thuê theo giờ.
-                const inValue = toDateTime(checkIn, 12);
-                checkIn.type = 'datetime-local';
-                checkIn.value = inValue;
+                // Thuê theo giờ không nhập giờ nào: đồng hồ chạy từ lúc check-in tới lúc trả phòng.
+                // Chỉ còn ô ngày, để lập được đơn cho hôm sau.
+                const dayValue = datePart(checkIn.value);
+                checkIn.type = 'date';
+                checkIn.value = dayValue;
                 checkOutCol.classList.add('d-none');
-                checkInLabel.innerHTML = 'Giờ đến <span class="text-danger">*</span>';
-                hint.textContent = 'Không nhập giờ đi — tiền phòng chốt theo giờ khách trả phòng.';
+                checkInLabel.innerHTML = 'Ngày <span class="text-danger">*</span>';
+                hint.textContent = 'Tính giờ từ lúc check-in đến lúc trả phòng — không nhập giờ ở đây.';
                 return;
             }
 

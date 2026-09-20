@@ -23,6 +23,17 @@
 
 @* Badge hàng trên — bấm để đổi view *@
 <div class="d-flex flex-wrap gap-3 mb-3" id="badge-bar">
+    @*
+        Việc cần làm ngay đứng trước các con số trạng thái: khách đã tới quầy mà lễ tân phải đi
+        tìm đơn ở màn khác mới check-in được thì bảng điều khiển không làm đúng việc của nó.
+    *@
+    <span class="badge @(Model.Arrivals.Count > 0 ? "text-bg-danger" : "text-bg-light text-dark")"
+          style="cursor:pointer"
+          data-panel="pending"
+          onclick="showPanel('pending')"
+          title="Đơn đã xác nhận, đến hôm nay, chưa check-in">
+        Chờ check-in: @Model.Arrivals.Count
+    </span>
     <span class="badge text-bg-success"
           style="cursor:pointer"
           data-panel="available"
@@ -65,6 +76,39 @@
           title="Đã check-out hôm nay">
         Đi: @Model.CheckedOutToday.Count
     </span>
+</div>
+
+@* Panel: Chờ check-in — đơn đến hôm nay chưa nhận phòng *@
+<div id="panel-pending" class="panel-section d-none">
+    <div class="card">
+        <div class="card-header fw-semibold">Chờ check-in (@Model.Arrivals.Count đơn)</div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr><th>Mã đơn</th><th>Khách</th><th>Điện thoại</th><th>Loại phòng</th><th class="text-center">Khách</th><th class="text-end">Thao tác</th></tr>
+                </thead>
+                <tbody>
+                @foreach (var a in Model.Arrivals)
+                {
+                    <tr>
+                        <td><code>@a.Code</code></td>
+                        <td>@a.GuestName</td>
+                        <td>@a.PhoneNumber</td>
+                        <td>@a.RoomTypeSummary</td>
+                        <td class="text-center">@a.Guests</td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary" asp-controller="Reservations" asp-action="Details" asp-route-id="@a.ReservationId">Chi tiết</a>
+                            <a class="btn btn-sm btn-primary" asp-action="CheckIn" asp-route-reservationId="@a.ReservationId">
+                                <i class="bi bi-box-arrow-in-right"></i> Check-in
+                            </a>
+                        </td>
+                    </tr>
+                }
+                @if (Model.Arrivals.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-4">Không còn đơn nào chờ nhận phòng.</td></tr> }
+                </tbody>
+            </table>
+        </div>
+    </div>
 </div>
 
 @* Panel: Đang ở (mặc định) *@
@@ -189,9 +233,11 @@
 
     window.showPanel = showPanel;
 
-    // Đọc ?panel= từ URL hoặc mặc định inhouse
+    // Đọc ?panel= từ URL. Không chỉ định thì mở thẳng việc đang chờ: còn đơn chưa nhận phòng
+    // thì đó mới là thứ lễ tân cần thấy đầu tiên, hết việc rồi mới xem danh sách đang ở.
     var params = new URLSearchParams(window.location.search);
-    var initial = params.get('panel') || 'inhouse';
+    var pendingCount = @Model.Arrivals.Count;
+    var initial = params.get('panel') || (pendingCount > 0 ? 'pending' : 'inhouse');
     showPanel(initial);
 })();
 </script>

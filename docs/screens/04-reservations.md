@@ -147,7 +147,7 @@ phòng sắp chuyển sang `Dirty`.
 | Hình thức | Ô nhập | Giá trị hệ thống lưu |
 |---|---|---|
 | Theo ngày | Ngày đến `*`, ngày đi `*` | ngày đến + giờ nhận chuẩn → ngày đi + giờ trả chuẩn; tính **số đêm** (BR-02) |
-| Theo giờ | **Chỉ giờ đến** `*` (ngày + giờ) | giờ đến đúng như nhập; **không có ô giờ đi** — giờ đi là giờ khách thật sự trả phòng |
+| Theo giờ | **Chỉ ngày** `*` — không có ô giờ nào | mốc kỹ thuật một giờ; tiền tính từ **giờ check-in** đến giờ trả phòng |
 | Qua đêm | **Đêm ngày** `*` | 22:00 ngày đó → 10:00 hôm sau, hai mốc lấy từ cấu hình |
 
 - Bảng dòng phòng, **thêm được nhiều dòng** (FR-C03): mỗi dòng gồm loại phòng · phòng cụ thể

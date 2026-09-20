@@ -332,9 +332,11 @@ public class ReservationService : IReservationService
             EstimatedRemaining = r.EstimatedTotal,
             CanEdit = EditableStatuses.Contains(r.Status),
             CanTakeDeposit = false,
-            CanCheckIn = r.Status == ReservationStatus.Confirmed && r.CheckInDate <= today,
+            // Mốc nhận phòng mang giờ thật (BR-13) nên phải so với đầu ngày mai; so với đầu hôm nay
+            // thì đơn của chính hôm nay bị loại và nút Check-in biến mất.
+            CanCheckIn = r.Status == ReservationStatus.Confirmed && r.CheckInDate < today.AddDays(1),
             CanCancel = EditableStatuses.Contains(r.Status),
-            CanMarkNoShow = r.Status == ReservationStatus.Confirmed && r.CheckInDate <= today
+            CanMarkNoShow = r.Status == ReservationStatus.Confirmed && r.CheckInDate < today.AddDays(1)
         };
     }
 
@@ -536,8 +538,10 @@ public class ReservationService : IReservationService
         var now = DateTime.Now;
         var today = now.Date;
 
+        var tomorrow = today.AddDays(1);
+
         var candidates = await _db.Reservations.AsNoTracking()
-            .Where(r => r.Status == ReservationStatus.Confirmed && r.CheckInDate <= today)
+            .Where(r => r.Status == ReservationStatus.Confirmed && r.CheckInDate < tomorrow)
             .Include(r => r.PrimaryGuest)
             .Include(r => r.Rooms).ThenInclude(rr => rr.RoomType)
             .OrderBy(r => r.CheckInDate)
@@ -838,7 +842,9 @@ public class ReservationService : IReservationService
         var depositPaid = r.Deposits.Where(d => d.Status == DepositStatus.Held).Sum(d => d.Amount);
         var settings = await _settings.GetPricingSettingsAsync();
 
-        var arrival = r.CheckInDate.Date.Add(settings.StandardCheckInTime.ToTimeSpan());
+        // CheckInDate nay đã mang giờ thật của đúng hình thức thuê (BR-13) — ghép lại giờ nhận
+        // chuẩn vào đây sẽ ghi đè 22:00 của gói qua đêm thành 14:00 và tính sai số giờ trước khi đến.
+        var arrival = r.CheckInDate;
         var hours = (arrival - DateTime.Now).TotalHours;
 
         var fee = waive ? 0m : _pricing.CancellationFee(depositPaid, hours, settings);

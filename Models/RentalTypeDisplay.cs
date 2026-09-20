@@ -35,9 +35,9 @@ public static class RentalTypeDisplay
     public static string SpanText(this RentalType type, System.DateTime checkIn, System.DateTime checkOut, int nights, int hours)
         => type switch
         {
-            // Đơn thuê giờ chưa có giờ đi — nói thẳng ra thay vì in một mốc tạm mà người đọc
-            // sẽ tưởng là giờ khách phải trả phòng.
-            RentalType.Hourly => $"từ {checkIn:HH\\:mm dd/MM} — giờ đi chốt lúc trả phòng",
+            // Đơn thuê giờ không có mốc giờ nào thật: đồng hồ chạy từ lúc check-in tới lúc trả
+            // phòng. In một mốc giờ ra đây thì người đọc sẽ tưởng đó là giờ đã hẹn với khách.
+            RentalType.Hourly => $"ngày {checkIn:dd/MM/yyyy} — tính giờ từ lúc check-in đến lúc trả phòng",
             RentalType.Overnight => $"{checkIn:HH\\:mm dd/MM} → {checkOut:HH\\:mm dd/MM}",
             _ => $"{checkIn:dd/MM/yyyy} → {checkOut:dd/MM/yyyy} ({nights} đêm)"
         };

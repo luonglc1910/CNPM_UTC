@@ -78,8 +78,13 @@ public class FrontDeskService : IFrontDeskService
         var settings = await _settings.GetPricingSettingsAsync();
         var noonToday = today.Add(settings.StandardCheckOutTime.ToTimeSpan());
 
+        // So với đầu ngày mai chứ không với đầu hôm nay: từ BR-13 mốc nhận phòng mang giờ thật
+        // (14:00 cho thuê theo ngày, 22:00 cho gói qua đêm), nên "<= today" tức là <= 00:00 hôm nay
+        // sẽ loại sạch đơn của chính hôm nay và bảng khách đến trống trơn.
+        var tomorrow = today.AddDays(1);
+
         var arrivals = await _db.Reservations.AsNoTracking()
-            .Where(r => r.Status == ReservationStatus.Confirmed && r.CheckInDate <= today)
+            .Where(r => r.Status == ReservationStatus.Confirmed && r.CheckInDate < tomorrow)
             .Include(r => r.PrimaryGuest)
             .Include(r => r.Rooms).ThenInclude(rr => rr.RoomType)
             .Include(r => r.Deposits)
@@ -213,6 +218,7 @@ public class FrontDeskService : IFrontDeskService
             CheckOutDate = r.CheckOutDate,
             Nights = r.Nights,
             DepositPaid = r.Deposits.Where(d => d.Status == DepositStatus.Held).Sum(d => d.Amount),
+            RentalType = r.RentalType,
             Rooms = new List<CheckInRoomAssignment>()
         };
 

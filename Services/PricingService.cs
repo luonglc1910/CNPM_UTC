@@ -95,7 +95,7 @@ public record RentalPeriod(RentalType Type, DateTime CheckIn, DateTime CheckOut,
     /// <summary>Mô tả khoảng thuê để in lên dòng tiền phòng và màn hình chi tiết.</summary>
     public string SpanText => Type switch
     {
-        RentalType.Hourly => $"từ {CheckIn:HH\\:mm dd/MM}, tính giờ khi trả phòng",
+        RentalType.Hourly => $"ngày {CheckIn:dd/MM/yyyy}, tính giờ từ lúc check-in",
         RentalType.Overnight => $"qua đêm {CheckIn:HH\\:mm dd/MM} → {CheckOut:HH\\:mm dd/MM}",
         _ => $"{Nights} đêm"
     };
@@ -259,17 +259,15 @@ public class PricingService : IPricingService
         {
             case RentalType.Hourly:
             {
-                // Bỏ phần giây: ô datetime-local chỉ cho tới phút, giữ giây chỉ làm hóa đơn
-                // lệch một giờ ở sát ngưỡng làm tròn mà không ai giải thích được.
-                var checkIn = TrimToMinute(rawCheckIn);
+                // Thuê theo giờ không nhập giờ nào cả: đồng hồ chạy từ lúc check-in và dừng lúc
+                // trả phòng. Người lập đơn chọn ngày, hệ thống chỉ cần một mốc để chống trùng lịch,
+                // nên lấy đúng thời điểm lập đơn nếu là hôm nay, còn đơn cho ngày khác thì lấy
+                // đầu ngày đó. Cả hai chỉ là mốc tạm — tiền tính từ giờ check-in thật.
+                var now = TrimToMinute(DateTime.Now);
+                var checkIn = rawCheckIn.Date == now.Date ? now : rawCheckIn.Date;
 
-                // Thuê theo giờ không có giờ đi: khách ở bao lâu thì lúc trả phòng mới biết, và đó
-                // chính là điểm khác của hình thức này. Giá trị lưu ở đây chỉ là mốc tạm một giờ —
-                // đúng bằng mức tối thiểu phải trả — để phần chống trùng lịch và lưới tình trạng
-                // phòng vẫn có hai đầu mà so sánh. Số thật được chốt ở màn trả phòng.
-                var provisionalEnd = checkIn.AddHours(1);
-
-                return (new RentalPeriod(type, checkIn, provisionalEnd, Nights: 0, Hours: 1), null);
+                // Mốc kết thúc tạm bằng đúng mức tối thiểu phải trả là một giờ.
+                return (new RentalPeriod(type, checkIn, checkIn.AddHours(1), Nights: 0, Hours: 1), null);
             }
 
             case RentalType.Overnight:

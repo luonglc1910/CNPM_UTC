@@ -105,6 +105,9 @@ public class CheckInViewModel
     public int Nights { get; set; }
     public decimal DepositPaid { get; set; }
 
+    /// <summary>Hình thức thuê của đơn — BR-13. Quyết định ý nghĩa của giờ nhận phòng bên dưới.</summary>
+    public RentalType RentalType { get; set; }
+
     [Display(Name = "Đã đối chiếu giấy tờ tùy thân")]
     public bool IdVerified { get; set; }
 

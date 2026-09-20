@@ -82,10 +82,16 @@ Thanh chỉ số đầu trang vẫn đếm đủ Trống / Đang ở / Chờ d�
 | Dòng | Nội dung |
 |---|---|
 | Giờ nhận phòng thực tế | Mặc định thời điểm hiện tại, sửa được |
-| Phụ thu nhận phòng sớm | Tự tính nếu trước 14:00 theo BR-03, hiện rõ mức % |
-| Tiền phòng dự kiến | Giá/đêm đã chốt × số đêm (BR-02) |
-| Phụ thu thêm người | Nếu có |
-| Đã cọc | Trừ ra khi thanh toán, không thu lại ở đây |
+| Phụ thu nhận phòng sớm | Tự tính nếu trước 14:00 theo BR-03, hiện rõ mức % — **chỉ thuê theo ngày** |
+| Tiền phòng dự kiến | Theo hình thức thuê (BR-13): giá/đêm × số đêm · gói qua đêm · hoặc tối thiểu một giờ |
+| Phụ thu thêm người | Nếu có — **chỉ thuê theo ngày** |
+
+Với **thuê theo giờ** (BR-13), ô "Giờ nhận phòng thực tế" đổi nhãn thành **"Giờ bắt đầu tính tiền"**
+kèm cảnh báo vàng: đồng hồ chạy từ mốc này tới lúc trả phòng. Đơn thuê giờ không có giờ hẹn
+trước, nên đây là mốc duy nhất quyết định số tiền — sửa nhầm một tiếng là hóa đơn lệch một giờ.
+Thuê theo giờ cũng không có phụ thu nhận sớm / trả trễ.
+
+Với **gói qua đêm**, ô ghi chú nhắc lại khung giờ trọn gói và việc ở quá thì thu thêm theo giờ.
 
 ### Luồng xử lý khi nhấn "Xác nhận check-in" (một transaction)
 1. Kiểm tra lại: đơn còn `Confirmed`, phòng còn `Available`, đã tích đối chiếu giấy tờ (BR-07).
@@ -268,11 +274,12 @@ Giờ trả thực tế:     [16:30]   ← mặc định giờ hiện tại, s�
 
 *Theo giờ*
 ```
-Nhận lúc 08:00 21/09 · giờ trả quyết định số tiền
-Giờ trả thực tế: [10:35]
-→ Ở 2 giờ 35 phút — lẻ 35 phút quá 20 phút nên tính tròn 3 giờ
+Nhận lúc 09:00 21/09 · giờ trả quyết định số tiền
+Giờ trả thực tế: [12:10]
+→ Ở 3 giờ 10 phút — lẻ 10 phút không quá 20 phút nên tính 3 giờ
 → Tiền phòng 120.000 + 2 × 20.000 = 160.000 ₫
 ```
+- Mốc bắt đầu là **giờ check-in**, không phải một giờ hẹn trước nào — đơn thuê giờ không nhập giờ.
 - Đây là hình thức duy nhất mà **tiền phòng đổi theo giờ bấm nút**, nên dòng tiền phòng trên
   folio được **ghi đè** chứ không cộng thêm dòng chênh lệch.
 - Không có phụ thu nhận sớm / trả trễ — hai mốc 14:00 và 12:00 vô nghĩa với thuê giờ.
