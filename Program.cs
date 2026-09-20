@@ -27,6 +27,14 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
 
 var app = builder.Build();
 
+// Áp migration còn thiếu và nạp dữ liệu khởi tạo (NFR-08).
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<HotelDbContext>();
+    await db.Database.MigrateAsync();
+    await DbInitializer.SeedAsync(db);
+}
+
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Home/Error");
