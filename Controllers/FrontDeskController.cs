@@ -69,7 +69,7 @@ public class FrontDeskController : AdminControllerBase
             return View(form);
         }
 
-        TempData["Success"] = result.Message;
+        SetMessage(result);
         return RedirectToAction(nameof(Stay), new { id = stayId });
     }
 

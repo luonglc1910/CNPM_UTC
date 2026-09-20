@@ -414,6 +414,8 @@ public class FrontDeskService : IFrontDeskService
         var settings = await _settings.GetPricingSettingsAsync();
         var nights = _pricing.CountNights(checkIn, form.ExpectedCheckOut);
 
+        string? guestWarning = null;
+
         var stayId = await _tx.ExecuteAsync(async () =>
         {
             int guestId;
@@ -423,17 +425,14 @@ public class FrontDeskService : IFrontDeskService
             }
             else
             {
-                var guest = new Guest
+                (guestId, guestWarning) = await ResolveGuestAsync(new Guest
                 {
                     FullName = form.FullName!.Trim(),
                     IdType = form.IdType,
                     IdNumber = form.IdNumber!.Trim(),
                     PhoneNumber = form.PhoneNumber!.Trim(),
                     Nationality = string.IsNullOrWhiteSpace(form.Nationality) ? "Việt Nam" : form.Nationality.Trim()
-                };
-                _db.Guests.Add(guest);
-                await _db.SaveChangesAsync();
-                guestId = guest.Id;
+                });
             }
 
             var stay = new Stay
@@ -498,7 +497,7 @@ public class FrontDeskService : IFrontDeskService
             return stay.Id;
         });
 
-        return (ServiceResult.Ok(message: "Đã check-in khách vãng lai."), stayId);
+        return (ServiceResult.Ok(warning: guestWarning, message: "Đã check-in khách vãng lai."), stayId);
     }
 
     // ---------- SCR-D04 ----------
@@ -590,20 +589,20 @@ public class FrontDeskService : IFrontDeskService
 
         await _tx.ExecuteAsync(async () =>
         {
-            var guest = new Guest
+            var (guestId, guestWarning) = await ResolveGuestAsync(new Guest
             {
                 FullName = form.FullName.Trim(),
                 IdType = form.IdType,
                 IdNumber = form.IdNumber?.Trim() ?? string.Empty,
                 Nationality = string.IsNullOrWhiteSpace(form.Nationality) ? "Việt Nam" : form.Nationality.Trim()
-            };
-            _db.Guests.Add(guest);
-            await _db.SaveChangesAsync();
+            });
+
+            warning = Join(warning, guestWarning);
 
             _db.StayGuests.Add(new StayGuest
             {
                 StayId = stay.Id,
-                GuestId = guest.Id,
+                GuestId = guestId,
                 IsPrimary = false,
                 IsChild = form.IsChild
             });
@@ -625,7 +624,7 @@ public class FrontDeskService : IFrontDeskService
                     Amount = fee,
                     ChargedAt = DateTime.Now
                 });
-                warning = $"Vượt sức chứa chuẩn — đã thêm phụ thu {fee:N0} ₫.";
+                warning = Join(warning, $"Vượt sức chứa chuẩn — đã thêm phụ thu {fee:N0} ₫.");
             }
 
             _audit.Log("AddStayGuest", nameof(Stay), stay.Id.ToString(), newValue: form.FullName.Trim());
@@ -985,5 +984,55 @@ public class FrontDeskService : IFrontDeskService
         }
 
         return list;
+    }
+
+    /// <summary>
+    /// Lấy hồ sơ khách theo số giấy tờ, tạo mới nếu chưa có — SCR-D03, SCR-D05.
+    ///
+    /// Số giấy tờ là duy nhất toàn hệ thống (IX_Guests_IdNumber, lọc bỏ chuỗi rỗng). Hai màn
+    /// hình này trước đây tạo thẳng Guest mới, nên lễ tân gõ đúng CCCD của một khách đã có hồ sơ
+    /// là vỡ unique index và văng ra trang lỗi giữa lúc khách đứng chờ ở quầy.
+    ///
+    /// Khách cũ quay lại là chuyện bình thường — SCR-D03 mô tả ô nhập này là "tìm nhanh theo
+    /// CCCD/SĐT (khách cũ quay lại) hoặc nhập mới" — nên dùng lại hồ sơ đang có thay vì bắt
+    /// người dùng quay ra chọn từ danh sách.
+    /// </summary>
+    private async Task<(int GuestId, string? Warning)> ResolveGuestAsync(Guest draft)
+    {
+        // Chuẩn hóa giống GuestService để hai đường tạo khách không sinh ra hai dạng viết khác nhau
+        // của cùng một số giấy tờ.
+        draft.IdNumber = draft.IdNumber.Trim().ToUpperInvariant();
+
+        if (draft.IdNumber.Length > 0)
+        {
+            var existing = await _db.Guests.AsNoTracking()
+                .Where(g => g.IdNumber == draft.IdNumber)
+                .Select(g => new { g.Id, g.FullName })
+                .FirstOrDefaultAsync();
+
+            if (existing is not null)
+            {
+                // Tên gõ vào khác tên đang lưu thì phải nói ra: rất có thể gõ nhầm số giấy tờ
+                // của người khác, mà im lặng gắn lượt ở vào hồ sơ sai thì sau này không lần ra.
+                var warning = string.Equals(existing.FullName, draft.FullName, StringComparison.OrdinalIgnoreCase)
+                    ? null
+                    : $"Số giấy tờ {draft.IdNumber} đã thuộc hồ sơ \"{existing.FullName}\". "
+                      + "Đã dùng hồ sơ có sẵn thay vì tạo mới — kiểm tra lại nếu đây không phải cùng một người.";
+
+                return (existing.Id, warning);
+            }
+        }
+
+        _db.Guests.Add(draft);
+        await _db.SaveChangesAsync();
+        return (draft.Id, null);
+    }
+
+    /// <summary>Nối hai cảnh báo thành một dòng; bỏ qua vế rỗng.</summary>
+    private static string? Join(string? first, string? second)
+    {
+        if (string.IsNullOrWhiteSpace(first)) return second;
+        if (string.IsNullOrWhiteSpace(second)) return first;
+        return first + " " + second;
     }
 }

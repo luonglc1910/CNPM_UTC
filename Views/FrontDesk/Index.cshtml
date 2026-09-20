@@ -99,10 +99,10 @@
                 <div class="border rounded p-2 text-center" style="width: 5.5rem">
                     <div class="fw-semibold">@r.RoomNumber</div>
                     <span class="badge @r.Status.ToBadgeClass()">@r.Status.ToDisplayName()</span>
-                    @if (r.Status == RoomStatus.Available)
-                    {
-                        <a class="d-block small mt-1" asp-action="WalkIn">Walk-in</a>
-                    }
+                    @* @if (r.Status == RoomStatus.Available) *@
+                    @* { *@
+                    @*     <a class="d-block small mt-1" asp-action="WalkIn">Walk-in</a> *@
+                    @* } *@
                 </div>
             }
         </div></div>
