@@ -1,9 +1,127 @@
+@model RoomTypeIndexViewModel
 @{
     ViewData["Title"] = "Loại phòng";
+    var isAdmin = User.IsInRole(Roles.Admin);
 }
 
-<div class="d-flex justify-content-end mb-3">
-    <a class="btn btn-primary" asp-action="Create">Thêm loại phòng</a>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+        <div>
+            <label asp-for="Keyword" class="form-label mb-1 small text-muted"></label>
+            <input asp-for="Keyword" class="form-control form-control-sm" style="min-width: 220px"
+                   placeholder="VD: DLX hoặc Deluxe" />
+        </div>
+        <div class="form-check mb-2">
+            <input asp-for="IncludeInactive" class="form-check-input" />
+            <label asp-for="IncludeInactive" class="form-check-label small"></label>
+        </div>
+        <button type="submit" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="bi bi-search"></i> Tìm
+        </button>
+        @if (!string.IsNullOrWhiteSpace(Model.Keyword) || Model.IncludeInactive)
+        {
+            <a class="btn btn-link btn-sm mb-2" asp-action="Index">Bỏ lọc</a>
+        }
+    </form>
+
+    @* Chặn ở server bằng [Authorize] rồi, đây chỉ là phần trải nghiệm (00-conventions mục 2). *@
+    @if (isAdmin)
+    {
+        <a class="btn btn-primary" asp-action="Create">
+            <i class="bi bi-plus-lg"></i> Thêm loại phòng
+        </a>
+    }
 </div>
 
-<partial name="_Placeholder" model="@("Danh sách loại phòng: tên, giá theo đêm, sức chứa, tiện nghi.")" />
+@if (Model.Results.TotalItems == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        @if (string.IsNullOrWhiteSpace(Model.Keyword))
+        {
+            <p class="mb-1">Chưa có loại phòng nào.</p>
+            @if (isAdmin)
+            {
+                <p class="mb-0 small">Nhấn <strong>Thêm loại phòng</strong> để bắt đầu.</p>
+            }
+        }
+        else
+        {
+            <p class="mb-0">Không tìm thấy loại phòng khớp với "<strong>@Model.Keyword</strong>".</p>
+        }
+    </div></div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã</th>
+                        <th>Tên loại phòng</th>
+                        <th class="text-center">Sức chứa</th>
+                        <th class="text-end">Giá / đêm</th>
+                        <th class="text-end">Phí thêm người</th>
+                        <th class="text-center">Số phòng</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Results.Items)
+                {
+                    <tr class="@(item.IsActive ? "" : "opacity-50")">
+                        <td><code>@item.Code</code></td>
+                        <td>@item.Name</td>
+                        <td class="text-center">@item.StandardCapacity / @item.MaxCapacity</td>
+                        <td class="text-end">@item.BasePricePerNight.ToString("N0") ₫</td>
+                        <td class="text-end">@item.ExtraGuestFeePerNight.ToString("N0") ₫</td>
+                        <td class="text-center">@item.ActiveRoomCount</td>
+                        <td class="text-center">
+                            @if (item.IsActive)
+                            {
+                                <span class="badge text-bg-success">Đang dùng</span>
+                            }
+                            else
+                            {
+                                <span class="badge text-bg-secondary">Ngừng dùng</span>
+                            }
+                        </td>
+                        <td class="text-end text-nowrap">
+                            @if (isAdmin)
+                            {
+                                <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@item.Id"
+                                   title="Sửa"><i class="bi bi-pencil"></i></a>
+
+                                @if (item.CanDeactivate)
+                                {
+                                    <form method="post" asp-action="Deactivate" asp-route-id="@item.Id"
+                                          class="d-inline"
+                                          onsubmit="return confirm('Ngừng sử dụng loại phòng @item.Code?');">
+                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Ngừng sử dụng">
+                                            <i class="bi bi-slash-circle"></i>
+                                        </button>
+                                    </form>
+                                }
+                                else if (item.IsActive)
+                                {
+                                    <button class="btn btn-sm btn-outline-danger" disabled
+                                            title="Còn @item.ActiveRoomCount phòng đang hoạt động thuộc loại này">
+                                        <i class="bi bi-slash-circle"></i>
+                                    </button>
+                                }
+                            }
+                            else
+                            {
+                                <span class="text-muted small">Chỉ xem</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" />
+}

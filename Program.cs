@@ -3,8 +3,8 @@ using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.WebEncoders;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
@@ -23,6 +23,20 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditService, AuditService>();
 // Menu trái hỏi dịch vụ này để biết mục nào được hiện — xem Security/ScreenAccess.cs.
 builder.Services.AddScoped<IScreenAccess, ScreenAccess>();
+
+// Nghiệp vụ danh mục.
+builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<ISettingsService, SettingsService>();
+
+// Nghiệp vụ khách hàng.
+builder.Services.AddScoped<IGuestService, GuestService>();
+
+// Đối chiếu cookie đăng nhập với bản ghi nhân viên ở mỗi request — xem Security/EmployeeCookieEvents.cs.
+builder.Services.AddScoped<EmployeeCookieEvents>();
 
 // Giữ nguyên ký tự tiếng Việt trong HTML thay vì mã hóa thành &#x...;
 builder.Services.Configure<WebEncoderOptions>(options =>
@@ -48,18 +62,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.Cookie.IsEssential = true;
 
-        // Phân biệt "hết phiên" với "chưa từng đăng nhập": còn cookie mà vẫn bị từ chối
-        // nghĩa là phiên đã hết hạn (00-conventions.md mục 2).
-        options.Events.OnRedirectToLogin = context =>
-        {
-            if (context.Request.Cookies.ContainsKey("HotelAuth"))
-            {
-                context.RedirectUri = QueryHelpers.AddQueryString(context.RedirectUri, "expired", "1");
-            }
-
-            context.Response.Redirect(context.RedirectUri);
-            return Task.CompletedTask;
-        };
+        // Toàn bộ sự kiện nằm trong EmployeeCookieEvents: vừa xử lý chuyển hướng khi hết phiên,
+        // vừa đối chiếu vai trò/trạng thái trong cookie với DB ở mỗi request (SCR-A10, SCR-A11).
+        // Phải dùng EventsType vì lớp đó cần DbContext, tức là phải lấy từ DI theo từng request.
+        options.EventsType = typeof(EmployeeCookieEvents);
     });
 
 // Mặc định mọi endpoint đều phải đăng nhập; trang công khai phải tự đánh [AllowAnonymous].
@@ -89,6 +95,18 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// File người dùng tải lên lúc chạy (logo khách sạn — SCR-A12) không nằm trong manifest của
+// MapStaticAssets vốn chỉ biết những file có sẵn lúc build, nên phải phục vụ bằng middleware
+// tĩnh riêng. Chỉ mở đúng thư mục uploads, không mở cả wwwroot lần nữa.
+var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
+Directory.CreateDirectory(uploadsPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
+
 app.UseRouting();
 
 app.UseAuthentication();

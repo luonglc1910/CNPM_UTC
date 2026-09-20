@@ -1,0 +1,109 @@
+@model RoomTypeFormViewModel
+@* Form dùng chung cho Thêm và Sửa — SCR-A02. *@
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+<input type="hidden" asp-for="Id" />
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <label asp-for="Code" class="form-label">Mã loại phòng <span class="text-danger">*</span></label>
+        @if (Model.IsEdit)
+        {
+            @* Mã không sửa được sau khi tạo; hiển thị khóa và gửi kèm để form không mất giá trị. *@
+            <input asp-for="Code" class="form-control" readonly />
+            <input type="hidden" asp-for="Code" />
+            <div class="form-text">Mã loại phòng không thay đổi được sau khi tạo.</div>
+        }
+        else
+        {
+            <input asp-for="Code" class="form-control text-uppercase" placeholder="VD: DLX" autofocus />
+            <div class="form-text">2–10 ký tự, chỉ chữ in hoa và số.</div>
+        }
+        <span asp-validation-for="Code" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-8">
+        <label asp-for="Name" class="form-label">Tên loại phòng <span class="text-danger">*</span></label>
+        <input asp-for="Name" class="form-control" placeholder="VD: Deluxe hướng hồ" />
+        <span asp-validation-for="Name" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="StandardCapacity" class="form-label">Sức chứa chuẩn <span class="text-danger">*</span></label>
+        <input asp-for="StandardCapacity" class="form-control" type="number" min="1" max="10" />
+        <div class="form-text">Vượt mức này sẽ tính phụ thu thêm người.</div>
+        <span asp-validation-for="StandardCapacity" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="MaxCapacity" class="form-label">Sức chứa tối đa <span class="text-danger">*</span></label>
+        <input asp-for="MaxCapacity" class="form-control" type="number" min="1" max="10" />
+        <div class="form-text">Vượt mức này thì không cho nhận phòng.</div>
+        <span asp-validation-for="MaxCapacity" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="BasePricePerNight" class="form-label">Giá / đêm (₫) <span class="text-danger">*</span></label>
+        <input asp-for="BasePricePerNight" class="form-control" type="number" min="0" step="1000" />
+        <span asp-validation-for="BasePricePerNight" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="ExtraGuestFeePerNight" class="form-label"></label>
+        <input asp-for="ExtraGuestFeePerNight" class="form-control" type="number" min="0" step="1000" />
+        <span asp-validation-for="ExtraGuestFeePerNight" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="ExtraBedFeePerNight" class="form-label"></label>
+        <input asp-for="ExtraBedFeePerNight" class="form-control" type="number" min="0" step="1000" />
+        <span asp-validation-for="ExtraBedFeePerNight" class="text-danger small"></span>
+    </div>
+
+    <div class="col-12">
+        <label class="form-label">Tiện nghi</label>
+        <div class="d-flex flex-wrap gap-3">
+            @foreach (var amenity in RoomTypeFormViewModel.AmenityOptions)
+            {
+                var checkedAttr = Model.SelectedAmenities.Contains(amenity);
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" name="SelectedAmenities"
+                           value="@amenity" id="amenity-@amenity.GetHashCode()" checked="@checkedAttr" />
+                    <label class="form-check-label" for="amenity-@amenity.GetHashCode()">@amenity</label>
+                </div>
+            }
+        </div>
+    </div>
+
+    <div class="col-12">
+        <label asp-for="Description" class="form-label"></label>
+        <textarea asp-for="Description" class="form-control" rows="2"></textarea>
+        <span asp-validation-for="Description" class="text-danger small"></span>
+    </div>
+
+    @if (Model.IsEdit)
+    {
+        <div class="col-12">
+            <div class="form-check">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label"></label>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="alert alert-info mb-0 small">
+                <i class="bi bi-info-circle"></i>
+                Sửa giá <strong>không ảnh hưởng hồi tố</strong>: các lượt lưu trú đang mở đã chốt giá
+                lúc check-in (BR-02). Giá mới chỉ áp cho lượt lưu trú tạo sau đây.
+            </div>
+        </div>
+    }
+</div>
+
+<div class="mt-4 d-flex gap-2">
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg"></i> @(Model.IsEdit ? "Cập nhật" : "Thêm loại phòng")
+    </button>
+    <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+</div>

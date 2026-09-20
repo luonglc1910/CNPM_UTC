@@ -1,0 +1,117 @@
+@model RoomStatusFormViewModel
+@{
+    ViewData["Title"] = $"Đổi trạng thái phòng {Model.RoomNumber}";
+}
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-body">
+                <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                <p class="mb-3">
+                    Phòng <strong>@Model.RoomNumber</strong> đang ở trạng thái
+                    <partial name="_RoomStatusBadge" model="Model.CurrentStatus" />
+                </p>
+
+                @if (Model.AllowedStatuses.Count == 0)
+                {
+                    @* Occupied là trường hợp duy nhất không có chuyển đổi thủ công nào (SCR-A05). *@
+                    <div class="alert alert-warning mb-0">
+                        <i class="bi bi-lock"></i>
+                        Phòng đang có khách nên không đổi trạng thái tay được. Trạng thái sẽ tự thay đổi
+                        khi <strong>check-out</strong> hoặc <strong>đổi phòng</strong>.
+                    </div>
+                    <a class="btn btn-outline-secondary mt-3" asp-action="Index">Quay lại</a>
+                }
+                else
+                {
+                    <form method="post" asp-action="UpdateStatus" asp-route-id="@Model.RoomId">
+                        <input type="hidden" asp-for="RoomId" />
+                        <input type="hidden" asp-for="RoomNumber" />
+                        <input type="hidden" asp-for="CurrentStatus" />
+
+                        <div class="mb-3">
+                            <label asp-for="NewStatus" class="form-label">
+                                Trạng thái mới <span class="text-danger">*</span>
+                            </label>
+                            <select asp-for="NewStatus" asp-items="Model.AllowedStatuses" class="form-select"
+                                    id="newStatus"></select>
+                            <div class="form-text">Chỉ liệt kê những trạng thái hợp lệ từ trạng thái hiện tại.</div>
+                            <span asp-validation-for="NewStatus" class="text-danger small"></span>
+                        </div>
+
+                        <div class="mb-3">
+                            <label asp-for="Reason" class="form-label">
+                                Lý do <span class="text-danger" id="reasonRequired">*</span>
+                            </label>
+                            <input asp-for="Reason" class="form-control"
+                                   placeholder="VD: hỏng điều hòa, cải tạo dài hạn" />
+                            <div class="form-text">
+                                Bắt buộc khi chuyển sang <strong>Bảo trì</strong> hoặc
+                                <strong>Ngừng khai thác</strong>.
+                            </div>
+                            <span asp-validation-for="Reason" class="text-danger small"></span>
+                        </div>
+
+                        <div class="alert alert-secondary small">
+                            <i class="bi bi-journal-text"></i>
+                            Mọi lần đổi trạng thái đều được ghi vào nhật ký thao tác: ai đổi, từ trạng thái nào
+                            sang trạng thái nào, vì lý do gì (BR-11).
+                        </div>
+
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-check-lg"></i> Xác nhận
+                            </button>
+                            <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+                        </div>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+
+    @if (Model.AffectedReservations.Count > 0)
+    {
+        <div class="col-lg-5">
+            <div class="alert alert-warning">
+                <div class="fw-semibold mb-1">
+                    <i class="bi bi-calendar-x"></i> Phòng còn @Model.AffectedReservations.Count đơn đặt sắp tới
+                </div>
+                <ul class="mb-0 small">
+                    @foreach (var code in Model.AffectedReservations)
+                    {
+                        <li>@code</li>
+                    }
+                </ul>
+                <hr />
+                <p class="mb-0 small">
+                    Chuyển sang Bảo trì hoặc Ngừng khai thác sẽ khiến phòng không bán được.
+                    Hệ thống <strong>không tự hủy đơn</strong> — cần xếp lại phòng cho các đơn trên.
+                </p>
+            </div>
+        </div>
+    }
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        // Chỉ là gợi ý trên giao diện; server vẫn kiểm tra lại lý do bắt buộc.
+        (function () {
+            var statusSelect = document.getElementById('newStatus');
+            var marker = document.getElementById('reasonRequired');
+            if (!statusSelect || !marker) return;
+
+            var needReason = ['@((int)RoomStatus.Maintenance)', '@((int)RoomStatus.OutOfService)'];
+
+            function sync() {
+                marker.style.display = needReason.indexOf(statusSelect.value) >= 0 ? '' : 'none';
+            }
+
+            statusSelect.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
+}

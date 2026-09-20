@@ -31,6 +31,9 @@ public static class SystemSettingKeys
     public const string HotelPhone = "Hotel.Phone";
     public const string HotelTaxCode = "Hotel.TaxCode";
 
+    /// <summary>Đường dẫn tương đối tới file logo trong wwwroot, rỗng = chưa có logo.</summary>
+    public const string HotelLogoPath = "Hotel.LogoPath";
+
     // Giờ chuẩn — BR-01
     public const string StandardCheckInTime = "CheckInOut.StandardCheckInTime";
     public const string StandardCheckOutTime = "CheckInOut.StandardCheckOutTime";
@@ -45,7 +48,17 @@ public static class SystemSettingKeys
     public const string LateCheckOut12To15Rate = "Surcharge.LateCheckOut12To15Rate";
     public const string LateCheckOut15To18Rate = "Surcharge.LateCheckOut15To18Rate";
 
+    /// <summary>Mốc giờ chia hai bậc nhận phòng sớm — mặc định 09:00.</summary>
+    public const string EarlyCheckInBoundaryHour = "Surcharge.EarlyCheckInBoundaryHour";
+
+    /// <summary>Mốc giờ kết thúc bậc trả trễ thứ nhất — mặc định 15:00.</summary>
+    public const string LateCheckOutTier1EndHour = "Surcharge.LateCheckOutTier1EndHour";
+
+    /// <summary>Trả sau mốc này thì tính thêm hẳn một đêm — mặc định 18:00.</summary>
+    public const string LateCheckOutFullNightHour = "Surcharge.LateCheckOutFullNightHour";
+
     // Cọc và hủy — BR-05
+    public const string DepositNights = "Cancellation.DepositNights";
     public const string HoldUntilHour = "Cancellation.HoldUntilHour";
     public const string CancelFeeOver48hRate = "Cancellation.Over48hRate";
     public const string CancelFee24To48hRate = "Cancellation.Between24And48hRate";
@@ -56,4 +69,10 @@ public static class SystemSettingKeys
     public const string ReceptionistMaxDiscountRate = "Limit.ReceptionistMaxDiscountRate";
     public const string LoyalGuestStayThreshold = "Limit.LoyalGuestStayThreshold";
     public const string ChildAgeLimit = "Limit.ChildAgeLimit";
+
+    /// <summary>
+    /// Công tắc tổng cho việc bán dịch vụ khi hết tồn — BR-12. Một dịch vụ chỉ bán âm được
+    /// khi bật cả tham số này lẫn cờ riêng của dịch vụ đó (SCR-A07).
+    /// </summary>
+    public const string AllowSellWhenOutOfStock = "Limit.AllowSellWhenOutOfStock";
 }

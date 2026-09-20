@@ -1,0 +1,413 @@
+@model SettingsViewModel
+@{
+    ViewData["Title"] = "Cấu hình hệ thống";
+
+    // Nhóm vừa lưu hoặc vừa lỗi sẽ được cuộn tới; mặc định lấy từ query khi quay lại sau redirect.
+    var active = Model.ActiveGroup ?? Context.Request.Query["group"].ToString();
+}
+
+@* Mỗi nhóm một form riêng: lưu nhóm này không đụng nhóm kia, và "Khôi phục mặc định"
+   cũng theo từng nhóm đúng như SCR-A12 yêu cầu. *@
+
+<div class="row g-3">
+
+    @* ---------- 1. Thông tin khách sạn ---------- *@
+    <div class="col-12" id="Hotel">
+        <div class="card @(active == "Hotel" ? "border-primary" : "")">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-building"></i> 1. Thông tin khách sạn</span>
+                <form method="post" asp-action="ResetGroup" asp-route-group="Hotel"
+                      onsubmit="return confirm('Khôi phục nhóm Thông tin khách sạn về mặc định?');">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Khôi phục mặc định
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="SaveHotel" enctype="multipart/form-data">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label asp-for="Hotel.Name" class="form-label">Tên khách sạn <span class="text-danger">*</span></label>
+                            <input asp-for="Hotel.Name" class="form-control" />
+                            <span asp-validation-for="Hotel.Name" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-6">
+                            <label asp-for="Hotel.Address" class="form-label">Địa chỉ <span class="text-danger">*</span></label>
+                            <input asp-for="Hotel.Address" class="form-control" />
+                            <span asp-validation-for="Hotel.Address" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Hotel.Phone" class="form-label">Điện thoại <span class="text-danger">*</span></label>
+                            <input asp-for="Hotel.Phone" class="form-control" />
+                            <span asp-validation-for="Hotel.Phone" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Hotel.TaxCode" class="form-label"></label>
+                            <input asp-for="Hotel.TaxCode" class="form-control" placeholder="VD: 0100000000" />
+                            <span asp-validation-for="Hotel.TaxCode" class="text-danger small"></span>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label">Logo (in trên hóa đơn)</label>
+                            <input type="file" name="logo" class="form-control" accept="image/png,image/jpeg,image/webp" />
+                            <div class="form-text">PNG / JPG / WEBP, tối đa 1 MB.</div>
+                            <span asp-validation-for="Hotel.LogoPath" class="text-danger small"></span>
+                            @if (ViewData.ModelState["logo"]?.Errors.Count > 0)
+                            {
+                                <span class="text-danger small">@ViewData.ModelState["logo"]!.Errors[0].ErrorMessage</span>
+                            }
+                        </div>
+
+                        @if (!string.IsNullOrWhiteSpace(Model.Hotel.LogoPath))
+                        {
+                            <div class="col-12 d-flex align-items-center gap-3">
+                                <img src="@Model.Hotel.LogoPath" alt="Logo khách sạn" style="max-height: 64px" />
+                                <div class="form-check">
+                                    <input class="form-check-input" type="checkbox" name="removeLogo" value="true" id="removeLogo" />
+                                    <label class="form-check-label small" for="removeLogo">Xóa logo hiện tại</label>
+                                </div>
+                            </div>
+                        }
+                    </div>
+
+                    <button type="submit" class="btn btn-primary mt-3">
+                        <i class="bi bi-check-lg"></i> Lưu nhóm này
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ---------- 2. Giờ chuẩn ---------- *@
+    <div class="col-lg-6" id="CheckInOut">
+        <div class="card h-100 @(active == "CheckInOut" ? "border-primary" : "")">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-clock"></i> 2. Giờ chuẩn <small class="text-muted">(BR-01)</small></span>
+                <form method="post" asp-action="ResetGroup" asp-route-group="CheckInOut"
+                      onsubmit="return confirm('Khôi phục nhóm Giờ chuẩn về mặc định?');">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Mặc định
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="SaveCheckInOut">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label asp-for="CheckInOut.StandardCheckInTime" class="form-label"></label>
+                            <input asp-for="CheckInOut.StandardCheckInTime" class="form-control" type="time" />
+                            <span asp-validation-for="CheckInOut.StandardCheckInTime" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="CheckInOut.StandardCheckOutTime" class="form-label"></label>
+                            <input asp-for="CheckInOut.StandardCheckOutTime" class="form-control" type="time" />
+                            <span asp-validation-for="CheckInOut.StandardCheckOutTime" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info small mt-3 mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Đổi giờ chuẩn <strong>chỉ áp cho lượt lưu trú mới</strong>. Các lượt đang mở giữ nguyên
+                        tham số đã chốt lúc check-in, để không đổi tiền của khách giữa chừng.
+                    </div>
+
+                    <button type="submit" class="btn btn-primary mt-3">
+                        <i class="bi bi-check-lg"></i> Lưu nhóm này
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ---------- 3. Thuế &amp; làm tròn ---------- *@
+    <div class="col-lg-6" id="Tax">
+        <div class="card h-100 @(active == "Tax" ? "border-primary" : "")">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-percent"></i> 3. Thuế &amp; làm tròn <small class="text-muted">(BR-04)</small></span>
+                <form method="post" asp-action="ResetGroup" asp-route-group="Tax"
+                      onsubmit="return confirm('Khôi phục nhóm Thuế &amp; làm tròn về mặc định?');">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Mặc định
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="SaveTax">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label asp-for="Tax.VatPercent" class="form-label"></label>
+                            <input asp-for="Tax.VatPercent" class="form-control" type="number" step="0.1" min="0" max="100" />
+                            <div class="form-text">Áp trên tiền phòng + dịch vụ + phụ thu − giảm giá.</div>
+                            <span asp-validation-for="Tax.VatPercent" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Tax.RoundingUnit" class="form-label"></label>
+                            <input asp-for="Tax.RoundingUnit" class="form-control" type="number" step="1000" min="1" />
+                            <div class="form-text">Làm tròn ở dòng tổng cuối cùng.</div>
+                            <span asp-validation-for="Tax.RoundingUnit" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary mt-3">
+                        <i class="bi bi-check-lg"></i> Lưu nhóm này
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ---------- 4. Phụ thu ---------- *@
+    <div class="col-12" id="Surcharge">
+        <div class="card @(active == "Surcharge" ? "border-primary" : "")">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-cash-stack"></i> 4. Phụ thu <small class="text-muted">(BR-03)</small></span>
+                <form method="post" asp-action="ResetGroup" asp-route-group="Surcharge"
+                      onsubmit="return confirm('Khôi phục nhóm Phụ thu về mặc định?');">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Khôi phục mặc định
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="SaveSurcharge">
+                    <div class="table-responsive">
+                        <table class="table align-middle mb-0">
+                            <thead class="table-light">
+                                <tr>
+                                    <th style="width: 25%">Loại phụ thu</th>
+                                    <th style="width: 35%">Điều kiện</th>
+                                    <th>Cách tính</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Nhận phòng sớm</td>
+                                    <td>
+                                        Check-in <strong>trước</strong>
+                                        <input asp-for="Surcharge.EarlyCheckInBoundaryHour" class="form-control d-inline-block"
+                                               type="number" min="0" max="23" style="width: 5rem" />
+                                        giờ
+                                        <span asp-validation-for="Surcharge.EarlyCheckInBoundaryHour" class="text-danger small d-block"></span>
+                                    </td>
+                                    <td>
+                                        <div class="input-group" style="max-width: 12rem">
+                                            <input asp-for="Surcharge.EarlyCheckInBeforeBoundaryPercent" class="form-control"
+                                                   type="number" step="1" min="0" max="100" />
+                                            <span class="input-group-text">% giá đêm</span>
+                                        </div>
+                                        <span asp-validation-for="Surcharge.EarlyCheckInBeforeBoundaryPercent" class="text-danger small"></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Nhận phòng sớm</td>
+                                    <td>Check-in từ mốc trên tới giờ nhận phòng chuẩn (@Model.CheckInOut.StandardCheckInTime)</td>
+                                    <td>
+                                        <div class="input-group" style="max-width: 12rem">
+                                            <input asp-for="Surcharge.EarlyCheckInToStandardPercent" class="form-control"
+                                                   type="number" step="1" min="0" max="100" />
+                                            <span class="input-group-text">% giá đêm</span>
+                                        </div>
+                                        <span asp-validation-for="Surcharge.EarlyCheckInToStandardPercent" class="text-danger small"></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Trả phòng trễ</td>
+                                    <td>
+                                        Trả từ giờ chuẩn (@Model.CheckInOut.StandardCheckOutTime) tới
+                                        <input asp-for="Surcharge.LateCheckOutTier1EndHour" class="form-control d-inline-block"
+                                               type="number" min="0" max="23" style="width: 5rem" />
+                                        giờ
+                                        <span asp-validation-for="Surcharge.LateCheckOutTier1EndHour" class="text-danger small d-block"></span>
+                                    </td>
+                                    <td>
+                                        <div class="input-group" style="max-width: 12rem">
+                                            <input asp-for="Surcharge.LateCheckOutTier1Percent" class="form-control"
+                                                   type="number" step="1" min="0" max="100" />
+                                            <span class="input-group-text">% giá đêm</span>
+                                        </div>
+                                        <span asp-validation-for="Surcharge.LateCheckOutTier1Percent" class="text-danger small"></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Trả phòng trễ</td>
+                                    <td>
+                                        Trả từ mốc trên tới
+                                        <input asp-for="Surcharge.LateCheckOutFullNightHour" class="form-control d-inline-block"
+                                               type="number" min="0" max="23" style="width: 5rem" />
+                                        giờ
+                                        <span asp-validation-for="Surcharge.LateCheckOutFullNightHour" class="text-danger small d-block"></span>
+                                    </td>
+                                    <td>
+                                        <div class="input-group" style="max-width: 12rem">
+                                            <input asp-for="Surcharge.LateCheckOutTier2Percent" class="form-control"
+                                                   type="number" step="1" min="0" max="100" />
+                                            <span class="input-group-text">% giá đêm</span>
+                                        </div>
+                                        <span asp-validation-for="Surcharge.LateCheckOutTier2Percent" class="text-danger small"></span>
+                                    </td>
+                                </tr>
+                                <tr>
+                                    <td>Trả phòng trễ</td>
+                                    <td>Trả sau mốc trên</td>
+                                    <td><span class="badge text-bg-warning">Tính thêm 1 đêm</span></td>
+                                </tr>
+                                @* Hai dòng cuối của bảng BR-03 là phí theo từng loại phòng, không phải tham số
+                                   toàn hệ thống — chỉ dẫn sang đúng chỗ sửa thay vì nhân đôi dữ liệu. *@
+                                <tr class="text-muted">
+                                    <td>Thêm người</td>
+                                    <td>Vượt sức chứa chuẩn của loại phòng</td>
+                                    <td>
+                                        Phí / người / đêm khai báo theo
+                                        <a asp-controller="RoomTypes" asp-action="Index">từng loại phòng</a>
+                                    </td>
+                                </tr>
+                                <tr class="text-muted">
+                                    <td>Thêm giường phụ</td>
+                                    <td>Theo yêu cầu của khách</td>
+                                    <td>
+                                        Phí cố định / đêm khai báo theo
+                                        <a asp-controller="RoomTypes" asp-action="Index">từng loại phòng</a>
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="alert alert-info small mt-3 mb-0">
+                        <i class="bi bi-info-circle"></i>
+                        Đổi mức phụ thu <strong>chỉ áp cho lượt lưu trú mới</strong>; lượt đang mở giữ tham số
+                        đã chốt lúc check-in.
+                    </div>
+
+                    <button type="submit" class="btn btn-primary mt-3">
+                        <i class="bi bi-check-lg"></i> Lưu nhóm này
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ---------- 5. Chính sách cọc & hủy ---------- *@
+    <div class="col-lg-6" id="Cancellation">
+        <div class="card h-100 @(active == "Cancellation" ? "border-primary" : "")">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-shield-check"></i> 5. Cọc &amp; hủy <small class="text-muted">(BR-05)</small></span>
+                <form method="post" asp-action="ResetGroup" asp-route-group="Cancellation"
+                      onsubmit="return confirm('Khôi phục nhóm Chính sách cọc &amp; hủy về mặc định?');">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Mặc định
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="SaveCancellation">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label asp-for="Cancellation.DepositNights" class="form-label"></label>
+                            <input asp-for="Cancellation.DepositNights" class="form-control" type="number" min="0" max="30" />
+                            <span asp-validation-for="Cancellation.DepositNights" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Cancellation.HoldUntilHour" class="form-label"></label>
+                            <input asp-for="Cancellation.HoldUntilHour" class="form-control" type="number" min="0" max="23" />
+                            <div class="form-text">Giờ trong ngày đến; quá hạn thì được đánh dấu No-show.</div>
+                            <span asp-validation-for="Cancellation.HoldUntilHour" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Cancellation.Over48hPercent" class="form-label"></label>
+                            <input asp-for="Cancellation.Over48hPercent" class="form-control" type="number" step="1" min="0" max="100" />
+                            <span asp-validation-for="Cancellation.Over48hPercent" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Cancellation.Between24And48hPercent" class="form-label"></label>
+                            <input asp-for="Cancellation.Between24And48hPercent" class="form-control" type="number" step="1" min="0" max="100" />
+                            <span asp-validation-for="Cancellation.Between24And48hPercent" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <label asp-for="Cancellation.Under24hPercent" class="form-label"></label>
+                            <input asp-for="Cancellation.Under24hPercent" class="form-control" type="number" step="1" min="0" max="100" />
+                            <span asp-validation-for="Cancellation.Under24hPercent" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary mt-3">
+                        <i class="bi bi-check-lg"></i> Lưu nhóm này
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ---------- 6. Hạn mức nghiệp vụ ---------- *@
+    <div class="col-lg-6" id="Limit">
+        <div class="card h-100 @(active == "Limit" ? "border-primary" : "")">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-sliders"></i> 6. Hạn mức nghiệp vụ</span>
+                <form method="post" asp-action="ResetGroup" asp-route-group="Limit"
+                      onsubmit="return confirm('Khôi phục nhóm Hạn mức nghiệp vụ về mặc định?');">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Mặc định
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="SaveLimit">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <label asp-for="Limit.ReceptionistMaxDiscountAmount" class="form-label"></label>
+                            <input asp-for="Limit.ReceptionistMaxDiscountAmount" class="form-control" type="number" step="1000" min="0" />
+                            <span asp-validation-for="Limit.ReceptionistMaxDiscountAmount" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Limit.ReceptionistMaxDiscountPercent" class="form-label"></label>
+                            <input asp-for="Limit.ReceptionistMaxDiscountPercent" class="form-control" type="number" step="1" min="0" max="100" />
+                            <div class="form-text">Lễ tân bị chặn khi vượt <strong>một trong hai</strong> hạn mức.</div>
+                            <span asp-validation-for="Limit.ReceptionistMaxDiscountPercent" class="text-danger small"></span>
+                        </div>
+                        <div class="col-12">
+                            <div class="form-check">
+                                <input asp-for="Limit.AllowSellWhenOutOfStock" class="form-check-input" />
+                                <label asp-for="Limit.AllowSellWhenOutOfStock" class="form-check-label"></label>
+                            </div>
+                            <div class="form-text">
+                                Công tắc tổng (BR-12). Một dịch vụ chỉ bán được khi hết tồn nếu bật cả ô này
+                                lẫn cờ riêng của dịch vụ đó ở màn hình
+                                <a asp-controller="HotelServices" asp-action="Index">Dịch vụ</a>.
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Limit.LoyalGuestStayThreshold" class="form-label"></label>
+                            <input asp-for="Limit.LoyalGuestStayThreshold" class="form-control" type="number" min="1" max="100" />
+                            <span asp-validation-for="Limit.LoyalGuestStayThreshold" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="Limit.ChildAgeLimit" class="form-label"></label>
+                            <input asp-for="Limit.ChildAgeLimit" class="form-control" type="number" min="0" max="18" />
+                            <span asp-validation-for="Limit.ChildAgeLimit" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary mt-3">
+                        <i class="bi bi-check-lg"></i> Lưu nhóm này
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<p class="text-muted small mt-3">
+    <i class="bi bi-journal-text"></i>
+    Mọi thay đổi cấu hình đều được ghi vào nhật ký thao tác kèm giá trị cũ → mới (BR-11).
+</p>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+
+    @if (!string.IsNullOrEmpty(active))
+    {
+        <script>
+            // Sau khi lưu hoặc gặp lỗi, đưa người dùng về đúng thẻ vừa thao tác thay vì đầu trang.
+            document.getElementById(@Json.Serialize(active))?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        </script>
+    }
+}

@@ -1,0 +1,39 @@
+@model (int Page, int TotalPages, int TotalItems)
+@*
+    Thanh phân trang dùng chung. Giữ nguyên toàn bộ query string hiện tại và chỉ thay tham số
+    page, nhờ vậy bộ lọc của màn hình không bị mất khi chuyển trang.
+*@
+@{
+    var query = new Dictionary<string, string?>(
+        Context.Request.Query.ToDictionary(q => q.Key, q => (string?)q.Value.ToString()),
+        StringComparer.OrdinalIgnoreCase);
+
+    string PageUrl(int page)
+    {
+        query["page"] = page.ToString();
+        return Url.Action(null, null, query) ?? "#";
+    }
+}
+
+@if (Model.TotalPages > 1)
+{
+    <nav class="d-flex justify-content-between align-items-center mt-3">
+        <span class="text-muted small">
+            Trang @Model.Page / @Model.TotalPages — tổng @Model.TotalItems dòng
+        </span>
+        <ul class="pagination pagination-sm mb-0">
+            <li class="page-item @(Model.Page > 1 ? "" : "disabled")">
+                <a class="page-link" href="@PageUrl(Model.Page - 1)">Trước</a>
+            </li>
+            @for (var i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.Page ? "active" : "")">
+                    <a class="page-link" href="@PageUrl(i)">@i</a>
+                </li>
+            }
+            <li class="page-item @(Model.Page < Model.TotalPages ? "" : "disabled")">
+                <a class="page-link" href="@PageUrl(Model.Page + 1)">Sau</a>
+            </li>
+        </ul>
+    </nav>
+}

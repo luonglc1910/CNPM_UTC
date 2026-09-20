@@ -1,0 +1,16 @@
+@model GuestFormViewModel
+@{
+    ViewData["Title"] = $"Sửa hồ sơ {Model.FullName}";
+}
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" asp-action="Edit" asp-route-id="@Model.Id">
+            <partial name="_Form" model="Model" />
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}
