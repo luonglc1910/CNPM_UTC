@@ -1,4 +1,4 @@
-﻿@inject HotelManagement.Web.Security.IScreenAccess Screens
+@inject HotelManagement.Web.Security.IScreenAccess Screens
 @{
     var controller = ViewContext.RouteData.Values["controller"] as string;
     var action = ViewContext.RouteData.Values["action"] as string;
@@ -18,7 +18,7 @@
 
         ("Khách hàng",            "Hồ sơ khách",          "person-vcard",       "Guests",        "Index"),
 
-        ("Đặt phòng",             "Đơn đặt phòng",        "journal-bookmark",   "Reservations",  "Index"),
+        ("Đặt phòng",             "Đặt phòng",        "journal-bookmark",   "Reservations",  "Index"),
         (null,                    "Sơ đồ phòng",          "calendar3-range",    "Reservations",  "RoomChart"),
 
         // Không có mục Check-in ở đây: SCR-D02 là màn hình của một đơn đặt cụ thể

@@ -49,13 +49,14 @@ public class DashboardService : IDashboardService
             UsableRooms = roomStatuses.Count(s => s != RoomStatus.OutOfService)
         };
 
-        vm.ArrivalsToday = await _db.Reservations.AsNoTracking()
-            .CountAsync(r => r.Status == ReservationStatus.Confirmed
-                && r.CheckInDate >= today && r.CheckInDate < tomorrow);
+        // Đã check-in trong ngày hôm nay
+        vm.ArrivalsToday = await _db.Stays.AsNoTracking()
+            .CountAsync(s => s.ActualCheckIn >= today && s.ActualCheckIn < tomorrow);
 
+        // Đã check-out trong ngày hôm nay
         vm.DeparturesToday = await _db.Stays.AsNoTracking()
-            .CountAsync(s => s.Status == StayStatus.CheckedIn
-                && s.ExpectedCheckOut >= today && s.ExpectedCheckOut < tomorrow);
+            .CountAsync(s => s.Status == StayStatus.CheckedOut
+                && s.ActualCheckOut != null && s.ActualCheckOut >= today && s.ActualCheckOut < tomorrow);
 
         await FillRevenueAsync(vm, employeeId, isAdmin, today, tomorrow);
         vm.PendingWork = await BuildPendingWorkAsync();

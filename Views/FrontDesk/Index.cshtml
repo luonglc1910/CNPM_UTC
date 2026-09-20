@@ -3,72 +3,79 @@
     ViewData["Title"] = "Bảng điều khiển lễ tân";
 }
 
-<div class="d-flex flex-wrap gap-2 mb-3">
-    <span class="badge text-bg-success">Trống: @Model.AvailableCount</span>
-    <span class="badge text-bg-warning">Đang ở: @Model.OccupiedCount</span>
-    <span class="badge text-bg-secondary">Chờ dọn: @Model.DirtyCount</span>
-    <span class="badge text-bg-danger">Bảo trì: @Model.MaintenanceCount</span>
-    <span class="badge text-bg-primary">Đến: @Model.Arrivals.Count</span>
-    <span class="badge text-bg-info">Đi: @Model.Departures.Count</span>
+<style>
+    .panel-badge-active {
+        outline: 3px solid #fff;
+        outline-offset: 2px;
+        transform: scale(1.18);
+        box-shadow: 0 2px 8px rgba(0,0,0,.35);
+        position: relative;
+        z-index: 1;
+    }
+    #badge-bar .badge {
+        min-width: 100px;
+        text-align: center;
+        padding: .45em .6em;
+        transition: transform .15s, box-shadow .15s;
+        font-size: .85rem;
+    }
+</style>
+
+@* Badge hàng trên — bấm để đổi view *@
+<div class="d-flex flex-wrap gap-3 mb-3" id="badge-bar">
+    <span class="badge text-bg-success"
+          style="cursor:pointer"
+          data-panel="available"
+          onclick="showPanel('available')"
+          title="Phòng trống">
+        Trống: @Model.AvailableCount
+    </span>
+    <span class="badge text-bg-warning fw-semibold"
+          style="cursor:pointer"
+          data-panel="inhouse"
+          onclick="showPanel('inhouse')"
+          title="Đang có khách">
+        Đang ở: @Model.OccupiedCount
+    </span>
+    <span class="badge text-bg-secondary"
+          style="cursor:pointer"
+          data-panel="dirty"
+          onclick="showPanel('dirty')"
+          title="Chờ dọn phòng">
+        Chờ dọn: @Model.DirtyCount
+    </span>
+    <span class="badge text-bg-danger"
+          style="cursor:pointer"
+          data-panel="maintenance"
+          onclick="showPanel('maintenance')"
+          title="Bảo trì">
+        Bảo trì: @Model.MaintenanceCount
+    </span>
+    <span class="badge text-bg-primary"
+          style="cursor:pointer"
+          data-panel="arrivals"
+          onclick="showPanel('arrivals')"
+          title="Đã check-in hôm nay">
+        Đến: @Model.CheckedInToday.Count
+    </span>
+    <span class="badge text-bg-info"
+          style="cursor:pointer"
+          data-panel="departures"
+          onclick="showPanel('departures')"
+          title="Đã check-out hôm nay">
+        Đi: @Model.CheckedOutToday.Count
+    </span>
 </div>
 
-<ul class="nav nav-tabs mb-3" role="tablist">
-    <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-arr" type="button">Đến hôm nay (@Model.Arrivals.Count)</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-dep" type="button">Đi hôm nay (@Model.Departures.Count)</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-inh" type="button">Đang lưu trú (@Model.InHouse.Count)</button></li>
-</ul>
-
-<div class="tab-content">
-    <div class="tab-pane fade show active" id="tab-arr">
-        <div class="card"><div class="table-responsive">
+@* Panel: Đang ở (mặc định) *@
+<div id="panel-inhouse" class="panel-section">
+    <div class="card">
+        <div class="card-header fw-semibold">Đang lưu trú</div>
+        <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
-                <thead class="table-light"><tr><th>Mã đơn</th><th>Khách</th><th>Loại phòng</th><th class="text-center">Khách</th><th class="text-end">Thao tác</th></tr></thead>
-                <tbody>
-                @foreach (var a in Model.Arrivals)
-                {
-                    <tr>
-                        <td><code>@a.Code</code></td>
-                        <td>@a.GuestName<br /><span class="text-muted small">@a.PhoneNumber</span></td>
-                        <td>@a.RoomTypeSummary</td>
-                        <td class="text-center">@a.Guests</td>
-                        <td class="text-end"><a class="btn btn-sm btn-primary" asp-action="CheckIn" asp-route-reservationId="@a.ReservationId"><i class="bi bi-box-arrow-in-right"></i> Check-in</a></td>
-                    </tr>
-                }
-                @if (Model.Arrivals.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-4">Không có khách dự kiến đến.</td></tr> }
-                </tbody>
-            </table>
-        </div></div>
-    </div>
-
-    <div class="tab-pane fade" id="tab-dep">
-        <div class="card"><div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light"><tr><th>Phòng</th><th>Khách</th><th>Giờ trả dự kiến</th><th class="text-end">Số dư</th><th class="text-center">Kiểm phòng</th><th class="text-end">Thao tác</th></tr></thead>
-                <tbody>
-                @foreach (var d in Model.Departures)
-                {
-                    <tr class="@(d.OverdueNoon ? "table-warning" : "")">
-                        <td><strong>@d.RoomNumber</strong></td>
-                        <td>@d.GuestName</td>
-                        <td>@d.ExpectedCheckOut.ToString("dd/MM/yyyy")</td>
-                        <td class="text-end">@d.BalanceDue.ToString("N0") ₫</td>
-                        <td class="text-center">@(d.IsInspected ? Html.Raw("<i class='bi bi-check-circle text-success'></i>") : Html.Raw("<i class='bi bi-x-circle text-danger'></i>"))</td>
-                        <td class="text-end">
-                            <a class="btn btn-sm btn-outline-secondary" asp-action="Stay" asp-route-id="@d.StayId">Chi tiết</a>
-                            <a class="btn btn-sm btn-primary" asp-action="CheckOut" asp-route-stayId="@d.StayId"><i class="bi bi-box-arrow-left"></i> Check-out</a>
-                        </td>
-                    </tr>
-                }
-                @if (Model.Departures.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-4">Không có khách dự kiến đi.</td></tr> }
-                </tbody>
-            </table>
-        </div></div>
-    </div>
-
-    <div class="tab-pane fade" id="tab-inh">
-        <div class="card"><div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light"><tr><th>Phòng</th><th>Khách</th><th>Vào</th><th>Đi dự kiến</th><th class="text-end">Thao tác</th></tr></thead>
+                <thead class="table-light">
+                    <tr><th>Phòng</th><th>Khách</th><th>Vào</th><th>Đi dự kiến</th><th class="text-end">Thao tác</th></tr>
+                </thead>
                 <tbody>
                 @foreach (var h in Model.InHouse)
                 {
@@ -86,7 +93,106 @@
                 @if (Model.InHouse.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-4">Chưa có khách lưu trú.</td></tr> }
                 </tbody>
             </table>
-        </div></div>
+        </div>
     </div>
-
 </div>
+
+@* Panel: Đến hôm nay — đã check-in *@
+<div id="panel-arrivals" class="panel-section d-none">
+    <div class="card">
+        <div class="card-header fw-semibold">Đã check-in hôm nay (@Model.CheckedInToday.Count lượt)</div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Phòng</th><th>Khách</th><th>Giờ vào</th><th>Trả dự kiến</th><th class="text-end">Thao tác</th></tr></thead>
+                <tbody>
+                @foreach (var a in Model.CheckedInToday)
+                {
+                    <tr>
+                        <td><strong>@a.RoomNumber</strong></td>
+                        <td>@a.GuestName</td>
+                        <td>@a.ActualCheckIn.ToString("HH:mm")</td>
+                        <td>@a.ExpectedCheckOut.ToString("dd/MM/yyyy")</td>
+                        <td class="text-end"><a class="btn btn-sm btn-outline-secondary" asp-action="Stay" asp-route-id="@a.StayId">Chi tiết</a></td>
+                    </tr>
+                }
+                @if (Model.CheckedInToday.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-4">Chưa có lượt check-in nào hôm nay.</td></tr> }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@* Panel: Đi hôm nay — đã check-out *@
+<div id="panel-departures" class="panel-section d-none">
+    <div class="card">
+        <div class="card-header fw-semibold">Đã check-out hôm nay (@Model.CheckedOutToday.Count lượt)</div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light"><tr><th>Phòng</th><th>Khách</th><th>Vào</th><th>Giờ ra</th><th class="text-center">Đêm</th><th class="text-end">Thao tác</th></tr></thead>
+                <tbody>
+                @foreach (var d in Model.CheckedOutToday)
+                {
+                    <tr>
+                        <td><strong>@d.RoomNumber</strong></td>
+                        <td>@d.GuestName</td>
+                        <td>@d.ActualCheckIn.ToString("dd/MM")</td>
+                        <td>@d.ActualCheckOut.ToString("HH:mm")</td>
+                        <td class="text-center">@d.Nights</td>
+                        <td class="text-end"><a class="btn btn-sm btn-outline-secondary" asp-action="Stay" asp-route-id="@d.StayId">Chi tiết</a></td>
+                    </tr>
+                }
+                @if (Model.CheckedOutToday.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-4">Chưa có lượt check-out nào hôm nay.</td></tr> }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+@* Panel placeholder cho Trống / Chờ dọn / Bảo trì (chỉ thông báo, dữ liệu ở sơ đồ phòng) *@
+<div id="panel-available" class="panel-section d-none">
+    <div class="alert alert-success d-flex align-items-center gap-2 mb-0">
+        <i class="bi bi-door-open fs-5"></i>
+        <span><strong>@Model.AvailableCount phòng trống</strong> — xem chi tiết tại <a asp-action="RoomChart" asp-controller="Reservations">Sơ đồ phòng</a>.</span>
+    </div>
+</div>
+<div id="panel-dirty" class="panel-section d-none">
+    <div class="alert alert-secondary d-flex align-items-center gap-2 mb-0">
+        <i class="bi bi-stars fs-5"></i>
+        <span><strong>@Model.DirtyCount phòng chờ dọn</strong> — xem tại <a asp-controller="Housekeeping" asp-action="Index">Trạng thái dọn phòng</a>.</span>
+    </div>
+</div>
+<div id="panel-maintenance" class="panel-section d-none">
+    <div class="alert alert-danger d-flex align-items-center gap-2 mb-0">
+        <i class="bi bi-tools fs-5"></i>
+        <span><strong>@Model.MaintenanceCount phòng bảo trì</strong> — xem tại <a asp-controller="Rooms" asp-action="Index">Quản lý phòng</a>.</span>
+    </div>
+</div>
+
+@section Scripts {
+<script>
+(function () {
+    var panels = document.querySelectorAll('.panel-section');
+    var badges = document.querySelectorAll('#badge-bar .badge');
+
+    function showPanel(id) {
+        // Ẩn hết panel
+        panels.forEach(function (p) { p.classList.add('d-none'); });
+        var el = document.getElementById('panel-' + id);
+        if (el) el.classList.remove('d-none');
+
+        // Reset tất cả badge
+        badges.forEach(function (b) { b.classList.remove('panel-badge-active'); });
+        // Đánh dấu badge đang active
+        var active = document.querySelector('#badge-bar .badge[data-panel="' + id + '"]');
+        if (active) active.classList.add('panel-badge-active');
+    }
+
+    window.showPanel = showPanel;
+
+    // Đọc ?panel= từ URL hoặc mặc định inhouse
+    var params = new URLSearchParams(window.location.search);
+    var initial = params.get('panel') || 'inhouse';
+    showPanel(initial);
+})();
+</script>
+}

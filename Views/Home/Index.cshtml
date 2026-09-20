@@ -39,17 +39,17 @@
 
 <div class="row g-3 mb-4">
     <div class="col-6 col-lg-4">
-        <a class="stat-card stat-card-link d-block" asp-controller="FrontDesk" asp-action="Index">
-            <div class="stat-label"><i class="bi bi-box-arrow-in-right"></i> Khách đến hôm nay</div>
+        <a class="stat-card stat-card-link d-block" asp-controller="FrontDesk" asp-action="Index" asp-route-panel="arrivals">
+            <div class="stat-label"><i class="bi bi-box-arrow-in-right"></i> Đã check-in hôm nay</div>
             <div class="stat-value">@Model.ArrivalsToday</div>
-            <div class="stat-foot">Mở bảng lễ tân để check-in</div>
+            <div class="stat-foot">Lượt nhận phòng trong ngày</div>
         </a>
     </div>
     <div class="col-6 col-lg-4">
-        <a class="stat-card stat-card-link d-block" asp-controller="FrontDesk" asp-action="Index">
-            <div class="stat-label"><i class="bi bi-box-arrow-right"></i> Khách đi hôm nay</div>
+        <a class="stat-card stat-card-link d-block" asp-controller="FrontDesk" asp-action="Index" asp-route-panel="departures">
+            <div class="stat-label"><i class="bi bi-box-arrow-right"></i> Đã check-out hôm nay</div>
             <div class="stat-value">@Model.DeparturesToday</div>
-            <div class="stat-foot">Mở bảng lễ tân để check-out</div>
+            <div class="stat-foot">Lượt trả phòng trong ngày</div>
         </a>
     </div>
     <div class="col-12 col-lg-4">
