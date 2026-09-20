@@ -38,6 +38,7 @@ public class ShiftListItem
 {
     public int Id { get; set; }
     public string EmployeeName { get; set; } = string.Empty;
+    public ShiftSlot Slot { get; set; }
     public DateTime OpenedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
     public ShiftStatus Status { get; set; }

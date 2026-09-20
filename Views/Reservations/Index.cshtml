@@ -77,7 +77,7 @@ else
                         <th class="text-center">Đêm</th>
                         <th class="text-center">Phòng</th>
                         <th class="text-end">Dự kiến</th>
-                        <th class="text-end">Đã cọc</th>
+
                         <th>Trạng thái</th>
                         <th class="text-end">Thao tác</th>
                     </tr>
@@ -93,15 +93,11 @@ else
                         <td class="text-center">@r.Nights</td>
                         <td class="text-center">@r.RoomCount <span class="text-muted small">@r.RoomTypeSummary</span></td>
                         <td class="text-end">@r.EstimatedTotal.ToString("N0") ₫</td>
-                        <td class="text-end">@r.DepositPaid.ToString("N0") ₫</td>
+
                         <td><span class="badge @r.Status.ToBadgeClass()">@r.Status.ToDisplayName()</span></td>
                         <td class="text-end text-nowrap">
                             <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@r.Id" title="Xem"><i class="bi bi-eye"></i></a>
-                            @if (r.Status == ReservationStatus.Draft || r.Status == ReservationStatus.Confirmed)
-                            {
-                                <a class="btn btn-sm btn-outline-primary" asp-action="Deposit" asp-route-id="@r.Id" title="Thu cọc"><i class="bi bi-cash-coin"></i></a>
                                 <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@r.Id" title="Sửa"><i class="bi bi-pencil"></i></a>
-                            }
                         </td>
                     </tr>
                 }

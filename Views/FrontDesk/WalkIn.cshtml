@@ -1,4 +1,4 @@
-﻿@model WalkInViewModel
+@model WalkInViewModel
 @{
     ViewData["Title"] = "Check-in khách vãng lai";
 }
@@ -86,36 +86,7 @@
             </div>
         </div>
 
-        <div class="col-12">
-            <div class="card">
-                <div class="card-header">Đặt cọc (tùy chọn)</div>
-                <div class="card-body">
-                    @if (!Model.HasOpenShift)
-                    {
-                        <div class="alert alert-warning py-2 small">Chưa mở ca — không thu cọc được. Vẫn check-in được, bỏ trống tiền cọc. <a asp-controller="Shifts" asp-action="Index">Mở ca</a></div>
-                    }
-                    <div class="row g-2">
-                        <div class="col-md-4">
-                            <label asp-for="DepositAmount" class="form-label">Tiền cọc</label>
-                            <input asp-for="DepositAmount" type="number" min="0" step="any" class="form-control" />
-                        </div>
-                        <div class="col-md-4">
-                            <label asp-for="DepositMethod" class="form-label">Phương thức</label>
-                            <select asp-for="DepositMethod" class="form-select">
-                                @foreach (var m in Enum.GetValues<PaymentMethod>())
-                                {
-                                    <option value="@((int)m)" selected="@(Model.DepositMethod == m)">@m.ToDisplayName()</option>
-                                }
-                            </select>
-                        </div>
-                        <div class="col-md-4">
-                            <label asp-for="TransactionRef" class="form-label">Mã giao dịch (CK/Thẻ)</label>
-                            <input asp-for="TransactionRef" class="form-control" />
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+
     </div>
 
     <div class="d-flex gap-2 mt-3">

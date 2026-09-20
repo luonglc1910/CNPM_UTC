@@ -116,17 +116,8 @@ public class BillingService : IBillingService
         };
     }
 
-    private async Task<decimal> HeldDepositAsync(Stay stay)
-    {
-        var byStay = await _db.Deposits.Where(d => d.StayId == stay.Id && d.Status == DepositStatus.Held)
-            .SumAsync(d => (decimal?)d.Amount) ?? 0m;
-
-        var byReservation = stay.ReservationId is null ? 0m
-            : await _db.Deposits.Where(d => d.ReservationId == stay.ReservationId && d.Status == DepositStatus.Held)
-                .SumAsync(d => (decimal?)d.Amount) ?? 0m;
-
-        return byStay + byReservation;
-    }
+    /// <summary>Cọc đã bị bỏ — luôn trả 0.</summary>
+    private Task<decimal> HeldDepositAsync(Stay stay) => Task.FromResult(0m);
 
     // ---------- SCR-F01 ----------
 
@@ -673,22 +664,7 @@ public class BillingService : IBillingService
                     InvoiceId = invoice.Id
                 });
             }
-            else if (balance < 0)
-            {
-                // Cọc thừa: hoàn lại khách.
-                _db.Payments.Add(new Payment
-                {
-                    Type = PaymentType.Refund,
-                    Method = form.Method,
-                    Amount = balance,
-                    PaidAt = now,
-                    CashierShiftId = shift.Id,
-                    InvoiceId = invoice.Id,
-                    Notes = "Hoàn cọc thừa"
-                });
-            }
-
-            await ApplyDepositsAsync(folio.Stay, -Math.Min(0, balance));
+            // Cọc đã bị bỏ — không còn Refund/ApplyDeposits.
 
             folio.Stay.Status = StayStatus.CheckedOut;
             if (folio.Stay.ActualCheckOut is null)
@@ -728,26 +704,8 @@ public class BillingService : IBillingService
         return (ServiceResult.Ok(message: "Đã thanh toán và xuất hóa đơn."), invoiceId);
     }
 
-    /// <summary>Đối trừ cọc vào hóa đơn: chuyển Held → Applied, ghi phần hoàn nếu cọc thừa.</summary>
-    private async Task ApplyDepositsAsync(Stay stay, decimal refundTotal)
-    {
-        var deposits = await _db.Deposits
-            .Where(d => d.Status == DepositStatus.Held
-                && (d.StayId == stay.Id || (stay.ReservationId != null && d.ReservationId == stay.ReservationId)))
-            .ToListAsync();
-
-        var remainingRefund = refundTotal;
-        foreach (var d in deposits)
-        {
-            d.Status = DepositStatus.Applied;
-            if (remainingRefund > 0)
-            {
-                var share = Math.Min(remainingRefund, d.Amount);
-                d.RefundedAmount = share;
-                remainingRefund -= share;
-            }
-        }
-    }
+    /// <summary>Cọc đã bị bỏ — không làm gì.</summary>
+    private static Task ApplyDepositsAsync(Stay stay, decimal refundTotal) => Task.CompletedTask;
 
     // ---------- SCR-F06 ----------
 
