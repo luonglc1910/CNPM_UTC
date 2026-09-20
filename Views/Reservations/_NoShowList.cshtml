@@ -1,7 +1,9 @@
 @model NoShowListViewModel
-@{
-    ViewData["Title"] = "Đơn quá hạn / No-show";
-}
+@*
+    Tab "Quá hạn / No-show" — SCR-C09. Giữ bảng và nút riêng thay vì nhét thêm cột vào
+    bảng đơn đặt: đây là hàng đợi việc cần xử lý hôm nay, không phải danh sách đã lọc.
+    Hai cột "Hết hạn giữ" / "Quá hạn" và ba nút thao tác chỉ có nghĩa ở đây.
+*@
 
 <div class="alert alert-secondary small">
     Đơn <strong>Đã xác nhận</strong> có ngày đến ≤ hôm nay và đã quá giờ hết hạn giữ chỗ mà khách chưa check-in.

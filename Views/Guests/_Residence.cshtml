@@ -1,7 +1,9 @@
 @model ResidenceViewModel
-@{
-    ViewData["Title"] = "Khai báo tạm trú";
-}
+@*
+    Tab "Khai báo tạm trú" — SCR-B04. Chỉ được nạp khi người dùng thật sự mở tab
+    (URL có ?tab=residence), vì mỗi lần mở đều ghi một dòng nhật ký truy cập
+    dữ liệu cá nhân. Nạp sẵn cùng danh sách khách sẽ sinh nhật ký rác.
+*@
 
 <div class="card mb-3 d-print-none">
     <div class="card-body">

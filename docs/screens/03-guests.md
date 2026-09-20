@@ -111,11 +111,18 @@ nơi lễ tân thực sự cần đối chiếu với giấy tờ trên tay khá
 
 ---
 
+> **Gộp màn hình (20/09/2026).** SCR-B04 trước là một mục sidebar riêng, nay là tab thứ hai
+> của SCR-B01. Hai tab là hai đường dẫn chứ không phải tab JavaScript: chỉ tab đang mở mới nạp
+> dữ liệu, vì mở tab này ghi một dòng nhật ký truy cập dữ liệu cá nhân — nạp sẵn cả hai thì
+> mỗi lần xem danh sách khách cũng sinh nhật ký sai sự thật.
+>
+> URL cũ `/Guests/Residence` vẫn sống, chuyển hướng về tab tương ứng.
+
 ## SCR-B04 — Khai báo tạm trú theo ngày
 
 | | |
 |---|---|
-| **URL** | `GET /Guests/Residence?date=...` |
+| **URL** | `GET /Guests?tab=residence&date=...` — tab của SCR-B01 |
 | **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-B05 |
 

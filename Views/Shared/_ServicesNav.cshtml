@@ -1,0 +1,22 @@
+@*
+    Dịch vụ và tồn kho dùng chung một mục menu — SCR-A06 và SCR-A08.
+*@
+@{
+    var __c = ViewContext.RouteData.Values["controller"] as string;
+    var __a = ViewContext.RouteData.Values["action"] as string;
+}
+
+<ul class="nav nav-pills report-nav mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(string.Equals(__c, "HotelServices", StringComparison.OrdinalIgnoreCase) && string.Equals(__a, "Index", StringComparison.OrdinalIgnoreCase) ? "active" : "")"
+           asp-controller="HotelServices" asp-action="Index">
+            <i class="bi bi-cup-hot"></i> Dịch vụ
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(string.Equals(__c, "Inventory", StringComparison.OrdinalIgnoreCase) && string.Equals(__a, "Index", StringComparison.OrdinalIgnoreCase) ? "active" : "")"
+           asp-controller="Inventory" asp-action="Index">
+            <i class="bi bi-box-seam"></i> Tồn kho
+        </a>
+    </li>
+</ul>

@@ -1,143 +1,30 @@
-@model GuestIndexViewModel
+@model GuestsPageViewModel
 @{
-    ViewData["Title"] = "Hồ sơ khách";
+    ViewData["Title"] = Model.IsResidence ? "Khai báo tạm trú" : "Hồ sơ khách";
 }
 
-<div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
-    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
-        <div>
-            <label asp-for="Keyword" class="form-label mb-1 small text-muted"></label>
-            <input asp-for="Keyword" class="form-control form-control-sm" style="min-width: 240px"
-                   placeholder="VD: Nguyễn Văn A, 0912345678, 001..." />
-        </div>
+@*
+    Hai tab là hai đường dẫn, không phải tab JavaScript: tab tạm trú ghi nhật ký truy cập
+    dữ liệu cá nhân mỗi lần mở, nên chỉ được nạp khi người dùng thật sự chọn nó.
+*@
+<ul class="nav nav-pills report-nav mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(Model.IsResidence ? "" : "active")" asp-action="Index">
+            <i class="bi bi-person-vcard"></i> Danh sách khách
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.IsResidence ? "active" : "")" asp-action="Index" asp-route-tab="residence">
+            <i class="bi bi-file-earmark-text"></i> Khai báo tạm trú
+        </a>
+    </li>
+</ul>
 
-        <div>
-            <label asp-for="Nationality" class="form-label mb-1 small text-muted"></label>
-            <select asp-for="Nationality" class="form-select form-select-sm">
-                <option value="">— Tất cả —</option>
-                @foreach (var nationality in Model.NationalityOptions)
-                {
-                    <option value="@nationality" selected="@(Model.Nationality == nationality)">@nationality</option>
-                }
-            </select>
-        </div>
-
-        <div>
-            <label asp-for="Blacklisted" class="form-label mb-1 small text-muted"></label>
-            <select asp-for="Blacklisted" class="form-select form-select-sm">
-                <option value="">— Tất cả —</option>
-                <option value="true" selected="@(Model.Blacklisted == true)">Đang bị hạn chế</option>
-                <option value="false" selected="@(Model.Blacklisted == false)">Không hạn chế</option>
-            </select>
-        </div>
-
-        <div>
-            <label asp-for="LastStayFrom" class="form-label mb-1 small text-muted"></label>
-            <input asp-for="LastStayFrom" class="form-control form-control-sm" type="date" />
-        </div>
-
-        <div>
-            <label asp-for="LastStayTo" class="form-label mb-1 small text-muted"></label>
-            <input asp-for="LastStayTo" class="form-control form-control-sm" type="date" />
-        </div>
-
-        <button type="submit" class="btn btn-outline-secondary btn-sm mb-2">
-            <i class="bi bi-search"></i> Tìm
-        </button>
-        @if (Model.HasFilter)
-        {
-            <a class="btn btn-link btn-sm mb-2" asp-action="Index">Bỏ lọc</a>
-        }
-    </form>
-
-    <a class="btn btn-primary" asp-action="Create">
-        <i class="bi bi-person-plus"></i> Thêm khách
-    </a>
-</div>
-
-@if (Model.Results.TotalItems == 0)
+@if (Model.IsResidence)
 {
-    <div class="card"><div class="card-body text-center text-muted py-5">
-        @if (Model.HasFilter)
-        {
-            <p class="mb-0">Không tìm thấy khách nào khớp với bộ lọc hiện tại.</p>
-        }
-        else
-        {
-            <p class="mb-1">Chưa có hồ sơ khách nào.</p>
-            <p class="mb-0 small">Nhấn <strong>Thêm khách</strong> để tạo hồ sơ đầu tiên.</p>
-        }
-    </div></div>
+    <partial name="_Residence" model="Model.Residence" />
 }
 else
 {
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Họ tên</th>
-                        <th>Giới tính</th>
-                        <th>Giấy tờ</th>
-                        <th>SĐT</th>
-                        <th>Quốc tịch</th>
-                        <th class="text-center">Số lần ở</th>
-                        <th>Lần ở gần nhất</th>
-                        <th>Nhãn</th>
-                        <th class="text-end">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var item in Model.Results.Items)
-                {
-                    <tr>
-                        <td>
-                            <a asp-action="Details" asp-route-id="@item.Id">@item.FullName</a>
-                        </td>
-                        <td>@(item.Gender?.ToDisplayName() ?? "—")</td>
-                        <td>
-                            @* Danh sách chỉ hiện số giấy tờ dạng che; số đầy đủ nằm ở màn hình chi tiết. *@
-                            <span class="text-muted small">@item.IdType.ToDisplayName()</span>
-                            <code>@item.MaskedIdNumber</code>
-                        </td>
-                        <td>@item.PhoneNumber</td>
-                        <td>@item.Nationality</td>
-                        <td class="text-center">@item.CompletedStayCount</td>
-                        <td>
-                            @if (item.LastStayAt is not null)
-                            {
-                                @item.LastStayAt.Value.ToString("dd/MM/yyyy")
-                            }
-                            else
-                            {
-                                <span class="text-muted">Chưa từng ở</span>
-                            }
-                        </td>
-                        <td class="text-nowrap">
-                            @if (item.IsLoyal)
-                            {
-                                <span class="badge text-bg-success" title="Từ @item.LoyalThreshold lượt lưu trú trở lên">
-                                    Khách quen
-                                </span>
-                            }
-                            @if (item.IsBlacklisted)
-                            {
-                                <span class="badge text-bg-danger">Hạn chế</span>
-                            }
-                        </td>
-                        <td class="text-end text-nowrap">
-                            <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@item.Id"
-                               title="Xem chi tiết"><i class="bi bi-eye"></i></a>
-                            <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@item.Id"
-                               title="Sửa"><i class="bi bi-pencil"></i></a>
-                            @* Không có nút Xóa: hồ sơ khách không bao giờ xóa cứng (SCR-B01). *@
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" />
+    <partial name="_GuestList" model="Model.List" />
 }

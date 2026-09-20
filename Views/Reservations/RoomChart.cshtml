@@ -27,8 +27,13 @@
                     }
                 </select>
             </div>
-            <div class="col-12 col-md-3">
+            <div class="col-12 col-md-3 d-flex gap-2">
                 <button type="submit" class="btn btn-primary"><i class="bi bi-calendar3"></i> Xem sơ đồ</button>
+                @* SCR-C02 không còn ở menu — vào từ đây và từ Đơn đặt phòng.
+                   Sơ đồ cho thấy phòng nào hổng; tra cứu cho biết giá và sức chứa từng loại. *@
+                <a class="btn btn-outline-secondary text-nowrap" asp-action="Availability">
+                    <i class="bi bi-calendar-check"></i> Tra cứu theo loại phòng
+                </a>
             </div>
         </form>
     </div>

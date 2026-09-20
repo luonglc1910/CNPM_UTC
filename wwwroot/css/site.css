@@ -717,6 +717,25 @@ h1, h2, h3, h4, h5, h6 {
 /* ============================ Ô số liệu ============================
    Dùng ở Tổng quan. Số là nhân vật chính, nhãn là chú thích.          */
 
+/* ===================== Dieu huong giua cac bao cao =====================
+   Bon bao cao dung chung mot muc menu; chuyen giua chung bang thanh nay.
+   Muc dang mo to bang mau ink chu khong dung --bs-primary: mau do la mau
+   trang thai "Da dat" cua phong, dung lai o day se lam loang y nghia.    */
+
+.report-nav {
+  --bs-nav-pills-border-radius: var(--r-control);
+  --bs-nav-link-color: var(--fg-muted);
+  --bs-nav-link-hover-color: var(--ink);
+  --bs-nav-link-font-size: 0.875rem;
+  --bs-nav-link-padding-y: 0.35rem;
+  --bs-nav-link-padding-x: 0.75rem;
+  --bs-nav-pills-link-active-bg: var(--ink);
+  --bs-nav-pills-link-active-color: #fff;
+  gap: 0.25rem;
+  border-bottom: 1px solid var(--rule);
+  padding-bottom: 0.75rem;
+}
+
 .stat-card {
   background: var(--surface);
   border: 1px solid var(--rule);

@@ -1,0 +1,33 @@
+@*
+    Điều hướng giữa bốn báo cáo. Trước đây mỗi báo cáo là một mục sidebar riêng,
+    chiếm 5 trong 7 mục Admin-only; gom lại một mục "Báo cáo" rồi chuyển giữa chúng
+    ở đây, ngay trong vùng nội dung.
+*@
+@{
+    var current = ViewContext.RouteData.Values["action"] as string;
+
+    (string Action, string Label, string Icon)[] reports =
+    {
+        ("Index",    "Doanh thu & công suất", "graph-up"),
+        ("Services", "Dịch vụ & tồn kho",     "box-seam"),
+        ("Staff",    "Nhân viên / ca",        "person-badge"),
+        ("AuditLog", "Nhật ký thao tác",      "journal-text")
+    };
+
+    // Revenue và Occupancy là URL cũ đã chuyển hướng về Index, nhưng nếu ai đó vào
+    // thẳng thì vẫn phải sáng đúng mục.
+    bool IsCurrent(string action) =>
+        string.Equals(current, action, StringComparison.OrdinalIgnoreCase)
+        || (action == "Index" && current is "Revenue" or "Occupancy");
+}
+
+<ul class="nav nav-pills report-nav mb-3">
+    @foreach (var r in reports)
+    {
+        <li class="nav-item">
+            <a class="nav-link @(IsCurrent(r.Action) ? "active" : "")" asp-action="@r.Action">
+                <i class="bi bi-@r.Icon"></i> @r.Label
+            </a>
+        </li>
+    }
+</ul>
