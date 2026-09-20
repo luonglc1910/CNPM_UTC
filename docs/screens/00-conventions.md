@@ -89,7 +89,7 @@ giá trị cũ → giá trị mới, lý do (nếu có), thời điểm, địa 
 
 ## 8. Quy ước chặn thao tác theo ca làm việc
 
-Mọi màn hình có thu / hoàn tiền (SCR-C07, SCR-F05, SCR-F07, và phần thu cọc của SCR-D03)
+Mọi màn hình có thu / hoàn tiền (SCR-C07, SCR-F05, SCR-F07)
 đều kiểm tra trước: **người dùng phải có một ca đang mở**. Nếu chưa, màn hình hiển thị cảnh báo
 và nút "Mở ca làm việc" thay cho form thu tiền (BR-10).
 

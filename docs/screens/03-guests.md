@@ -149,7 +149,7 @@ Hành động (Đưa vào / Gỡ khỏi) · **Lý do** `*` (bắt buộc, ≥ 10
 
 ### Hệ quả nghiệp vụ
 - Khi tạo đơn đặt phòng hoặc check-in cho khách trong danh sách hạn chế (SCR-C04, SCR-D02,
-  SCR-D03), hệ thống hiện **cảnh báo đỏ** kèm nhắc "cần quản lý duyệt".
+  hệ thống hiện **cảnh báo đỏ** kèm nhắc "cần quản lý duyệt". (SCR-D03 đã bỏ nên không còn áp dụng ở đó.)
 - Cảnh báo **không tự chặn** giao dịch — quyết định nhận hay từ chối khách là của con người,
   nhưng nếu lễ tân vẫn tiếp tục thì hệ thống ghi audit log việc bỏ qua cảnh báo.
 - Mọi thao tác thêm/gỡ khỏi danh sách đều ghi audit log kèm lý do.

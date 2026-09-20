@@ -45,34 +45,6 @@ public class FrontDeskController : AdminControllerBase
         return RedirectToAction(nameof(Index));
     }
 
-    // SCR-D03
-    [HttpGet]
-    public async Task<IActionResult> WalkIn()
-        => View(await _service.BuildWalkInAsync(CurrentEmployeeId));
-
-    [HttpPost]
-    [ValidateAntiForgeryToken]
-    [ActionName(nameof(WalkIn))]
-    public async Task<IActionResult> WalkInPost(WalkInViewModel form)
-    {
-        if (!ModelState.IsValid)
-        {
-            await _service.FillWalkInOptionsAsync(form, CurrentEmployeeId);
-            return View(form);
-        }
-
-        var (result, stayId) = await _service.WalkInAsync(form, CurrentEmployeeId);
-        if (!result.Succeeded)
-        {
-            ModelState.AddModelError(result.ErrorField ?? string.Empty, result.Error!);
-            await _service.FillWalkInOptionsAsync(form, CurrentEmployeeId);
-            return View(form);
-        }
-
-        SetMessage(result);
-        return RedirectToAction(nameof(Stay), new { id = stayId });
-    }
-
     // SCR-D04
     [HttpGet]
     public async Task<IActionResult> Stay(int id)

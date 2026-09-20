@@ -84,7 +84,7 @@ Ký hiệu quyền: **A** = Admin, **L** = Lễ tân.
 |---|---|---|:-:|:-:|
 | SCR-D01 | Bảng điều khiển lễ tân | `/FrontDesk` | ✔ | ✔ |
 | SCR-D02 | Check-in khách có đặt trước | `/FrontDesk/CheckIn/{reservationId}` | ✔ | ✔ |
-| SCR-D03 | Check-in khách vãng lai | `/FrontDesk/WalkIn` | ✔ | ✔ |
+| ~~SCR-D03~~ | ~~Check-in khách vãng lai~~ — **đã bỏ** | — | — | — |
 | SCR-D04 | Chi tiết lượt lưu trú | `/FrontDesk/Stay/{id}` | ✔ | ✔ |
 | SCR-D05 | Thêm khách vào phòng | `/FrontDesk/AddGuest/{stayId}` | ✔ | ✔ |
 | SCR-D06 | Đổi phòng | `/FrontDesk/ChangeRoom/{stayId}` | ✔ | ✔ |

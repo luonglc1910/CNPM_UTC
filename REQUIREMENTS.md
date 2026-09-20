@@ -247,7 +247,7 @@ Open (đang mở, còn thêm được chi phí)
 |---|---|:---:|
 | FR-D01 | Bảng điều khiển lễ tân: **khách dự kiến đến hôm nay**, **dự kiến đi hôm nay**, **đang lưu trú**, **phòng trống**. | Bắt buộc |
 | FR-D02 | **Check-in khách có đặt trước**: tra mã đơn, đối chiếu giấy tờ, gán phòng cụ thể, nhập danh sách khách ở cùng, tạo Stay + Folio, phòng chuyển `Occupied`. | Bắt buộc |
-| FR-D03 | **Check-in khách vãng lai (Walk-in)**: tạo hồ sơ khách nhanh, chọn phòng trống, nhận cọc, tạo Stay + Folio trong một luồng. | Bắt buộc |
+| ~~FR-D03~~ | ~~**Check-in khách vãng lai (Walk-in)**~~ — **đã bỏ** (20/09/2026): khách sạn không nhận khách vãng lai. Khách tới quầy rồi mới đặt thì tạo đơn ở FR-C04 với nguồn "Trực tiếp tại quầy", rồi check-in theo FR-D02. | — |
 | FR-D04 | **Thêm khách** vào lượt lưu trú đang diễn ra; cảnh báo và tính phụ thu khi vượt sức chứa chuẩn. | Bắt buộc |
 | FR-D05 | **Đổi phòng** giữa kỳ lưu trú theo BR-09, bắt buộc nhập lý do. | Bắt buộc |
 | FR-D06 | **Gia hạn lưu trú**: kéo dài ngày đi nếu phòng còn trống ở các đêm tiếp theo. | Bắt buộc |
