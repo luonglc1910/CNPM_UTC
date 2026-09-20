@@ -30,6 +30,7 @@ public class HotelDbContext : DbContext
     public DbSet<HotelService> HotelServices => Set<HotelService>();
     public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
+    public DbSet<NumberSequence> NumberSequences => Set<NumberSequence>();
 
     // Khách hàng
     public DbSet<Guest> Guests => Set<Guest>();
@@ -146,6 +147,12 @@ public class HotelDbContext : DbContext
         {
             e.HasIndex(x => x.Key).IsUnique();
         });
+
+        b.Entity<NumberSequence>(e =>
+        {
+            // Cấp số chứng từ: mỗi cặp (tiền tố, kỳ) là một dòng đếm duy nhất — FR-C04, FR-F05.
+            e.HasIndex(x => new { x.Prefix, x.Period }).IsUnique();
+        });
     }
 
     private static void ConfigureGuests(ModelBuilder b)
@@ -261,6 +268,13 @@ public class HotelDbContext : DbContext
         {
             e.HasIndex(x => new { x.RoomId, x.Status });
 
+            // Một phòng chỉ có đúng một nhiệm vụ dọn đang mở (Pending=1 hoặc InProgress=2) —
+            // SCR-E01. Chặn ở tầng database để hai lễ tân không tạo trùng nhiệm vụ cùng lúc.
+            e.HasIndex(x => x.RoomId)
+                .IsUnique()
+                .HasDatabaseName("UX_Housekeeping_OpenPerRoom")
+                .HasFilter("[Status] IN (1, 2)");
+
             e.HasOne(x => x.Room)
                 .WithMany(r => r.HousekeepingTasks)
                 .HasForeignKey(x => x.RoomId);
@@ -368,6 +382,13 @@ public class HotelDbContext : DbContext
         b.Entity<CashierShift>(e =>
         {
             e.HasIndex(x => new { x.EmployeeId, x.Status });
+
+            // Một nhân viên chỉ được có đúng một ca đang mở (Open=1) tại một thời điểm —
+            // BR-10, SCR-F08. Chặn ở tầng database, không chỉ dựa vào kiểm tra ở service.
+            e.HasIndex(x => x.EmployeeId)
+                .IsUnique()
+                .HasDatabaseName("UX_Shift_OpenPerEmployee")
+                .HasFilter("[Status] = 1");
 
             e.HasOne(x => x.Employee)
                 .WithMany(emp => emp.Shifts)

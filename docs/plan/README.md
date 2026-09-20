@@ -12,10 +12,12 @@ Mục đích là để lần sau mở ra đọc rồi làm tiếp hoặc sửa l
 | [`05-employees.md`](05-employees.md) | Nhân viên & tài khoản (SCR-A10, A11) — khóa/mở khóa, đặt lại mật khẩu, đổi vai trò là đăng xuất mọi phiên | ✅ Đã xong, đã kiểm thử |
 | [`06-system-settings.md`](06-system-settings.md) | Cấu hình hệ thống (SCR-A12) — 6 nhóm tham số, logo, khôi phục mặc định từng nhóm. **Đóng lại nhóm A** | ✅ Đã xong, đã kiểm thử |
 | [`07-guests.md`](07-guests.md) | Hồ sơ khách (SCR-B01…B03) — che số giấy tờ, tra trùng khi nhập, lịch sử lưu trú & thống kê | ✅ Đã xong, đã kiểm thử (B04, B05 để sau) |
+| [`08-foundation.md`](08-foundation.md) | Sprint nền tảng vận hành (SP0) — engine phòng trống/giá/cấp số/transaction + Ca làm việc (SCR-F08, F09) | ⏳ Đã viết code, chờ build & verify trên máy có .NET SDK |
 
 ## Thứ tự làm tiếp
 
-Nhóm A đã xong toàn bộ SCR-A01…A12; nhóm B đã xong SCR-B01…B03.
+Nhóm A đã xong toàn bộ SCR-A01…A12; nhóm B đã xong SCR-B01…B03. SP0 (nền tảng) đã viết xong,
+chờ verify. Kế tiếp: SP1 — Đặt phòng (nhóm C).
 
 1. **Lát cắt dọc luồng chính**: tra phòng trống → đặt phòng → check-in → folio → check-out →
    thanh toán. Đây là phần khó và quan trọng nhất (chống trùng phòng BR-06, tính tiền

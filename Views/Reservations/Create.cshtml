@@ -1,11 +1,11 @@
+@model ReservationFormViewModel
 @{
     ViewData["Title"] = "Tạo đơn đặt phòng";
 }
 
-<partial name="_Placeholder" model="@("Admin tạo đơn đặt phòng thay cho khách: thông tin khách, ngày ở, loại phòng / phòng.")" />
+<partial name="_Form" model="Model" />
 
-<form method="post" class="mt-3 d-flex gap-2">
-    @* TODO: các trường nhập liệu *@
-    <button type="submit" class="btn btn-primary">Lưu</button>
-    <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
-</form>
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <partial name="_RoomLinesScript" model="Model" />
+}

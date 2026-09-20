@@ -1,0 +1,90 @@
+﻿@model InvoiceViewModel
+@{
+    ViewData["Title"] = $"Hóa đơn {Model.Invoice.InvoiceNo}";
+    var inv = Model.Invoice;
+}
+
+<div class="d-flex gap-2 mb-3 d-print-none">
+    <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> In hóa đơn</button>
+    <a class="btn btn-outline-secondary" asp-action="Index" asp-route-tab="@BillingIndexViewModel.InvoiceTab">Danh sách hóa đơn</a>
+    @if (User.IsInRole(Roles.Admin) && inv.Status != InvoiceStatus.Void)
+    {
+        <a class="btn btn-outline-danger ms-auto" asp-action="VoidInvoice" asp-route-id="@inv.Id"><i class="bi bi-x-octagon"></i> Hủy hóa đơn</a>
+    }
+</div>
+
+<div class="card"><div class="card-body">
+    @if (inv.Status == InvoiceStatus.Void)
+    {
+        <div class="alert alert-danger"><strong>ĐÃ HỦY</strong> — @inv.VoidReason</div>
+    }
+    else if (inv.Status == InvoiceStatus.Debt)
+    {
+        <div class="alert alert-warning">Còn nợ: <strong>@inv.DebtAmount.ToString("N0") ₫</strong></div>
+    }
+
+    <div class="d-flex justify-content-between flex-wrap">
+        <div>
+            <h4 class="mb-1">@Model.HotelName</h4>
+            <div class="small text-muted">@Model.HotelAddress</div>
+            <div class="small text-muted">ĐT: @Model.HotelPhone · MST: @Model.HotelTaxCode</div>
+        </div>
+        <div class="text-end">
+            <h5 class="mb-1">HÓA ĐƠN</h5>
+            <div><code>@inv.InvoiceNo</code></div>
+            <div class="small text-muted">@inv.IssuedAt.ToString("dd/MM/yyyy HH:mm")</div>
+        </div>
+    </div>
+
+    <hr />
+    <div class="row small mb-2">
+        <div class="col-sm-6">Khách: <strong>@Model.GuestName</strong> — @Model.GuestIdNumber</div>
+        <div class="col-sm-6 text-sm-end">
+            Phòng @Model.RoomNumber · @Model.ActualCheckIn.ToString("dd/MM/yyyy")
+            @(Model.ActualCheckOut is not null ? "→ " + Model.ActualCheckOut.Value.ToString("dd/MM/yyyy") : "") (@Model.Nights đêm)
+        </div>
+    </div>
+
+    <div class="table-responsive">
+    <table class="table table-sm">
+        <thead class="table-light"><tr><th>Nội dung</th><th class="text-center">SL</th><th class="text-end">Đơn giá</th><th class="text-end">Thành tiền</th></tr></thead>
+        <tbody>
+        @foreach (var l in Model.Lines.Where(x => !x.IsVoided))
+        {
+            <tr>
+                <td>@l.Description</td>
+                <td class="text-center">@l.Quantity</td>
+                <td class="text-end">@l.UnitPrice.ToString("N0")</td>
+                <td class="text-end">@l.Amount.ToString("N0")</td>
+            </tr>
+        }
+        </tbody>
+    </table>
+    </div>
+
+    <div class="row justify-content-end">
+        <div class="col-sm-5">
+            <div class="table-responsive">
+            <table class="table table-sm">
+                <tbody>
+                    <tr><td>Tạm tính</td><td class="text-end">@inv.SubTotal.ToString("N0") ₫</td></tr>
+                    <tr><td>VAT @((inv.TaxRate * 100).ToString("0.#"))%</td><td class="text-end">@inv.TaxAmount.ToString("N0") ₫</td></tr>
+                    <tr class="fw-semibold"><td>Tổng</td><td class="text-end">@inv.TotalAmount.ToString("N0") ₫</td></tr>
+                    <tr><td>Đã cọc</td><td class="text-end">-@inv.DepositAmount.ToString("N0") ₫</td></tr>
+                    <tr><td>Đã thanh toán</td><td class="text-end">@inv.AmountPaid.ToString("N0") ₫</td></tr>
+                    @if (inv.DebtAmount > 0)
+                    {
+                        <tr class="text-danger"><td>Còn nợ</td><td class="text-end">@inv.DebtAmount.ToString("N0") ₫</td></tr>
+                    }
+                </tbody>
+            </table>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.Payments.Any())
+    {
+        <div class="small text-muted">Phương thức: @string.Join(", ", Model.Payments.Where(p => p.Amount > 0).Select(p => p.Method.ToDisplayName()))</div>
+    }
+    <div class="text-center text-muted small mt-3">Cảm ơn quý khách. Hóa đơn này không thay thế hóa đơn giá trị gia tăng.</div>
+</div></div>

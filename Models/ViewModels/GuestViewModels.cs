@@ -233,3 +233,71 @@ public class GuestDetailsViewModel
     public IReadOnlyList<GuestReservationHistoryItem> Reservations { get; set; }
         = Array.Empty<GuestReservationHistoryItem>();
 }
+
+// ===================== SCR-B04 — Khai báo tạm trú theo ngày =====================
+
+/// <summary>
+/// Một người trong danh sách khai báo tạm trú — SCR-B04.
+/// Gồm cả khách ở cùng phòng chứ không riêng người đứng tên đơn (FR-B04).
+/// </summary>
+public class ResidenceRow
+{
+    public int GuestId { get; set; }
+    public string FullName { get; set; } = string.Empty;
+    public DateTime? DateOfBirth { get; set; }
+    public Gender? Gender { get; set; }
+    public string Nationality { get; set; } = string.Empty;
+    public GuestIdType IdType { get; set; }
+    public string IdNumber { get; set; } = string.Empty;
+    public string? Address { get; set; }
+    public string RoomNumber { get; set; } = string.Empty;
+    public DateTime From { get; set; }
+    public DateTime? To { get; set; }
+    public bool IsPrimary { get; set; }
+
+    /// <summary>
+    /// Thiếu trường bắt buộc để khai báo. Công an yêu cầu đủ ngày sinh và địa chỉ thường trú,
+    /// nên những dòng này phải được bổ sung trước khi in.
+    /// </summary>
+    public bool IsIncomplete => DateOfBirth is null || string.IsNullOrWhiteSpace(Address);
+}
+
+/// <summary>Danh sách khai báo tạm trú theo ngày — SCR-B04, FR-B05.</summary>
+public class ResidenceViewModel
+{
+    [Display(Name = "Ngày")]
+    [DataType(DataType.Date)]
+    public DateTime Date { get; set; }
+
+    public IReadOnlyList<ResidenceRow> Rows { get; set; } = new List<ResidenceRow>();
+
+    public int IncompleteCount => Rows.Count(r => r.IsIncomplete);
+    public int RoomCount => Rows.Select(r => r.RoomNumber).Distinct().Count();
+}
+
+// ===================== SCR-B05 — Danh sách hạn chế =====================
+
+/// <summary>
+/// Đưa vào / gỡ khỏi danh sách hạn chế — SCR-B05, FR-B06, BR-11.
+/// Lý do bắt buộc vì đây là quyết định ảnh hưởng tới khách và phải giải trình được về sau.
+/// </summary>
+public class BlacklistForm
+{
+    public int Id { get; set; }
+
+    /// <summary>Tên khách, chỉ để hiển thị lại khi có lỗi kiểm tra.</summary>
+    public string? GuestName { get; set; }
+
+    [Display(Name = "Hành động")]
+    public bool AddToBlacklist { get; set; } = true;
+
+    [Display(Name = "Lý do")]
+    [Required(ErrorMessage = "Vui lòng nhập lý do.")]
+    [MinLength(10, ErrorMessage = "Lý do cần ít nhất 10 ký tự để người đọc sau còn hiểu được.")]
+    [MaxLength(500)]
+    public string Reason { get; set; } = string.Empty;
+
+    [Display(Name = "Ghi chú")]
+    [MaxLength(500)]
+    public string? Notes { get; set; }
+}

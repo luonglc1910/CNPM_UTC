@@ -1,0 +1,132 @@
+﻿@model RoomChartViewModel
+@{
+    ViewData["Title"] = "Sơ đồ phòng theo ngày";
+
+    string CellClass(RoomChartCellKind kind) => kind switch
+    {
+        RoomChartCellKind.Occupied => "chart-occupied",
+        RoomChartCellKind.Reserved => "chart-reserved",
+        RoomChartCellKind.Blocked => "chart-blocked",
+        _ => "chart-free"
+    };
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-6 col-md-3">
+                <label asp-for="From" class="form-label">Từ ngày</label>
+                <input asp-for="From" type="date" name="from" class="form-control" />
+            </div>
+            <div class="col-6 col-md-2">
+                <label asp-for="Days" class="form-label">Số ngày</label>
+                <select asp-for="Days" name="days" class="form-select">
+                    @foreach (var d in new[] { 7, 14, 30, 60 })
+                    {
+                        <option value="@d" selected="@(Model.Days == d)">@d ngày</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-calendar3"></i> Xem sơ đồ</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@if (Model.Truncated)
+{
+    <div class="alert alert-info">
+        Khoảng yêu cầu vượt quá @RoomChartViewModel.MaxDays ngày nên đã rút gọn — bảng rộng hơn
+        thì mất tác dụng nhìn nhanh.
+    </div>
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+    <div class="status-legend">
+        <span class="status-legend-item"><span class="status-legend-swatch" style="background: #f3faf6; box-shadow: inset 0 0 0 1px var(--st-available)"></span> Trống</span>
+        <span class="status-legend-item"><span class="status-legend-swatch" style="background: var(--st-reserved)"></span> Đã đặt</span>
+        <span class="status-legend-item"><span class="status-legend-swatch" style="background: var(--st-occupied)"></span> Đang ở</span>
+        <span class="status-legend-item"><span class="status-legend-swatch" style="background: var(--st-maintenance)"></span> Không khai thác</span>
+    </div>
+    <span class="text-muted small">
+        @Model.Rows.Count phòng × @Model.Days đêm · còn trống <strong>@Model.FreeNights</strong>/@Model.TotalNights đêm
+    </span>
+</div>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        <p class="mb-0">Chưa có phòng nào đang khai thác.</p>
+    </div></div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table room-chart mb-0">
+                <thead>
+                    <tr>
+                        <th class="room-chart-head">Phòng</th>
+                        @foreach (var d in Model.Dates)
+                        {
+                            var weekend = d.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                            <th class="room-chart-day @(weekend ? "is-weekend" : "")">
+                                <div class="room-chart-dow">@d.ToString("ddd", new System.Globalization.CultureInfo("vi-VN"))</div>
+                                <div>@d.ToString("dd/MM")</div>
+                            </th>
+                        }
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var row in Model.Rows)
+                {
+                    <tr>
+                        <th class="room-chart-head">
+                            <div class="fw-semibold">@row.RoomNumber</div>
+                            <div class="text-muted small">@row.RoomTypeName</div>
+                        </th>
+                        @foreach (var seg in row.Segments)
+                        {
+                            @if (seg.Kind == RoomChartCellKind.Free)
+                            {
+                                @* Ô trống mở thẳng màn tạo đơn với phòng và ngày điền sẵn — SCR-C03. *@
+                                <td class="room-chart-cell chart-free" colspan="@seg.Span">
+                                    <a class="room-chart-link"
+                                       asp-action="Create"
+                                       asp-route-roomId="@row.RoomId"
+                                       asp-route-checkIn="@seg.Date.ToString("yyyy-MM-dd")"
+                                       asp-route-checkOut="@seg.Date.AddDays(seg.Span).ToString("yyyy-MM-dd")"
+                                       title="Đặt phòng @row.RoomNumber từ @seg.Date.ToString("dd/MM") (@seg.Span đêm trống)">
+                                        <span class="visually-hidden">Đặt phòng</span>
+                                    </a>
+                                </td>
+                            }
+                            else
+                            {
+                                <td class="room-chart-cell @CellClass(seg.Kind)" colspan="@seg.Span" title="@seg.Tooltip">
+                                    @if (seg.ReservationId is int rid)
+                                    {
+                                        <a class="room-chart-band" asp-action="Details" asp-route-id="@rid">
+                                            @seg.GuestName
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="room-chart-band">@seg.StatusLabel</span>
+                                    }
+                                </td>
+                            }
+                        }
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <p class="text-muted small mt-2">
+        Một dải liền là một lượt đặt. Nhấp ô trống để tạo đơn với phòng và ngày điền sẵn;
+        nhấp dải để mở đơn. Ô vừa kết thúc một dải chính là phòng sắp chuyển sang chờ dọn.
+    </p>
+}

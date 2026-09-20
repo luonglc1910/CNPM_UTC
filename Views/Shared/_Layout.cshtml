@@ -1,14 +1,23 @@
+@inject HotelManagement.Web.Services.IShiftService ShiftService
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
     <title>@ViewData["Title"] - Quản lý Khách sạn</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    @* Be Vietnam Pro: bộ chữ vẽ riêng cho dấu tiếng Việt, đủ dải nét cho một
+       giao diện vận hành dày dữ liệu. *@
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
+    <a class="skip-link" href="#main">Bỏ qua tới nội dung</a>
+
     <div class="admin-shell">
         <aside class="admin-sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="adminSidebar">
             <div class="offcanvas-header">
@@ -28,22 +37,47 @@
                     <i class="bi bi-list"></i>
                 </button>
                 <h1 class="admin-title">@ViewData["Title"]</h1>
-                <div class="ms-auto d-flex align-items-center gap-2">
-                    <span class="text-muted small">
-                        <i class="bi bi-person-circle"></i>
-                        @User.GetDisplayName()
-                        <span class="badge text-bg-secondary ms-1">@User.GetRoleDisplayName()</span>
-                    </span>
-                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Account" asp-action="ChangePassword">
-                        <i class="bi bi-key"></i> Đổi mật khẩu
-                    </a>
-                    <form asp-controller="Account" asp-action="Logout" method="post">
-                        <button type="submit" class="btn btn-outline-secondary btn-sm">Đăng xuất</button>
-                    </form>
+
+                <div class="ms-auto d-flex align-items-center gap-3">
+                    @* Chỉ báo ca đang mở của người đăng nhập — 00-conventions.md mục 1, BR-10.
+                       Chưa mở ca thì thu ngân không thu được tiền, nên đây là trạng thái chặn
+                       nghiệp vụ chứ không phải một nhãn phụ. *@
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        var openShift = await ShiftService.GetOpenShiftAsync(User.GetEmployeeId() ?? 0);
+                        if (openShift is not null)
+                        {
+                            <a class="shift-pill shift-pill-open" asp-controller="Shifts" asp-action="Index">
+                                <i class="bi bi-cash-stack"></i> Ca #@openShift.Id đang mở
+                            </a>
+                        }
+                        else
+                        {
+                            <a class="shift-pill shift-pill-closed" asp-controller="Shifts" asp-action="Index">
+                                <i class="bi bi-exclamation-circle"></i> Chưa mở ca
+                            </a>
+                        }
+
+                        <div class="topbar-divider d-none d-md-block"></div>
+
+                        <div class="topbar-user d-none d-md-flex">
+                            <span class="topbar-user-name">@User.GetDisplayName()</span>
+                            <span class="topbar-user-role">@User.GetRoleDisplayName()</span>
+                        </div>
+                    }
+
+                    <div class="d-flex align-items-center gap-2">
+                        <a class="btn btn-outline-secondary btn-sm" asp-controller="Account" asp-action="ChangePassword">
+                            <i class="bi bi-key"></i> <span class="d-none d-lg-inline">Đổi mật khẩu</span>
+                        </a>
+                        <form asp-controller="Account" asp-action="Logout" method="post">
+                            <button type="submit" class="btn btn-outline-secondary btn-sm">Đăng xuất</button>
+                        </form>
+                    </div>
                 </div>
             </header>
 
-            <main class="admin-content">
+            <main class="admin-content" id="main">
                 @* Bốn kênh thông báo theo 00-conventions.md mục 4. *@
                 @if (TempData["Success"] is string success)
                 {

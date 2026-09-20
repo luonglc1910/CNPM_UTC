@@ -1,4 +1,4 @@
-@model GuestDetailsViewModel
+﻿@model GuestDetailsViewModel
 @{
     ViewData["Title"] = $"Khách: {Model.FullName}";
     var isAdmin = User.IsInRole(Roles.Admin);
@@ -24,6 +24,20 @@
     </div>
     <div class="d-flex gap-2">
         <a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a>
+        @* Đặt/gỡ hạn chế chỉ Admin làm được — SCR-B05. *@
+        @if (isAdmin)
+        {
+            <button type="button" class="btn btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#blacklistModal">
+                @if (Model.IsBlacklisted)
+                {
+                    <i class="bi bi-shield-check"></i><span> Gỡ hạn chế</span>
+                }
+                else
+                {
+                    <i class="bi bi-shield-exclamation"></i><span> Đưa vào hạn chế</span>
+                }
+            </button>
+        }
         <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Id">
             <i class="bi bi-pencil"></i> Sửa hồ sơ
         </a>
@@ -257,3 +271,54 @@
         }
     </div>
 </div>
+
+
+@* ===== SCR-B05 — hộp thoại đưa vào / gỡ khỏi danh sách hạn chế ===== *@
+@if (isAdmin)
+{
+    <div class="modal fade" id="blacklistModal" tabindex="-1" aria-labelledby="blacklistModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <form method="post" asp-action="Blacklist" asp-route-id="@Model.Id" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="blacklistModalLabel">
+                        @(Model.IsBlacklisted ? "Gỡ khỏi danh sách hạn chế" : "Đưa vào danh sách hạn chế")
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Đóng"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">
+                        Khách <strong>@Model.FullName</strong>.
+                        @if (Model.IsBlacklisted)
+                        {
+                            <span>Gỡ hạn chế sẽ xóa lý do đang lưu và ngừng cảnh báo ở màn hình đặt phòng, check-in.</span>
+                        }
+                        else
+                        {
+                            <span>Hệ thống sẽ cảnh báo khi đặt phòng hoặc check-in cho khách này, nhưng <strong>không tự chặn</strong> — quyết định nhận hay từ chối vẫn là của con người.</span>
+                        }
+                    </p>
+
+                    <input type="hidden" name="AddToBlacklist" value="@((!Model.IsBlacklisted).ToString().ToLowerInvariant())" />
+
+                    <div class="mb-3">
+                        <label for="blacklistReason" class="form-label">Lý do <span class="text-danger">*</span></label>
+                        <textarea id="blacklistReason" name="Reason" class="form-control" rows="3" required minlength="10"
+                                  placeholder="Ghi rõ để người đọc lại sau vài tháng vẫn hiểu được"></textarea>
+                        <div class="form-text">Ít nhất 10 ký tự. Lý do được ghi vào nhật ký thao tác.</div>
+                    </div>
+
+                    <div class="mb-1">
+                        <label for="blacklistNotes" class="form-label">Ghi chú</label>
+                        <input id="blacklistNotes" name="Notes" class="form-control" />
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn @(Model.IsBlacklisted ? "btn-primary" : "btn-danger")">
+                        @(Model.IsBlacklisted ? "Gỡ hạn chế" : "Đưa vào hạn chế")
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+}

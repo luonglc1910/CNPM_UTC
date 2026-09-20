@@ -1,4 +1,4 @@
-@inject HotelManagement.Web.Security.IScreenAccess Screens
+﻿@inject HotelManagement.Web.Security.IScreenAccess Screens
 @{
     var controller = ViewContext.RouteData.Values["controller"] as string;
     var action = ViewContext.RouteData.Values["action"] as string;
@@ -19,20 +19,30 @@
         (null,                    "Cấu hình hệ thống",    "sliders",            "Settings",      "Index"),
 
         ("Khách hàng",            "Hồ sơ khách",          "person-vcard",       "Guests",        "Index"),
+        (null,                    "Khai báo tạm trú",     "file-earmark-text",  "Guests",        "Residence"),
 
         ("Đặt phòng",             "Đơn đặt phòng",        "journal-bookmark",   "Reservations",  "Index"),
         (null,                    "Tra cứu phòng trống",  "calendar-check",     "Reservations",  "Availability"),
+        (null,                    "Sơ đồ phòng",          "calendar3-range",    "Reservations",  "RoomChart"),
+        (null,                    "Đơn quá hạn / No-show","person-x",           "Reservations",  "NoShow"),
 
-        ("Lễ tân",                "Khách đang lưu trú",   "person-lines-fill",  "FrontDesk",     "Index"),
-        (null,                    "Check-in",             "box-arrow-in-right", "FrontDesk",     "CheckIn"),
+        // Không có mục Check-in ở đây: SCR-D02 là màn hình của một đơn đặt cụ thể
+        // (/FrontDesk/CheckIn/{reservationId} — 05-frontdesk.md), gọi trơn không kèm mã đơn
+        // thì action trả NotFound. Lối vào đúng là tab "Khách đến hôm nay" của bảng điều
+        // khiển ngay dưới, nơi mỗi dòng có nút Check-in.
+        ("Lễ tân",                "Bảng điều khiển",      "person-lines-fill",  "FrontDesk",     "Index"),
         (null,                    "Khách vãng lai",       "person-walking",     "FrontDesk",     "WalkIn"),
 
         ("Buồng phòng",           "Trạng thái dọn phòng", "stars",              "Housekeeping",  "Index"),
         (null,                    "Yêu cầu phục vụ",      "bell",               "Housekeeping",  "Requests"),
 
         ("Thu ngân & Báo cáo",    "Hóa đơn",              "receipt",            "Billing",       "Index"),
+        (null,                    "Ca làm việc",          "cash-stack",         "Shifts",        "Index"),
         (null,                    "Doanh thu",            "graph-up",           "Reports",       "Revenue"),
-        (null,                    "Công suất phòng",      "pie-chart",          "Reports",       "Occupancy")
+        (null,                    "Công suất phòng",      "pie-chart",          "Reports",       "Occupancy"),
+        (null,                    "Dịch vụ & tồn kho",    "box-seam",           "Reports",       "Services"),
+        (null,                    "Nhân viên / ca",        "person-badge",       "Reports",       "Staff"),
+        (null,                    "Nhật ký thao tác",    "journal-text",       "Reports",       "AuditLog")
     };
 
     // Lọc trước những mục không có quyền, rồi mới quyết định tiêu đề nhóm nào còn mục để hiện.

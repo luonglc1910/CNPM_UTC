@@ -1,0 +1,87 @@
+﻿@model CheckOutViewModel
+@{
+    ViewData["Title"] = $"Check-out — Phòng {Model.RoomNumber}";
+    var s = Model.Summary;
+}
+
+<div class="row g-3">
+    <div class="col-lg-7">
+        <div class="card mb-3">
+            <div class="card-header">Điều kiện check-out (BR-08)</div>
+            <ul class="list-group list-group-flush">
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    Đã kiểm phòng &amp; minibar
+                    @if (Model.IsInspected)
+                    {
+                        <span class="badge text-bg-success">Đã kiểm</span>
+                    }
+                    else
+                    {
+                        <a class="btn btn-sm btn-warning" asp-controller="Billing" asp-action="Minibar" asp-route-stayId="@Model.StayId">Kiểm phòng ngay</a>
+                    }
+                </li>
+            </ul>
+        </div>
+
+        <form method="post" asp-action="CheckOut">
+            <input type="hidden" asp-for="StayId" />
+            <div class="card mb-3">
+                <div class="card-header">Chốt giờ trả &amp; phụ thu (BR-01, BR-03)</div>
+                <div class="card-body">
+                    <div class="mb-2">
+                        <label class="form-label">Giờ trả phòng chuẩn: 12:00 · dự kiến @Model.ExpectedCheckOut.ToString("dd/MM/yyyy")</label>
+                        <input asp-for="ActualCheckOut" type="datetime-local" class="form-control" />
+                    </div>
+                    @if (Model.LateSurchargeAmount > 0 || Model.ExtraNightsFromLate > 0)
+                    {
+                        <div class="alert alert-warning py-2 small mb-2">
+                            @Model.LateSurchargeDescription — dự kiến @Model.LateSurchargeAmount.ToString("N0") ₫
+                            @(Model.ExtraNightsFromLate > 0 ? "(tính thêm 1 đêm)" : "")
+                        </div>
+                    }
+                    @if (Model.IsAdmin)
+                    {
+                        <div class="form-check">
+                            <input asp-for="WaiveLateSurcharge" class="form-check-input" />
+                            <label asp-for="WaiveLateSurcharge" class="form-check-label">Miễn phụ thu trễ giờ</label>
+                        </div>
+                    }
+                </div>
+            </div>
+
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary" disabled="@(!Model.CanProceed)">
+                    <i class="bi bi-arrow-right-circle"></i> Tiếp tục thanh toán
+                </button>
+                <a class="btn btn-outline-secondary" asp-action="Stay" asp-route-id="@Model.StayId">Quay lại</a>
+            </div>
+            @if (!Model.CanProceed)
+            {
+                <div class="form-text text-danger mt-1">Chưa kiểm phòng nên chưa thanh toán được.</div>
+            }
+        </form>
+    </div>
+
+    <div class="col-lg-5">
+        <div class="card">
+            <div class="card-header">Tạm tính hiện tại</div>
+            <div class="card-body">
+                <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr><td>Tiền phòng</td><td class="text-end">@s.RoomCharge.ToString("N0") ₫</td></tr>
+                        <tr><td>Dịch vụ</td><td class="text-end">@s.ServiceCharge.ToString("N0") ₫</td></tr>
+                        <tr><td>Phụ thu</td><td class="text-end">@s.SurchargeAmount.ToString("N0") ₫</td></tr>
+                        <tr><td>Giảm giá</td><td class="text-end">-@s.DiscountAmount.ToString("N0") ₫</td></tr>
+                        <tr><td>VAT</td><td class="text-end">@s.TaxAmount.ToString("N0") ₫</td></tr>
+                        <tr class="fw-semibold"><td>Tổng</td><td class="text-end">@s.Total.ToString("N0") ₫</td></tr>
+                        <tr><td>Đã cọc</td><td class="text-end">-@s.DepositApplied.ToString("N0") ₫</td></tr>
+                        <tr class="table-light fw-semibold"><td>Số dư phải thu</td><td class="text-end">@s.BalanceDue.ToString("N0") ₫</td></tr>
+                    </tbody>
+                </table>
+                </div>
+                <div class="form-text mt-2">Phụ thu trễ giờ được cộng vào folio khi nhấn "Tiếp tục thanh toán".</div>
+            </div>
+        </div>
+    </div>
+</div>

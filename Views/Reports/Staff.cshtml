@@ -1,0 +1,253 @@
+@model StaffReportViewModel
+@{
+    ViewData["Title"] = "Báo cáo theo nhân viên / ca";
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-6 col-md-3">
+                <label asp-for="From" class="form-label">Từ ngày</label>
+                <input asp-for="From" type="date" class="form-control" />
+            </div>
+            <div class="col-6 col-md-3">
+                <label asp-for="To" class="form-label">Đến ngày</label>
+                <input asp-for="To" type="date" class="form-control" />
+            </div>
+            <div class="col-12 col-md-3">
+                <label asp-for="EmployeeId" class="form-label">Nhân viên</label>
+                <select asp-for="EmployeeId" class="form-select">
+                    <option value="">Tất cả</option>
+                    @foreach (var e in Model.EmployeeOptions)
+                    {
+                        <option value="@e.Id" selected="@(Model.EmployeeId == e.Id)">@e.FullName</option>
+                    }
+                </select>
+            </div>
+            <div class="col-8 col-md-2">
+                <label asp-for="Role" class="form-label">Vai trò</label>
+                <select asp-for="Role" class="form-select">
+                    <option value="">Tất cả</option>
+                    @foreach (var r in Enum.GetValues<EmployeeRole>())
+                    {
+                        <option value="@((int)r)" selected="@(Model.Role == r)">@r.ToDisplayName()</option>
+                    }
+                </select>
+            </div>
+            <div class="col-4 col-md-1">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="row g-2 mb-3">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-label">Tổng thu trong kỳ</div>
+            <div class="stat-value fs-4">@Model.TotalCollected.ToString("N0") ₫</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-label">Số ca</div>
+            <div class="stat-value fs-4">@Model.Shifts.Count</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-label">Ca lệch quỹ</div>
+            <div class="stat-value fs-4">@Model.ShiftsWithDifference</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-label">Lần bỏ qua cảnh báo</div>
+            <div class="stat-value fs-4">@Model.Activity.Sum(a => a.WarningOverrides)</div>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-shifts" type="button">
+            Theo ca thu ngân (@Model.Shifts.Count)
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-activity" type="button">
+            Theo nhân viên lễ tân (@Model.Activity.Count)
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-shifts">
+        @if (Model.Shifts.Count == 0)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-5">
+                <p class="mb-0">Không có ca nào được mở trong khoảng đã chọn.</p>
+            </div></div>
+        }
+        else
+        {
+            <div class="card mb-3">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Ca</th>
+                                <th>Nhân viên</th>
+                                <th>Mở – đóng</th>
+                                <th class="text-end">Tiền mặt</th>
+                                <th class="text-end">Chuyển khoản</th>
+                                <th class="text-end">Thẻ</th>
+                                <th class="text-end">Tổng thu</th>
+                                <th class="text-end">Chênh lệch quỹ</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var s in Model.Shifts)
+                        {
+                            <tr class="@(s.HasDifference ? "table-warning" : "")">
+                                <td class="text-nowrap">
+                                    <a asp-controller="Shifts" asp-action="Report" asp-route-id="@s.ShiftId">#@s.ShiftId</a>
+                                </td>
+                                <td class="text-nowrap">@s.EmployeeName</td>
+                                <td class="text-nowrap small">
+                                    @s.OpenedAt.ToString("dd/MM HH:mm")
+                                    @if (s.ClosedAt is not null)
+                                    {
+                                        <span> – @s.ClosedAt.Value.ToString("dd/MM HH:mm")</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge text-bg-success ms-1">đang mở</span>
+                                    }
+                                </td>
+                                <td class="text-end">@s.Cash.ToString("N0")</td>
+                                <td class="text-end">@s.BankTransfer.ToString("N0")</td>
+                                <td class="text-end">@s.Card.ToString("N0")</td>
+                                <td class="text-end fw-semibold">@s.Total.ToString("N0")</td>
+                                <td class="text-end">
+                                    @if (s.CashDifference is null)
+                                    {
+                                        <span class="text-muted">—</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="@(s.HasDifference ? "fw-semibold text-danger" : "")">
+                                            @s.CashDifference.Value.ToString("N0")
+                                        </span>
+                                        @if (!string.IsNullOrWhiteSpace(s.DifferenceReason))
+                                        {
+                                            <div class="small text-muted">@s.DifferenceReason</div>
+                                        }
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            @* Cộng dồn theo người: một ca lệch có thể là nhầm lẫn, lệch lặp lại thì không. *@
+            <div class="card">
+                <div class="card-header">Chênh lệch quỹ cộng dồn theo nhân viên</div>
+                <div class="table-responsive">
+                    <table class="table table-sm align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nhân viên</th>
+                                <th class="text-end">Số ca</th>
+                                <th class="text-end">Số ca lệch</th>
+                                <th class="text-end">Tổng chênh lệch</th>
+                                <th class="text-end">Tổng trị tuyệt đối</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var c in Model.CashDifferences)
+                        {
+                            <tr>
+                                <td>@c.EmployeeName</td>
+                                <td class="text-end">@c.ShiftCount</td>
+                                <td class="text-end">@c.DifferenceCount</td>
+                                <td class="text-end @(c.TotalDifference != 0 ? "fw-semibold" : "")">@c.TotalDifference.ToString("N0")</td>
+                                <td class="text-end @(c.TotalAbsoluteDifference > 0 ? "text-danger fw-semibold" : "")">@c.TotalAbsoluteDifference.ToString("N0")</td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+                <div class="card-body py-2">
+                    <p class="text-muted small mb-0">
+                        Cột trị tuyệt đối tồn tại vì hai ca lệch +1.000.000 và −1.000.000 sẽ triệt tiêu
+                        thành 0 ở cột tổng, che mất đúng người cần để ý.
+                    </p>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="tab-pane fade" id="tab-activity">
+        @if (Model.Activity.Count == 0)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-5">
+                <p class="mb-0">Không có thao tác nào trong khoảng đã chọn.</p>
+            </div></div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Nhân viên</th>
+                                <th>Vai trò</th>
+                                <th class="text-end">Check-in</th>
+                                <th class="text-end">Check-out</th>
+                                <th class="text-end">Đơn tạo mới</th>
+                                <th class="text-end">Đơn hủy</th>
+                                <th class="text-end">Tổng giảm giá</th>
+                                <th class="text-end">Bỏ qua cảnh báo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var a in Model.Activity)
+                        {
+                            <tr>
+                                <td>@a.EmployeeName</td>
+                                <td class="small text-muted">@a.Role.ToDisplayName()</td>
+                                <td class="text-end">@a.CheckIns</td>
+                                <td class="text-end">@a.CheckOuts</td>
+                                <td class="text-end">@a.ReservationsCreated</td>
+                                <td class="text-end @(a.ReservationsCancelled > 0 ? "text-danger" : "")">@a.ReservationsCancelled</td>
+                                <td class="text-end @(a.TotalDiscount > 0 ? "text-danger" : "")">@a.TotalDiscount.ToString("N0")</td>
+                                <td class="text-end">
+                                    @if (a.WarningOverrides > 0)
+                                    {
+                                        <a asp-action="AuditLog" asp-route-UserName="" asp-route-From="@Model.From.ToString("yyyy-MM-dd")" asp-route-To="@Model.To.ToString("yyyy-MM-dd")">
+                                            <span class="badge text-bg-danger">@a.WarningOverrides</span>
+                                        </a>
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted">0</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <p class="text-muted small mt-2">
+                Giảm giá bất thường, hủy đơn bất thường và lệch quỹ lặp lại đều lộ ra ở hai tab này —
+                đó là mục đích kiểm soát của SCR-G04.
+            </p>
+        }
+    </div>
+</div>

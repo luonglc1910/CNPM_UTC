@@ -35,6 +35,23 @@ builder.Services.AddScoped<ISettingsService, SettingsService>();
 // Nghiệp vụ khách hàng.
 builder.Services.AddScoped<IGuestService, GuestService>();
 
+// Hạ tầng dùng chung cho phần vận hành (SP0) — đặt phòng, lễ tân, thu ngân, báo cáo đều dựa vào.
+builder.Services.AddScoped<ISettingsReader, SettingsReader>();
+builder.Services.AddScoped<IPricingService, PricingService>();
+builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
+builder.Services.AddScoped<INumberSequenceService, NumberSequenceService>();
+builder.Services.AddScoped<ITransactionRunner, TransactionRunner>();
+builder.Services.AddScoped<IShiftService, ShiftService>();
+
+// Nghiệp vụ đặt phòng (SP1 — nhóm C).
+builder.Services.AddScoped<IReservationService, ReservationService>();
+
+// Vận hành: lễ tân (D), thu ngân (F), buồng phòng (E), báo cáo (G).
+builder.Services.AddScoped<IBillingService, BillingService>();
+builder.Services.AddScoped<IFrontDeskService, FrontDeskService>();
+builder.Services.AddScoped<IHousekeepingService, HousekeepingService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+
 // Đối chiếu cookie đăng nhập với bản ghi nhân viên ở mỗi request — xem Security/EmployeeCookieEvents.cs.
 builder.Services.AddScoped<EmployeeCookieEvents>();
 
@@ -43,7 +60,11 @@ builder.Services.Configure<WebEncoderOptions>(options =>
     options.TextEncoderSettings = new TextEncoderSettings(UnicodeRanges.All));
 
 builder.Services.AddDbContext<HotelDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("HotelDb")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("HotelDb"),
+        // Tự thử lại khi gặp lỗi tạm thời của SQL Server — NFR-03. Transaction nghiệp vụ phải
+        // đi qua ITransactionRunner (bọc execution strategy) mới mở được transaction thủ công.
+        sql => sql.EnableRetryOnFailure()));
 
 // Xác thực bằng cookie — SCR-S01, NFR-02.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
