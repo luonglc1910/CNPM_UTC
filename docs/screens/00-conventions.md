@@ -16,7 +16,6 @@ sẽ **không lặp lại** những nội dung này.
 │ • Tổng quan   │  Vùng thông báo (thành công / lỗi / cảnh báo)        │
 │ • Đặt phòng   │                                                      │
 │ • Lễ tân      │  Nội dung chính (bảng / form / thẻ số liệu)          │
-│ • Buồng phòng │                                                      │
 │ • Thu ngân    │                                                      │
 │ • Khách hàng  │                                                      │
 │ • Danh mục ▾  │                                                      │

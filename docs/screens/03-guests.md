@@ -1,8 +1,9 @@
 # 03 — Khách hàng (Nhóm B)
 
-> Nguyên tắc chung: **Buồng phòng không truy cập được bất kỳ màn hình nào trong nhóm này**
-> — họ không có nhu cầu nghiệp vụ với thông tin cá nhân của khách, và đây là dữ liệu nhạy cảm
-> (số CCCD/Passport). Mọi truy cập vào hồ sơ khách đều ghi audit log ở mức đọc.
+> Nguyên tắc chung: cả Admin và Lễ tân đều dùng nhóm này, nhưng **thao tác đưa vào / gỡ khỏi
+> danh sách hạn chế chỉ dành cho Admin**. Đây là dữ liệu cá nhân nhạy cảm (số CCCD/Passport)
+> nên số giấy tờ bị che một phần ở màn hình danh sách, và mọi truy cập vào hồ sơ khách đều
+> ghi audit log ở mức đọc.
 
 ---
 
@@ -11,7 +12,7 @@
 | | |
 |---|---|
 | **URL** | `GET /Guests` |
-| **Quyền** | Admin, Lễ tân · Buồng phòng → 403 |
+| **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-B01, FR-B02 |
 
 ### Cột hiển thị

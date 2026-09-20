@@ -6,6 +6,11 @@
         string.Equals(controller, c, StringComparison.OrdinalIgnoreCase)
         && (a is null || string.Equals(action, a, StringComparison.OrdinalIgnoreCase))
             ? "active" : "";
+
+    // Với 2 vai trò, mọi nhóm nghiệp vụ đều mở cho cả Admin lẫn Lễ tân.
+    // Chỉ còn hai chỗ giới hạn cho Admin: danh mục Nhân viên và nhóm Báo cáo.
+    // (Các màn hình danh mục lễ tân chỉ được xem — nút Thêm/Sửa ẩn ngay trong màn hình đó.)
+    var isAdmin = User.IsInRole(Roles.Admin);
 }
 
 <nav class="sidebar-nav">
@@ -15,7 +20,10 @@
     <a class="nav-link @Active("RoomTypes")" asp-controller="RoomTypes" asp-action="Index"><i class="bi bi-tags"></i> Loại phòng</a>
     <a class="nav-link @Active("Rooms")" asp-controller="Rooms" asp-action="Index"><i class="bi bi-door-closed"></i> Phòng</a>
     <a class="nav-link @Active("HotelServices")" asp-controller="HotelServices" asp-action="Index"><i class="bi bi-cup-hot"></i> Dịch vụ</a>
-    <a class="nav-link @Active("Employees")" asp-controller="Employees" asp-action="Index"><i class="bi bi-people"></i> Nhân viên</a>
+    @if (isAdmin)
+    {
+        <a class="nav-link @Active("Employees")" asp-controller="Employees" asp-action="Index"><i class="bi bi-people"></i> Nhân viên</a>
+    }
 
     <div class="nav-section">Đặt phòng</div>
     <a class="nav-link @Active("Reservations", "Index")" asp-controller="Reservations" asp-action="Index"><i class="bi bi-journal-bookmark"></i> Đơn đặt phòng</a>
@@ -32,6 +40,9 @@
 
     <div class="nav-section">Thu ngân &amp; Báo cáo</div>
     <a class="nav-link @Active("Billing")" asp-controller="Billing" asp-action="Index"><i class="bi bi-receipt"></i> Hóa đơn</a>
-    <a class="nav-link @Active("Reports", "Revenue")" asp-controller="Reports" asp-action="Revenue"><i class="bi bi-graph-up"></i> Doanh thu</a>
-    <a class="nav-link @Active("Reports", "Occupancy")" asp-controller="Reports" asp-action="Occupancy"><i class="bi bi-pie-chart"></i> Công suất phòng</a>
+    @if (isAdmin)
+    {
+        <a class="nav-link @Active("Reports", "Revenue")" asp-controller="Reports" asp-action="Revenue"><i class="bi bi-graph-up"></i> Doanh thu</a>
+        <a class="nav-link @Active("Reports", "Occupancy")" asp-controller="Reports" asp-action="Occupancy"><i class="bi bi-pie-chart"></i> Công suất phòng</a>
+    }
 </nav>

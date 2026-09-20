@@ -1,8 +1,7 @@
 # 04 — Đặt phòng (Nhóm C)
 
-> Nguyên tắc chung: Admin và Lễ tân có quyền như nhau ở hầu hết màn hình trong nhóm này
-> (lễ tân phải tự chủ được việc đặt phòng). Buồng phòng chỉ được xem sơ đồ phòng (SCR-C03)
-> để biết lịch dọn, không thấy thông tin khách và tiền.
+> Nguyên tắc chung: Admin và Lễ tân có quyền **như nhau** ở toàn bộ nhóm này — lễ tân phải tự
+> chủ được việc đặt phòng. Ngoại lệ duy nhất là thao tác miễn phí hủy (SCR-C08), chỉ Admin.
 
 ---
 
@@ -11,7 +10,7 @@
 | | |
 |---|---|
 | **URL** | `GET /Reservations` |
-| **Quyền** | Admin, Lễ tân · Buồng phòng → 403 |
+| **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-C09 |
 
 ### Cột hiển thị
@@ -97,7 +96,7 @@ Nút **Chọn đặt** chuyển sang SCR-C04 mang theo sẵn ngày, loại phòn
 | | |
 |---|---|
 | **URL** | `GET /Reservations/RoomChart?from=...&days=14` |
-| **Quyền** | Admin, Lễ tân đầy đủ · Buồng phòng: chỉ xem, ẩn tên khách |
+| **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-C02 |
 
 ### Hiển thị
@@ -114,9 +113,9 @@ Phòng │ 20/09 │ 21/09 │ 22/09 │ 23/09 │ ...
 - Di chuột lên dải → tooltip: mã đơn, khách, số khách, trạng thái.
 - Nhấp vào ô trống → mở nhanh SCR-C04 với phòng và ngày đã điền sẵn.
 
-### Phân quyền hiển thị
-Với vai trò **Buồng phòng**: dải đặt phòng chỉ hiện trạng thái (Có khách / Trống / Bảo trì),
-**không hiện tên khách, mã đơn hay tiền**; nhấp vào ô không mở được màn hình đặt phòng.
+### Ghi chú
+Sơ đồ này cũng là chỗ nhìn nhanh lịch dọn phòng: ô vừa kết thúc một dải đặt phòng chính là
+phòng sắp chuyển sang `Dirty`.
 
 ---
 

@@ -1,9 +1,13 @@
 # 06 — Dịch vụ & Buồng phòng (Nhóm E)
 
-> Đây là nhóm màn hình **duy nhất mà vai trò Buồng phòng được thao tác**. Nguyên tắc thiết kế:
-> giao diện đơn giản, nút to, ít chữ — nhân viên buồng phòng thường dùng trên điện thoại hoặc
-> máy tính bảng khi đang đi hành lang. Mọi thông tin về tiền và khách đều bị ẩn với vai trò này,
-> trừ số lượng hàng minibar cần ghi.
+> **Hệ thống không có vai trò Buồng phòng.** Nhân viên dọn phòng vẫn làm việc ngoài thực tế
+> nhưng không có tài khoản đăng nhập: dọn xong hoặc phát hiện hỏng hóc thì báo về quầy
+> (miệng hoặc bộ đàm), **lễ tân bấm cập nhật hộ** trên các màn hình dưới đây.
+>
+> Hệ quả thiết kế: nhóm này giờ được dùng ngay tại quầy lễ tân chứ không phải trên điện thoại
+> ngoài hành lang, nên không cần giao diện rút gọn và không cần ẩn thông tin tiền/khách.
+> Trường "người dọn" của `HousekeepingTask` vì vậy ghi lại **người bấm xác nhận**, không phải
+> người thực sự cầm chổi — đừng dùng nó để đo năng suất (xem SCR-G04).
 
 ---
 
@@ -12,7 +16,7 @@
 | | |
 |---|---|
 | **URL** | `GET /Housekeeping` |
-| **Quyền** | Admin, Lễ tân, Buồng phòng (nội dung khác nhau) |
+| **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-E04, FR-E05 |
 
 ### Bố cục
@@ -36,22 +40,22 @@ Tầng 2
 4. Các phòng còn lại.
 
 ### Bộ lọc
-Tầng · Trạng thái · Hộp kiểm "Chỉ hiện phòng cần xử lý" (mặc định bật với vai trò Buồng phòng).
+Tầng · Trạng thái · Hộp kiểm "Chỉ hiện phòng cần xử lý" (mặc định bật).
 
 ### Thao tác và phân quyền
 
-| Nút | Điều kiện hiện | Admin | Lễ tân | Buồng phòng |
-|---|---|:-:|:-:|:-:|
-| Bắt đầu dọn | Phòng `Dirty` | ✔ | ✔ | ✔ |
-| Hoàn thành dọn | Đang dọn | ✔ | ✔ | ✔ |
-| Báo hỏng | Mọi phòng không có khách | ✔ | ✔ | ✔ |
-| Đánh dấu đã sửa xong | Phòng `Maintenance` | ✔ | ✔ | — |
-| Ngừng khai thác | Mọi phòng trống | ✔ | — | — |
-| Xem khách đang ở | Phòng `Occupied` | ✔ | ✔ | **Ẩn** |
+| Nút | Điều kiện hiện | Admin | Lễ tân |
+|---|---|:-:|:-:|
+| Bắt đầu dọn | Phòng `Dirty` | ✔ | ✔ |
+| Hoàn thành dọn | Đang dọn | ✔ | ✔ |
+| Báo hỏng | Mọi phòng không có khách | ✔ | ✔ |
+| Đánh dấu đã sửa xong | Phòng `Maintenance` | ✔ | ✔ |
+| Ngừng khai thác | Mọi phòng trống | ✔ | ✔ (bắt buộc nhập lý do — SCR-A05) |
+| Xem khách đang ở | Phòng `Occupied` | ✔ | ✔ |
 
 ### Luồng "Bắt đầu dọn → Hoàn thành dọn" (FR-E05)
-1. Nhấn **Bắt đầu dọn** → tạo `HousekeepingTask`: phòng, người dọn = người đăng nhập,
-   thời điểm bắt đầu, trạng thái `InProgress`. Ô phòng đổi sang nhãn "Đang dọn — Nguyễn Thị C".
+1. Nhấn **Bắt đầu dọn** → tạo `HousekeepingTask`: phòng, người xác nhận = người đăng nhập,
+   thời điểm bắt đầu, trạng thái `InProgress`. Ô phòng đổi sang nhãn "Đang dọn".
 2. Nhấn **Hoàn thành dọn** → ghi thời điểm kết thúc, trạng thái `Done`,
    **phòng chuyển `Available`** và lập tức bán được ở SCR-C02.
 3. Nếu trong lúc dọn phát hiện hỏng hóc → nút **Báo hỏng** (SCR-E03), phòng chuyển `Maintenance`
@@ -59,13 +63,10 @@ Tầng · Trạng thái · Hộp kiểm "Chỉ hiện phòng cần xử lý" (m�
 
 ### Quy tắc
 - Một phòng chỉ có **một tác vụ dọn đang mở** tại một thời điểm; người thứ hai nhấn "Bắt đầu dọn"
-  sẽ thấy thông báo ai đang dọn.
+  sẽ thấy thông báo ai đang xử lý.
 - Không cho chuyển `Occupied` → `Available` từ màn hình này (BR: chỉ check-out mới làm việc đó).
-- Thời gian dọn được lưu để làm báo cáo năng suất buồng phòng (FR-G06).
-
-### Phân quyền hiển thị với vai trò Buồng phòng
-Ô phòng `Occupied` chỉ hiện chữ "Đang ở" — **không hiện tên khách, không hiện ngày đi,
-không hiện tiền**. Dữ liệu này cũng không được gửi xuống client (tránh xem qua mã nguồn trang).
+- Thời gian giữa hai mốc được lưu để tính **thời gian phòng nằm chờ dọn** — chỉ số này thuộc
+  báo cáo công suất (SCR-G02), không dùng để đo năng suất cá nhân.
 
 ---
 
@@ -74,15 +75,16 @@ không hiện tiền**. Dữ liệu này cũng không được gửi xuống cli
 | | |
 |---|---|
 | **URL** | `GET/POST /Housekeeping/MinibarUsage/{stayId}` |
-| **Quyền** | Admin, Lễ tân, Buồng phòng |
+| **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-E06, BR-08, BR-12 |
 
 ### Mục đích
-Nhân viên buồng phòng lên kiểm phòng trước khi khách rời đi, ghi các mặt hàng minibar khách đã
-dùng; hệ thống đẩy thẳng vào folio để lễ tân thu tiền (BR-08 — đây là điều kiện để check-out).
+Nhân viên dọn phòng lên kiểm phòng trước khi khách rời đi rồi báo về quầy; lễ tân nhập các mặt
+hàng minibar khách đã dùng. Hệ thống đẩy thẳng vào folio để thu tiền — đây là **điều kiện bắt
+buộc để check-out** (BR-08), và là chốt chặn duy nhất ngăn việc quên thu tiền minibar.
 
 ### Nội dung
-- Tiêu đề: số phòng + tên khách (**ẩn tên khách với vai trò Buồng phòng**, chỉ hiện số phòng).
+- Tiêu đề: số phòng + tên khách.
 - Danh sách mặt hàng minibar (dịch vụ thuộc nhóm *Minibar*), mỗi dòng có nút `−` / `+`
   và ô số lượng, mặc định 0. Nút to, bấm được trên điện thoại.
 - Ô ghi chú tình trạng phòng: hư hỏng tài sản, mất đồ, cần thay đồ vải.
@@ -102,8 +104,8 @@ dùng; hệ thống đẩy thẳng vào folio để lễ tân thu tiền (BR-08 
   không ghi đè lần trước.
 - Sau khi folio đã khóa (khách đang thanh toán), màn hình này **chỉ đọc**; muốn thêm phải
   nhờ lễ tân mở khóa folio (chỉ Admin — xem SCR-F02).
-- Với vai trò Buồng phòng: **không hiển thị đơn giá và thành tiền**, chỉ hiện tên hàng và
-  số lượng. Việc của họ là đếm, không phải tính tiền.
+- Màn hình hiện cả đơn giá và thành tiền để lễ tân đối chiếu ngay với số khách khai báo —
+  không còn vai trò nào cần giấu thông tin tiền.
 
 ---
 
@@ -112,7 +114,7 @@ dùng; hệ thống đẩy thẳng vào folio để lễ tân thu tiền (BR-08 
 | | |
 |---|---|
 | **URL** | `GET/POST /Housekeeping/CreateRequest` |
-| **Quyền** | Admin, Lễ tân, Buồng phòng |
+| **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-E07, FR-E08 |
 
 ### Các trường
@@ -146,7 +148,7 @@ dùng; hệ thống đẩy thẳng vào folio để lễ tân thu tiền (BR-08 
 | | |
 |---|---|
 | **URL** | `GET /Housekeeping/Requests` |
-| **Quyền** | Admin, Lễ tân, Buồng phòng |
+| **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-E07, FR-E08 |
 
 ### Cột
@@ -159,13 +161,13 @@ Yêu cầu **Khẩn cấp** luôn hiện đầu danh sách, nền đỏ nhạt.
 
 ### Thao tác
 
-| Nút | Điều kiện | Admin | Lễ tân | Buồng phòng |
-|---|---|:-:|:-:|:-:|
-| Nhận xử lý | Trạng thái Mới | ✔ | ✔ | ✔ |
-| Hoàn thành | Đang xử lý | ✔ | ✔ | ✔ (yêu cầu mình nhận) |
-| Phân công cho người khác | Mọi trạng thái mở | ✔ | ✔ | — |
-| Hủy yêu cầu | Mọi trạng thái mở | ✔ | ✔ | — |
-| Đánh dấu sửa xong & mở bán lại phòng | Yêu cầu bảo trì hoàn thành | ✔ | ✔ | — |
+| Nút | Điều kiện | Admin | Lễ tân |
+|---|---|:-:|:-:|
+| Nhận xử lý | Trạng thái Mới | ✔ | ✔ |
+| Hoàn thành | Đang xử lý | ✔ | ✔ |
+| Phân công cho người khác | Mọi trạng thái mở | ✔ | ✔ |
+| Hủy yêu cầu | Mọi trạng thái mở | ✔ | ✔ |
+| Đánh dấu sửa xong & mở bán lại phòng | Yêu cầu bảo trì hoàn thành | ✔ | ✔ |
 
 ### Luồng đóng yêu cầu bảo trì
 1. Nhấn **Hoàn thành** → ghi thời điểm và người xử lý.

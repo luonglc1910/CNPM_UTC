@@ -68,7 +68,7 @@ public static class DbInitializer
         await db.SaveChangesAsync();
     }
 
-    /// <summary>Tài khoản mặc định cho 3 vai trò. Mật khẩu ban đầu đều là 123456.</summary>
+    /// <summary>Tài khoản mặc định cho 2 vai trò. Mật khẩu ban đầu đều là 123456.</summary>
     private static async Task SeedEmployeesAsync(HotelDbContext db)
     {
         if (await db.Employees.AnyAsync())
@@ -95,16 +95,6 @@ public static class DbInitializer
                 PhoneNumber = "0900000002",
                 UserName = "letan",
                 Role = EmployeeRole.Receptionist,
-                PasswordHash = PasswordHasher.Hash("123456"),
-                MustChangePassword = true
-            },
-            new Employee
-            {
-                Code = "NV003",
-                FullName = "Trần Văn Buồng Phòng",
-                PhoneNumber = "0900000003",
-                UserName = "buongphong",
-                Role = EmployeeRole.Housekeeping,
                 PasswordHash = PasswordHasher.Hash("123456"),
                 MustChangePassword = true
             }

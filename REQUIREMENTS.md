@@ -59,25 +59,28 @@ Số hóa toàn bộ chu trình vận hành của một khách sạn quy mô v�
 | Tác nhân | Mô tả | Quyền chính |
 |---|---|---|
 | **Quản lý (Admin)** | Chủ / quản lý khách sạn | Toàn quyền: danh mục, giá, nhân viên, báo cáo, audit log, duyệt giảm giá và hủy hóa đơn |
-| **Lễ tân (Receptionist)** | Trực quầy | Đặt phòng, check-in/out, đổi phòng, ghi dịch vụ, thu tiền, mở/đóng ca |
-| **Buồng phòng (Housekeeping)** | Nhân viên dọn phòng | Xem danh sách phòng cần dọn, cập nhật trạng thái dọn, báo hỏng, ghi minibar đã dùng |
+| **Lễ tân (Receptionist)** | Trực quầy | Đặt phòng, check-in/out, đổi phòng, ghi dịch vụ, thu tiền, mở/đóng ca, cập nhật buồng phòng |
+
+> **Nhân viên dọn phòng không phải là một vai trò của hệ thống.** Họ vẫn làm việc ngoài thực tế
+> nhưng không có tài khoản đăng nhập: dọn xong thì báo cho quầy (miệng hoặc bộ đàm), lễ tân bấm
+> cập nhật hộ. Vì vậy toàn bộ nghiệp vụ buồng phòng ở nhóm E vẫn được giữ, chỉ đổi người thao tác.
 
 ### 2.1 Ma trận phân quyền
 
-| Chức năng | Admin | Lễ tân | Buồng phòng |
-|---|:---:|:---:|:---:|
-| Danh mục phòng / loại phòng / giá | CRUD | Xem | Xem |
-| Danh mục dịch vụ & kho | CRUD | Xem | Xem |
-| Quản lý nhân viên, phân quyền | CRUD | — | — |
-| Đặt phòng (tạo / sửa / hủy) | ✔ | ✔ | — |
-| Check-in / Check-out / Đổi phòng | ✔ | ✔ | — |
-| Ghi nhận dịch vụ vào folio | ✔ | ✔ | Chỉ minibar |
-| Giảm giá trên hóa đơn | ✔ | Trong hạn mức | — |
-| Hủy / điều chỉnh hóa đơn đã chốt | ✔ | — | — |
-| Cập nhật trạng thái dọn phòng | ✔ | ✔ | ✔ |
-| Mở / đóng ca thu ngân | ✔ | ✔ (ca của mình) | — |
-| Báo cáo doanh thu, công suất | ✔ | Chỉ ca của mình | — |
-| Nhật ký thao tác (audit log) | ✔ | — | — |
+| Chức năng | Admin | Lễ tân |
+|---|:---:|:---:|
+| Danh mục phòng / loại phòng / giá | CRUD | Xem |
+| Danh mục dịch vụ & kho | CRUD | Xem |
+| Quản lý nhân viên, phân quyền | CRUD | — |
+| Đặt phòng (tạo / sửa / hủy) | ✔ | ✔ |
+| Check-in / Check-out / Đổi phòng | ✔ | ✔ |
+| Ghi nhận dịch vụ vào folio | ✔ | ✔ |
+| Giảm giá trên hóa đơn | ✔ | Trong hạn mức |
+| Hủy / điều chỉnh hóa đơn đã chốt | ✔ | — |
+| Cập nhật trạng thái dọn phòng, kiểm minibar, báo hỏng | ✔ | ✔ |
+| Mở / đóng ca thu ngân | ✔ | ✔ (ca của mình) |
+| Báo cáo doanh thu, công suất | ✔ | — |
+| Nhật ký thao tác (audit log) | ✔ | — |
 
 **Quy tắc chung:** mọi trang đều bắt buộc đăng nhập; truy cập sai quyền trả về trang 403.
 
@@ -131,8 +134,12 @@ Chỉ check-in được khi: đơn ở trạng thái `Confirmed`, phòng ở tr�
 (đã dọn sạch), và đã ghi nhận đủ giấy tờ tùy thân của khách đứng tên.
 
 ### BR-08 — Điều kiện check-out
-Chỉ check-out được khi: folio đã khóa thêm chi phí, buồng phòng đã xác nhận kiểm phòng
+Chỉ check-out được khi: folio đã khóa thêm chi phí, **lễ tân đã xác nhận kiểm phòng**
 (minibar + tình trạng phòng), và hóa đơn đã thanh toán đủ (số dư = 0).
+
+Bước kiểm phòng vẫn **bắt buộc** dù không còn tài khoản buồng phòng riêng: nhân viên dọn phòng
+báo kết quả về quầy, lễ tân nhập vào SCR-E02 rồi mới check-out được. Đây là chốt chặn duy nhất
+ngăn việc quên thu tiền minibar.
 
 ### BR-09 — Đổi phòng
 Khi đổi phòng giữa kỳ lưu trú: chi phí phòng cũ tính đến thời điểm đổi được chuyển nguyên
@@ -244,7 +251,7 @@ Open (đang mở, còn thêm được chi phí)
 | FR-D04 | **Thêm khách** vào lượt lưu trú đang diễn ra; cảnh báo và tính phụ thu khi vượt sức chứa chuẩn. | Bắt buộc |
 | FR-D05 | **Đổi phòng** giữa kỳ lưu trú theo BR-09, bắt buộc nhập lý do. | Bắt buộc |
 | FR-D06 | **Gia hạn lưu trú**: kéo dài ngày đi nếu phòng còn trống ở các đêm tiếp theo. | Bắt buộc |
-| FR-D07 | **Check-out**: khóa folio, yêu cầu xác nhận kiểm phòng từ buồng phòng, chốt giờ trả thực tế, tự tính phụ thu trễ giờ, chuyển sang thanh toán, phòng chuyển `Dirty`. | Bắt buộc |
+| FR-D07 | **Check-out**: khóa folio, yêu cầu xác nhận đã kiểm phòng, chốt giờ trả thực tế, tự tính phụ thu trễ giờ, chuyển sang thanh toán, phòng chuyển `Dirty`. | Bắt buộc |
 | FR-D08 | Xem chi tiết một lượt lưu trú: thông tin khách, phòng, các khoản chi phí, số dư còn phải trả. | Bắt buộc |
 
 ### 5.5 Nhóm E — Dịch vụ & Buồng phòng
@@ -255,7 +262,7 @@ Open (đang mở, còn thêm được chi phí)
 | FR-E02 | Bán dịch vụ có kho sẽ **tự trừ tồn kho**; chặn bán khi hết hàng (BR-12). | Bắt buộc |
 | FR-E03 | **Hủy dòng dịch vụ** ghi nhầm khi folio còn mở — có log và hoàn tồn kho. | Bắt buộc |
 | FR-E04 | **Bảng trạng thái buồng phòng**: danh sách phòng theo tầng kèm trạng thái dọn, ưu tiên phòng vừa check-out. | Bắt buộc |
-| FR-E05 | Buồng phòng **cập nhật trạng thái**: bắt đầu dọn → dọn xong (`Available`); ghi người dọn và thời gian. | Bắt buộc |
+| FR-E05 | Lễ tân **cập nhật trạng thái dọn**: bắt đầu dọn → dọn xong (`Available`); ghi người xác nhận và thời gian. | Bắt buộc |
 | FR-E06 | **Kiểm minibar khi check-out**: nhập các mặt hàng khách đã dùng, hệ thống đẩy thẳng vào folio. | Bắt buộc |
 | FR-E07 | **Báo hỏng hóc / yêu cầu bảo trì**: mô tả sự cố, mức độ, chuyển phòng sang `Maintenance`; đánh dấu đã sửa xong. | Bắt buộc |
 | FR-E08 | **Yêu cầu phục vụ từ khách** (thêm khăn, gọi đồ): tạo yêu cầu, gán người xử lý, đánh dấu hoàn thành. | Nên có |
@@ -302,7 +309,7 @@ Khách gọi đặt phòng
                   └─► Trong kỳ ở: ghi dịch vụ (FR-E01), đổi phòng (FR-D05), gia hạn (FR-D06)
                        └─► Check-out (FR-D07): khóa folio + kiểm minibar (FR-E06)
                             └─► Thanh toán (FR-F03) ──► Hóa đơn Settled ──► phòng = Dirty
-                                 └─► Buồng phòng dọn (FR-E05) ──► phòng = Available
+                                 └─► Đánh dấu đã dọn (FR-E05) ──► phòng = Available
 ```
 
 ### 6.2 Luồng khách vãng lai (Walk-in)
@@ -340,7 +347,7 @@ Các thực thể chính cần khai báo trong `Models/` và đăng ký DbSet tr
 | `FolioItem` | Dòng chi phí: loại (phòng / dịch vụ / phụ thu / giảm giá), số lượng, đơn giá |
 | `Service` | Danh mục dịch vụ, cờ quản lý kho |
 | `InventoryItem`, `InventoryTransaction` | Tồn kho và phiếu nhập / xuất / điều chỉnh |
-| `HousekeepingTask` | Nhiệm vụ dọn phòng: phòng, người dọn, trạng thái, thời gian |
+| `HousekeepingTask` | Nhiệm vụ dọn phòng: phòng, người xác nhận đã dọn, trạng thái, thời gian |
 | `MaintenanceRequest` | Báo hỏng: phòng, mô tả, mức độ, trạng thái xử lý |
 | `Invoice` | Hóa đơn: số hóa đơn, tổng tiền, VAT, trạng thái |
 | `Payment` | Giao dịch thu / hoàn: phương thức, số tiền, ca làm việc |
@@ -390,7 +397,7 @@ Các thực thể chính cần khai báo trong `Models/` và đăng ký DbSet tr
 1. Tạo được đơn đặt phòng và hệ thống **từ chối** đơn thứ hai trùng phòng, trùng ngày.
 2. Check-in → ghi 2 dịch vụ → check-out trễ giờ → hóa đơn tính đúng: tiền phòng theo đêm +
    dịch vụ + phụ thu trễ − cọc + VAT.
-3. Check-out xong, phòng tự chuyển `Dirty`; buồng phòng dọn xong thành `Available` và phòng
+3. Check-out xong, phòng tự chuyển `Dirty`; sau khi đánh dấu đã dọn thì thành `Available` và phòng
    đó lập tức xuất hiện trong kết quả tra phòng trống.
 4. Hủy đơn trước 12 giờ so với ngày đến thì hệ thống thu đúng 100% cọc và ghi vào doanh thu.
 5. Bán 1 lon nước minibar thì tồn kho giảm đúng 1 đơn vị; hủy dòng đó thì tồn hoàn lại.

@@ -1,9 +1,12 @@
+using HotelManagement.Web.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HotelManagement.Web.Controllers;
 
 // Đặt phòng: Admin/lễ tân tạo và quản lý đơn đặt phòng thay cho khách
 // (không có cổng đặt phòng cho khách hàng).
+[Authorize(Roles = Roles.All)]
 public class ReservationsController : AdminControllerBase
 {
     // Danh sách đơn đặt phòng, lọc theo ngày / trạng thái / khách sắp đến.

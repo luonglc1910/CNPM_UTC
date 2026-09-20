@@ -1,7 +1,8 @@
 # 07 — Thu ngân & Thanh toán (Nhóm F)
 
 > Đây là nhóm nhạy cảm nhất về tiền. Ba nguyên tắc xuyên suốt:
-> 1. **Buồng phòng không vào được bất kỳ màn hình nào trong nhóm này.**
+> 1. Cả hai vai trò đều thu tiền được, nhưng **hủy hóa đơn (SCR-F07) chỉ Admin**, và lễ tân
+>    chỉ giảm giá trong hạn mức (SCR-F04).
 > 2. Mọi giao dịch thu/hoàn tiền phải gắn với một **ca làm việc đang mở** (BR-10).
 > 3. Không sửa, không xóa chứng từ đã chốt — sai thì lập chứng từ điều chỉnh mới, có lý do
 >    và audit log (BR-11).
@@ -13,7 +14,7 @@
 | | |
 |---|---|
 | **URL** | `GET /Billing` |
-| **Quyền** | Admin, Lễ tân · Buồng phòng → 403 |
+| **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-F01 |
 
 ### Hai tab
@@ -103,7 +104,7 @@ Tổng     = làm tròn(Tạm tính + VAT, 1.000 ₫)
 | | |
 |---|---|
 | **URL** | `GET/POST /Billing/AddCharge/{folioId}` |
-| **Quyền** | Admin, Lễ tân (Buồng phòng chỉ ghi minibar qua SCR-E02) |
+| **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-E01, FR-E02, BR-12 |
 
 ### Các trường
@@ -278,7 +279,7 @@ khoản điều chỉnh nằm ở ca hiện tại.
 | | |
 |---|---|
 | **URL** | `GET /Shifts`, `POST /Shifts/Open`, `POST /Shifts/Close` |
-| **Quyền** | Admin (mọi ca) · Lễ tân (chỉ ca của mình) · Buồng phòng → 403 |
+| **Quyền** | Admin (mọi ca) · Lễ tân (chỉ ca của mình) |
 | **Yêu cầu** | FR-F08, BR-10 |
 
 ### Nội dung màn hình

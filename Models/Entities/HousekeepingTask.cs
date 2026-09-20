@@ -13,7 +13,10 @@ public class HousekeepingTask : BaseEntity
 
     public HousekeepingTaskStatus Status { get; set; } = HousekeepingTaskStatus.Pending;
 
-    /// <summary>Nhân viên nhận dọn.</summary>
+    /// <summary>
+    /// Tài khoản đã bấm xác nhận (lễ tân hoặc admin). Nhân viên dọn phòng không có tài khoản
+    /// nên trường này không dùng để đo năng suất cá nhân.
+    /// </summary>
     public int? AssignedTo { get; set; }
     public Employee? AssignedEmployee { get; set; }
 

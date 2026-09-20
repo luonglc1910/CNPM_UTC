@@ -1,8 +1,11 @@
+using HotelManagement.Web.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HotelManagement.Web.Controllers;
 
 // Lễ tân: check-in, check-out và quản lý khách đang lưu trú.
+[Authorize(Roles = Roles.All)]
 public class FrontDeskController : AdminControllerBase
 {
     // Danh sách phòng đang có khách lưu trú.

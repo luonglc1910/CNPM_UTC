@@ -1,8 +1,11 @@
+using HotelManagement.Web.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HotelManagement.Web.Controllers;
 
 // Buồng phòng & dịch vụ: trạng thái dọn dẹp, yêu cầu phục vụ, minibar.
+[Authorize(Roles = Roles.All)]
 public class HousekeepingController : AdminControllerBase
 {
     // Bảng trạng thái dọn dẹp của tất cả các phòng.

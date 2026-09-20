@@ -1,11 +1,13 @@
 namespace HotelManagement.Web.Models;
 
-/// <summary>Vai trò nhân viên. Ma trận phân quyền: docs/screens/README.md.</summary>
+/// <summary>
+/// Vai trò nhân viên. Ma trận phân quyền: docs/screens/README.md.
+/// Nhân viên dọn phòng không có tài khoản đăng nhập — lễ tân cập nhật hộ (xem nhóm E).
+/// </summary>
 public enum EmployeeRole
 {
     Admin = 1,
-    Receptionist = 2,
-    Housekeeping = 3
+    Receptionist = 2
 }
 
 public enum EmployeeStatus

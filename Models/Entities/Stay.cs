@@ -30,7 +30,10 @@ public class Stay : BaseEntity
 
     public StayStatus Status { get; set; } = StayStatus.CheckedIn;
 
-    /// <summary>Buồng phòng đã kiểm phòng và minibar — điều kiện check-out (BR-08).</summary>
+    /// <summary>
+    /// Lễ tân đã xác nhận kiểm phòng và minibar — điều kiện bắt buộc để check-out (BR-08).
+    /// InspectedBy là người bấm xác nhận, không nhất thiết là người trực tiếp đi kiểm.
+    /// </summary>
     public bool IsInspected { get; set; }
     public DateTime? InspectedAt { get; set; }
     public int? InspectedBy { get; set; }

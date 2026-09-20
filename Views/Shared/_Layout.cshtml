@@ -29,7 +29,14 @@
                 </button>
                 <h1 class="admin-title">@ViewData["Title"]</h1>
                 <div class="ms-auto d-flex align-items-center gap-2">
-                    <span class="text-muted small"><i class="bi bi-person-circle"></i> @(User.Identity?.IsAuthenticated == true ? User.Identity.Name : "Admin")</span>
+                    <span class="text-muted small">
+                        <i class="bi bi-person-circle"></i>
+                        @User.GetDisplayName()
+                        <span class="badge text-bg-secondary ms-1">@User.GetRoleDisplayName()</span>
+                    </span>
+                    <a class="btn btn-outline-secondary btn-sm" asp-controller="Account" asp-action="ChangePassword">
+                        <i class="bi bi-key"></i> Đổi mật khẩu
+                    </a>
                     <form asp-controller="Account" asp-action="Logout" method="post">
                         <button type="submit" class="btn btn-outline-secondary btn-sm">Đăng xuất</button>
                     </form>
@@ -37,6 +44,28 @@
             </header>
 
             <main class="admin-content">
+                @* Bốn kênh thông báo theo 00-conventions.md mục 4. *@
+                @if (TempData["Success"] is string success)
+                {
+                    <div class="alert alert-success alert-dismissible fade show" role="alert">
+                        @success
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                    </div>
+                }
+                @if (TempData["Error"] is string error)
+                {
+                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                        @error
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                    </div>
+                }
+                @if (TempData["Warning"] is string warning)
+                {
+                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                        @warning
+                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
+                    </div>
+                }
                 @if (TempData["Info"] is string info)
                 {
                     <div class="alert alert-info alert-dismissible fade show" role="alert">

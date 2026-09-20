@@ -35,12 +35,16 @@ Xác thực nhân viên trước khi vào hệ thống.
 ### Quy tắc bảo mật
 - Thông báo lỗi khi sai tài khoản và sai mật khẩu phải **giống hệt nhau**:
   "Tên đăng nhập hoặc mật khẩu không đúng" — tránh lộ tài khoản nào tồn tại.
+- **Thứ tự kiểm tra: mật khẩu trước, trạng thái sau.** Yêu cầu "thông báo giống hệt nhau" và
+  yêu cầu "báo riêng khi tài khoản bị khóa" chỉ dung hòa được khi thông báo riêng chỉ hiện ra
+  cho người đã nhập đúng mật khẩu. Kiểm trạng thái trước sẽ để lộ tài khoản nào tồn tại.
+- Khi tài khoản không tồn tại, hệ thống vẫn phải **chạy một lần băm giả** rồi mới báo lỗi;
+  bỏ qua bước này thì thời gian đáp ứng nhanh hơn hẳn và vẫn lộ tài khoản nào có thật.
 - Mật khẩu lưu dạng băm (BCrypt/PBKDF2), **không bao giờ** lưu hoặc log dạng gốc.
 - Cookie đặt `HttpOnly`, `SameSite=Lax`, thời hạn 8 giờ (hoặc 7 ngày nếu chọn ghi nhớ).
 
 ### Phân quyền sau đăng nhập
-Trang đích mặc định theo vai trò: Admin → Dashboard; Lễ tân → `/FrontDesk`;
-Buồng phòng → `/Housekeeping`.
+Trang đích mặc định theo vai trò: Admin → Dashboard; Lễ tân → `/FrontDesk`.
 
 ---
 
@@ -60,7 +64,14 @@ Mật khẩu hiện tại `*`, mật khẩu mới `*`, xác nhận mật khẩu 
 2. Mật khẩu mới tối thiểu 8 ký tự, có chữ và số.
 3. Mật khẩu mới phải khác mật khẩu hiện tại.
 4. Xác nhận phải trùng khớp.
-5. Lưu mật khẩu băm mới, **đăng xuất mọi phiên khác**, ghi audit log, báo thành công.
+5. Lưu mật khẩu băm mới, ghi audit log, phát hành lại cookie cho phiên hiện tại, báo thành công.
+
+> **Chưa triển khai (ghi nhận nợ kỹ thuật):**
+> - *Đăng xuất mọi phiên khác*: cookie authentication không giữ sổ phiên nên không thu hồi được
+>   phiên trên máy khác. Muốn làm đúng phải thêm `SecurityStamp` và kiểm mỗi request, hoặc dùng
+>   `ITicketStore` — để đợt sau. Phiên hiện tại vẫn được làm mới đúng.
+> - *Tự khóa tài khoản sau 5 lần sai* (FR-A08): `FailedLoginCount` đã được đếm và reset đúng,
+>   tài khoản ở trạng thái `Locked` đã bị từ chối, nhưng hệ thống chưa tự chuyển sang `Locked`.
 
 ### Phân quyền
 Không ai — kể cả Admin — đổi được mật khẩu người khác ở màn hình này. Admin chỉ có thể
@@ -124,13 +135,14 @@ ai sắp đi, có việc gì đang tồn.
 
 ### Phân quyền nội dung
 
-| Thành phần | Admin | Lễ tân | Buồng phòng |
-|---|:-:|:-:|:-:|
-| Thẻ trạng thái phòng | ✔ | ✔ | ✔ |
-| Thẻ doanh thu hôm nay | ✔ | Chỉ ca của mình | Ẩn |
-| Danh sách khách đến / đi | ✔ | ✔ | Ẩn |
-| Việc cần xử lý — phòng chờ dọn, bảo trì | ✔ | ✔ | ✔ |
-| Việc cần xử lý — đơn quá hạn, tồn kho | ✔ | ✔ | Ẩn |
+| Thành phần | Admin | Lễ tân |
+|---|:-:|:-:|
+| Thẻ trạng thái phòng | ✔ | ✔ |
+| Thẻ doanh thu hôm nay | ✔ (toàn khách sạn) | Chỉ ca của mình |
+| Danh sách khách đến / đi | ✔ | ✔ |
+| Việc cần xử lý — phòng chờ dọn, bảo trì | ✔ | ✔ |
+| Việc cần xử lý — đơn quá hạn, tồn kho | ✔ | ✔ |
 
-Với vai trò Buồng phòng, dashboard rút gọn chỉ còn phần trạng thái phòng và việc cần dọn;
-mọi số liệu tiền bạc đều bị ẩn ở cả tầng view lẫn tầng dữ liệu (không truy vấn, không gửi xuống client).
+Chỉ còn một khác biệt về nội dung: **thẻ doanh thu**. Admin thấy doanh thu toàn khách sạn,
+lễ tân chỉ thấy phần thu trong ca của mình. Giới hạn này phải làm ở **tầng truy vấn**
+(lọc theo `CashierShiftId`), không phải chỉ ẩn trên view.

@@ -1,6 +1,6 @@
 # 02 — Danh mục & Cấu hình hệ thống (Nhóm A)
 
-> Nguyên tắc chung cho cả nhóm: **Admin toàn quyền; Lễ tân và Buồng phòng chỉ xem**
+> Nguyên tắc chung cho cả nhóm: **Admin toàn quyền; Lễ tân chỉ xem**
 > (cần xem để biết giá và tiện nghi khi tư vấn khách). Ngoại lệ duy nhất là SCR-A05.
 > Danh mục đã phát sinh giao dịch **không được xóa cứng** — chỉ đánh dấu ngừng sử dụng.
 
@@ -11,7 +11,7 @@
 | | |
 |---|---|
 | **URL** | `GET /RoomTypes` |
-| **Quyền** | Admin: đầy đủ · Lễ tân, Buồng phòng: chỉ xem |
+| **Quyền** | Admin: đầy đủ · Lễ tân: chỉ xem |
 | **Yêu cầu** | FR-A01 |
 
 ### Cột hiển thị
@@ -66,7 +66,7 @@ Số phòng thuộc loại · Trạng thái (Đang dùng / Ngừng) · Thao tác
 | | |
 |---|---|
 | **URL** | `GET /Rooms` |
-| **Quyền** | Admin: đầy đủ · Lễ tân, Buồng phòng: chỉ xem + SCR-A05 |
+| **Quyền** | Admin: đầy đủ · Lễ tân: chỉ xem + SCR-A05 |
 | **Yêu cầu** | FR-A02 |
 
 ### Hiển thị
@@ -82,7 +82,7 @@ Tầng · Loại phòng · Trạng thái · Ô tìm theo số phòng.
 | Nút | Quyền |
 |---|---|
 | Thêm phòng / Sửa | Admin |
-| Đổi trạng thái | Admin, Lễ tân, Buồng phòng (xem SCR-A05) |
+| Đổi trạng thái | Admin, Lễ tân (xem SCR-A05) |
 | Ngừng khai thác | Admin, chỉ khi phòng không có khách và không có đơn đặt trong tương lai |
 | Xem lượt lưu trú hiện tại | Admin, Lễ tân — mở SCR-D04 |
 
@@ -120,24 +120,32 @@ Tầng · Loại phòng · Trạng thái · Ô tìm theo số phòng.
 | | |
 |---|---|
 | **URL** | `POST /Rooms/UpdateStatus/{id}` (hộp thoại từ SCR-A03 hoặc SCR-E01) |
-| **Quyền** | Admin, Lễ tân, Buồng phòng — **nhưng khác nhau về trạng thái được chọn** |
+| **Quyền** | Admin, Lễ tân — quyền như nhau |
 | **Yêu cầu** | FR-A03, BR-11 |
 
-### Ma trận chuyển trạng thái được phép
+### Các chuyển trạng thái được phép
 
-| Từ → Đến | Admin | Lễ tân | Buồng phòng |
-|---|:-:|:-:|:-:|
-| `Dirty` → `Available` (dọn xong) | ✔ | ✔ | ✔ |
-| bất kỳ → `Maintenance` (báo hỏng) | ✔ | ✔ | ✔ |
-| `Maintenance` → `Dirty` (sửa xong) | ✔ | ✔ | — |
-| `Available` → `Dirty` (bẩn lại) | ✔ | ✔ | ✔ |
-| bất kỳ → `OutOfService` | ✔ | — | — |
-| `OutOfService` → `Dirty` | ✔ | — | — |
-| `Occupied` → bất kỳ | **Không ai** — chỉ thay đổi qua check-out / đổi phòng | | |
+Cả hai vai trò đều được thực hiện mọi chuyển đổi dưới đây; không còn phân biệt theo vai trò.
+
+| Từ → Đến | Ghi chú |
+|---|---|
+| `Dirty` → `Available` | Dọn xong |
+| bất kỳ → `Maintenance` | Báo hỏng, bắt buộc nhập lý do |
+| `Maintenance` → `Dirty` | Sửa xong; phải dọn lại rồi mới bán được |
+| `Available` → `Dirty` | Phòng bẩn lại |
+| bất kỳ → `OutOfService` | Ngừng khai thác dài hạn, bắt buộc nhập lý do |
+| `OutOfService` → `Dirty` | Đưa phòng trở lại khai thác |
+| `Occupied` → bất kỳ | **Không ai được sửa tay** — chỉ đổi qua check-out hoặc đổi phòng |
+
+Luật cuối cùng là luật duy nhất còn hiệu lực ở tầng nghiệp vụ, và phải kiểm trong thân action
+chứ không diễn đạt được bằng attribute phân quyền.
+
+> `OutOfService` ảnh hưởng trực tiếp tới mẫu số của báo cáo công suất phòng (SCR-G02), nên dù
+> lễ tân được phép dùng, thao tác này vẫn bắt buộc nhập lý do và luôn được ghi audit log.
 
 ### Các trường trong hộp thoại
-Trạng thái mới `*` (chỉ liệt kê trạng thái người dùng được phép), **Lý do** `*` khi chuyển sang
-`Maintenance` hoặc `OutOfService`, ghi chú.
+Trạng thái mới `*` (chỉ liệt kê trạng thái hợp lệ từ trạng thái hiện tại), **Lý do** `*` khi chuyển
+sang `Maintenance` hoặc `OutOfService`, ghi chú.
 
 ### Quy tắc
 - Chuyển sang `Maintenance` khi phòng có **đơn đặt trong tương lai** → cảnh báo danh sách đơn
@@ -151,7 +159,7 @@ Trạng thái mới `*` (chỉ liệt kê trạng thái người dùng được 
 | | |
 |---|---|
 | **URL** | `GET /HotelServices` |
-| **Quyền** | Admin: đầy đủ · Lễ tân, Buồng phòng: chỉ xem |
+| **Quyền** | Admin: đầy đủ · Lễ tân: chỉ xem |
 | **Yêu cầu** | FR-A04 |
 
 ### Cột hiển thị
@@ -197,7 +205,7 @@ Dòng có tồn kho **dưới định mức tối thiểu** được tô nền v
 | | |
 |---|---|
 | **URL** | `GET /Inventory` |
-| **Quyền** | Admin: đầy đủ · Lễ tân, Buồng phòng: chỉ xem tồn |
+| **Quyền** | Admin: đầy đủ · Lễ tân: chỉ xem tồn |
 | **Yêu cầu** | FR-A05, BR-12 |
 
 ### Nội dung
@@ -235,7 +243,7 @@ ghi audit log.
 | | |
 |---|---|
 | **URL** | `GET /Employees` |
-| **Quyền** | **Chỉ Admin.** Lễ tân và Buồng phòng truy cập → 403 |
+| **Quyền** | **Chỉ Admin.** Lễ tân truy cập → 403 |
 | **Yêu cầu** | FR-A06 |
 
 ### Cột
@@ -265,7 +273,7 @@ Mã NV · Họ tên · Vai trò · SĐT · Tên đăng nhập · Trạng thái (
 | Số điện thoại | ✔ | Đúng định dạng SĐT Việt Nam |
 | Email | | Đúng định dạng nếu có nhập |
 | CCCD | | Duy nhất nếu có nhập |
-| Vai trò | ✔ | Admin / Lễ tân / Buồng phòng |
+| Vai trò | ✔ | Admin / Lễ tân |
 | Tên đăng nhập | ✔ | Duy nhất, không dấu, không khoảng trắng, không sửa sau khi tạo |
 | Mật khẩu ban đầu | ✔ khi tạo mới | ≥ 8 ký tự; buộc đổi ở lần đăng nhập đầu |
 | Trạng thái | ✔ | Đang làm / Đã nghỉ |

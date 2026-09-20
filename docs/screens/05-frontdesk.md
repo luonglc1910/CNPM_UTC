@@ -1,7 +1,6 @@
 # 05 — Lễ tân / Front Desk (Nhóm D)
 
-> Đây là nhóm màn hình được dùng nhiều nhất trong ngày. Nguyên tắc chung: Admin và Lễ tân
-> quyền như nhau; **Buồng phòng không vào được nhóm này** (trừ phần kiểm minibar ở nhóm E).
+> Đây là nhóm màn hình được dùng nhiều nhất trong ngày. Admin và Lễ tân quyền **như nhau**.
 > Mọi thao tác trong nhóm này đều chạy trong **transaction** (NFR-03) — không được để xảy ra
 > tình trạng phòng đã chuyển `Occupied` nhưng folio chưa tạo.
 
@@ -12,7 +11,7 @@
 | | |
 |---|---|
 | **URL** | `GET /FrontDesk` |
-| **Quyền** | Admin, Lễ tân · Buồng phòng → 403 |
+| **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-D01 |
 
 ### Bố cục — 4 tab
@@ -40,8 +39,8 @@ với phòng điền sẵn.
 
 ### Quy tắc
 - Nút **Check-in** mờ khi phòng chưa sẵn sàng (`Dirty`/`Maintenance`), tooltip nêu rõ lý do
-  và gợi ý "Nhắc buồng phòng dọn" (BR-07).
-- Nút **Check-out** mờ khi chưa có xác nhận kiểm phòng của buồng phòng (BR-08).
+  và gợi ý "Ghi nhận cần dọn phòng" (BR-07).
+- Nút **Check-out** mờ khi chưa có xác nhận đã kiểm phòng (BR-08).
 
 ---
 
@@ -254,7 +253,7 @@ Số đêm thêm · giá/đêm áp dụng cho các đêm thêm · thành tiền 
 **Khối 1 — Điều kiện check-out (BR-08)**
 | Điều kiện | Trạng thái | Hành động nếu chưa đạt |
 |---|---|---|
-| Đã kiểm phòng & minibar | ✔ / ✘ | Nút "Yêu cầu buồng phòng kiểm phòng" → tạo tác vụ ở SCR-E02 |
+| Đã kiểm phòng & minibar | ✔ / ✘ | Nút "Kiểm phòng ngay" → mở SCR-E02 |
 | Folio đã khóa thêm chi phí | ✔ / ✘ | Nút "Khóa folio" |
 | Không còn yêu cầu dịch vụ đang dở | ✔ / ✘ | Liên kết sang danh sách yêu cầu |
 

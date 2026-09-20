@@ -1,6 +1,6 @@
 # 08 — Báo cáo & Quản trị (Nhóm G)
 
-> **Toàn bộ nhóm này chỉ dành cho Admin.** Lễ tân và Buồng phòng truy cập → 403.
+> **Toàn bộ nhóm này chỉ dành cho Admin.** Lễ tân truy cập → 403.
 > Ngoại lệ duy nhất: lễ tân xem được số liệu ca của chính mình, nhưng qua SCR-F09
 > (báo cáo cuối ca) chứ không qua nhóm màn hình này.
 >
@@ -136,11 +136,12 @@ thường xuyên lệch quỹ.
 Số lượt check-in · check-out · đơn đặt tạo mới · đơn hủy · tổng giảm giá đã cấp ·
 số lần bỏ qua cảnh báo (khách blacklist, bán âm kho).
 
-**Tab 3 — Theo nhân viên buồng phòng**
-Số phòng đã dọn · thời gian dọn trung bình · số yêu cầu bảo trì đã xử lý.
+> **Đã bỏ tab "Năng suất nhân viên buồng phòng".** Không còn tài khoản buồng phòng riêng nên
+> số liệu chỉ phản ánh *ai bấm nút cập nhật*, không phải *ai thực sự dọn* — đo ra sẽ sai lệch.
+> Thống kê số lượt dọn và thời gian phòng nằm chờ dọn thuộc về báo cáo công suất (SCR-G02).
 
 ### Mục đích kiểm soát
-Ba tab này là công cụ chống gian lận: giảm giá bất thường, hủy đơn bất thường, lệch quỹ
+Hai tab này là công cụ chống gian lận: giảm giá bất thường, hủy đơn bất thường, lệch quỹ
 lặp lại đều lộ ra ở đây.
 
 ---

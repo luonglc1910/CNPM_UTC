@@ -1,8 +1,11 @@
+using HotelManagement.Web.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HotelManagement.Web.Controllers;
 
 // Thu ngân: bảng kê tạm tính (folio), phụ phí, thanh toán, xuất hóa đơn.
+[Authorize(Roles = Roles.All)]
 public class BillingController : AdminControllerBase
 {
     // Danh sách folio đang mở và hóa đơn đã xuất.

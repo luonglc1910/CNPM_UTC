@@ -1,5 +1,7 @@
+@model LoginViewModel
 @{
     Layout = null;
+    ViewData["Title"] = "Đăng nhập";
 }
 <!DOCTYPE html>
 <html lang="vi">
@@ -20,20 +22,38 @@
                 {
                     <div class="alert alert-info">@info</div>
                 }
+                @if (TempData["Error"] is string error)
+                {
+                    <div class="alert alert-danger">@error</div>
+                }
 
                 <form asp-action="Login" asp-route-returnUrl="@ViewData["ReturnUrl"]" method="post">
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
                     <div class="mb-3">
-                        <label for="username" class="form-label">Tên đăng nhập</label>
-                        <input id="username" name="username" class="form-control" autocomplete="username" required />
+                        <label asp-for="UserName" class="form-label"></label>
+                        <input asp-for="UserName" class="form-control" autocomplete="username" autofocus />
+                        <span asp-validation-for="UserName" class="text-danger small"></span>
                     </div>
                     <div class="mb-3">
-                        <label for="password" class="form-label">Mật khẩu</label>
-                        <input id="password" name="password" type="password" class="form-control" autocomplete="current-password" required />
+                        <label asp-for="Password" class="form-label"></label>
+                        <input asp-for="Password" class="form-control" autocomplete="current-password" />
+                        <span asp-validation-for="Password" class="text-danger small"></span>
                     </div>
+                    <div class="form-check mb-3">
+                        <input asp-for="RememberMe" class="form-check-input" />
+                        <label asp-for="RememberMe" class="form-check-label"></label>
+                    </div>
+
                     <button type="submit" class="btn btn-primary w-100">Đăng nhập</button>
                 </form>
             </div>
         </div>
     </div>
+
+    @* Layout = null nên phải tự nạp script kiểm tra dữ liệu phía trình duyệt. *@
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/dist/jquery.validate.unobtrusive.min.js"></script>
 </body>
 </html>

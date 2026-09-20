@@ -1,8 +1,11 @@
+using HotelManagement.Web.Security;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace HotelManagement.Web.Controllers;
 
 // Danh mục: Nhân viên.
+[Authorize(Roles = Roles.Admin)]
 public class EmployeesController : AdminControllerBase
 {
     public IActionResult Index() => View();
