@@ -62,7 +62,7 @@ public static class DbInitializer
                 UserName = "admin",
                 Role = EmployeeRole.Admin,
                 PasswordHash = PasswordHasher.Hash("123456"),
-                MustChangePassword = true
+                MustChangePassword = false
             },
             new Employee
             {
@@ -72,7 +72,7 @@ public static class DbInitializer
                 UserName = "letan",
                 Role = EmployeeRole.Receptionist,
                 PasswordHash = PasswordHasher.Hash("123456"),
-                MustChangePassword = true
+                MustChangePassword = false
             }
         };
 
