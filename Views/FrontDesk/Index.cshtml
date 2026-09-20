@@ -10,14 +10,12 @@
     <span class="badge text-bg-danger">Bảo trì: @Model.MaintenanceCount</span>
     <span class="badge text-bg-primary">Đến: @Model.Arrivals.Count</span>
     <span class="badge text-bg-info">Đi: @Model.Departures.Count</span>
-    <a class="btn btn-primary btn-sm ms-auto" asp-action="WalkIn"><i class="bi bi-person-walking"></i> Khách vãng lai</a>
 </div>
 
 <ul class="nav nav-tabs mb-3" role="tablist">
     <li class="nav-item"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-arr" type="button">Đến hôm nay (@Model.Arrivals.Count)</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-dep" type="button">Đi hôm nay (@Model.Departures.Count)</button></li>
     <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-inh" type="button">Đang lưu trú (@Model.InHouse.Count)</button></li>
-    <li class="nav-item"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-rooms" type="button">Phòng</button></li>
 </ul>
 
 <div class="tab-content">
@@ -91,19 +89,4 @@
         </div></div>
     </div>
 
-    <div class="tab-pane fade" id="tab-rooms">
-        <div class="card"><div class="card-body d-flex flex-wrap gap-2">
-            @foreach (var r in Model.Rooms)
-            {
-                <div class="border rounded p-2 text-center" style="width: 5.5rem">
-                    <div class="fw-semibold">@r.RoomNumber</div>
-                    <span class="badge @r.Status.ToBadgeClass()">@r.Status.ToDisplayName()</span>
-                    @* @if (r.Status == RoomStatus.Available) *@
-                    @* { *@
-                    @*     <a class="d-block small mt-1" asp-action="WalkIn">Walk-in</a> *@
-                    @* } *@
-                </div>
-            }
-        </div></div>
-    </div>
 </div>

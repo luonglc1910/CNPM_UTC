@@ -1,0 +1,113 @@
+@model ReservationIndexViewModel
+@*
+    Tab "Tất cả đơn" của màn Đơn đặt phòng — SCR-C01.
+*@
+
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+        <input type="hidden" name="customFilter" value="true" />
+        <div>
+            <label asp-for="Keyword" class="form-label mb-1 small text-muted"></label>
+            <input asp-for="Keyword" class="form-control form-control-sm" style="min-width: 200px"
+                   placeholder="Mã đơn / tên khách / SĐT" />
+        </div>
+        <div>
+            <label asp-for="CheckInFrom" class="form-label mb-1 small text-muted"></label>
+            <input asp-for="CheckInFrom" type="date" class="form-control form-control-sm" />
+        </div>
+        <div>
+            <label asp-for="CheckInTo" class="form-label mb-1 small text-muted"></label>
+            <input asp-for="CheckInTo" type="date" class="form-control form-control-sm" />
+        </div>
+        <div>
+            <label asp-for="Status" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="Status" class="form-select form-select-sm">
+                <option value="">— Tất cả —</option>
+                @foreach (var s in Enum.GetValues<ReservationStatus>())
+                {
+                    <option value="@((int)s)" selected="@(Model.Status == s)">@s.ToDisplayName()</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label asp-for="Source" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="Source" class="form-select form-select-sm">
+                <option value="">— Tất cả —</option>
+                @foreach (var s in Enum.GetValues<ReservationSource>())
+                {
+                    <option value="@((int)s)" selected="@(Model.Source == s)">@s.ToDisplayName()</option>
+                }
+            </select>
+        </div>
+        <button type="submit" class="btn btn-outline-secondary btn-sm mb-1"><i class="bi bi-search"></i> Lọc</button>
+        @if (Model.HasFilter)
+        {
+            <a class="btn btn-link btn-sm mb-1" asp-action="Index">Bỏ lọc</a>
+        }
+    </form>
+
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-primary" asp-action="Availability"><i class="bi bi-calendar-check"></i> Tra phòng trống</a>
+        <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg"></i> Tạo đơn</a>
+    </div>
+</div>
+
+@if (!Model.HasFilter)
+{
+    <div class="alert alert-secondary small">Đang hiển thị mặc định: đơn <strong>Đã xác nhận</strong> có ngày đến từ hôm nay trở đi. Dùng bộ lọc để xem đơn khác.</div>
+}
+
+@if (Model.Results.TotalItems == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        <p class="mb-0">Không có đơn đặt phòng nào khớp.</p>
+    </div></div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã đơn</th>
+                        <th>Khách</th>
+                        <th>Đến</th>
+                        <th>Đi</th>
+                        <th class="text-center">Đêm</th>
+                        <th class="text-center">Phòng</th>
+                        <th class="text-end">Dự kiến</th>
+                        <th class="text-end">Đã cọc</th>
+                        <th>Trạng thái</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var r in Model.Results.Items)
+                {
+                    <tr>
+                        <td><code>@r.Code</code></td>
+                        <td>@r.GuestName<br /><span class="text-muted small">@r.PhoneNumber</span></td>
+                        <td class="text-nowrap">@r.CheckInDate.ToString("dd/MM/yyyy")</td>
+                        <td class="text-nowrap">@r.CheckOutDate.ToString("dd/MM/yyyy")</td>
+                        <td class="text-center">@r.Nights</td>
+                        <td class="text-center">@r.RoomCount <span class="text-muted small">@r.RoomTypeSummary</span></td>
+                        <td class="text-end">@r.EstimatedTotal.ToString("N0") ₫</td>
+                        <td class="text-end">@r.DepositPaid.ToString("N0") ₫</td>
+                        <td><span class="badge @r.Status.ToBadgeClass()">@r.Status.ToDisplayName()</span></td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@r.Id" title="Xem"><i class="bi bi-eye"></i></a>
+                            @if (r.Status == ReservationStatus.Draft || r.Status == ReservationStatus.Confirmed)
+                            {
+                                <a class="btn btn-sm btn-outline-primary" asp-action="Deposit" asp-route-id="@r.Id" title="Thu cọc"><i class="bi bi-cash-coin"></i></a>
+                                <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@r.Id" title="Sửa"><i class="bi bi-pencil"></i></a>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" />
+}

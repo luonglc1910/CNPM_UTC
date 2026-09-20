@@ -19,9 +19,6 @@ public interface IFrontDeskService
     Task<CheckInViewModel?> BuildCheckInAsync(int reservationId);
     Task<ServiceResult> CheckInAsync(CheckInViewModel form, int employeeId);
 
-    Task<WalkInViewModel> BuildWalkInAsync(int employeeId);
-    Task FillWalkInOptionsAsync(WalkInViewModel form, int employeeId);
-    Task<(ServiceResult Result, int StayId)> WalkInAsync(WalkInViewModel form, int employeeId);
 
     Task<StayDetailViewModel?> GetStayAsync(int stayId);
 
@@ -130,16 +127,11 @@ public class FrontDeskService : IFrontDeskService
             }
         }
 
+        // Chỉ cần trạng thái để đếm cho thanh chỉ số đầu trang. Tab "Phòng" đã bỏ
+        // (trùng SCR-E01 và không còn thao tác nào), nên không kéo về số phòng và tầng nữa.
         var rooms = await _db.Rooms.AsNoTracking()
             .Where(r => r.IsActive)
-            .OrderBy(r => r.RoomNumber)
-            .Select(r => new RoomGridItem
-            {
-                RoomId = r.Id,
-                RoomNumber = r.RoomNumber,
-                Floor = r.Floor,
-                Status = r.Status
-            })
+            .Select(r => r.Status)
             .ToListAsync();
 
         return new FrontDeskDashboardViewModel
@@ -147,11 +139,10 @@ public class FrontDeskService : IFrontDeskService
             Arrivals = arrivals,
             Departures = departures.OrderBy(d => d.RoomNumber).ToList(),
             InHouse = inHouse.OrderBy(i => i.RoomNumber).ToList(),
-            Rooms = rooms,
-            AvailableCount = rooms.Count(r => r.Status == RoomStatus.Available),
-            OccupiedCount = rooms.Count(r => r.Status == RoomStatus.Occupied),
-            DirtyCount = rooms.Count(r => r.Status == RoomStatus.Dirty),
-            MaintenanceCount = rooms.Count(r => r.Status == RoomStatus.Maintenance)
+            AvailableCount = rooms.Count(s => s == RoomStatus.Available),
+            OccupiedCount = rooms.Count(s => s == RoomStatus.Occupied),
+            DirtyCount = rooms.Count(s => s == RoomStatus.Dirty),
+            MaintenanceCount = rooms.Count(s => s == RoomStatus.Maintenance)
         };
     }
 
@@ -327,177 +318,6 @@ public class FrontDeskService : IFrontDeskService
         });
 
         return ServiceResult.Ok(message: $"Đã check-in đơn {reservation.Code}.");
-    }
-
-    // ---------- SCR-D03 ----------
-
-    public async Task<WalkInViewModel> BuildWalkInAsync(int employeeId)
-    {
-        var form = new WalkInViewModel();
-        await FillWalkInOptionsAsync(form, employeeId);
-        return form;
-    }
-
-    public async Task FillWalkInOptionsAsync(WalkInViewModel form, int employeeId)
-    {
-        form.HasOpenShift = await _shifts.GetOpenShiftAsync(employeeId) is not null;
-
-        form.GuestOptions = await _db.Guests.AsNoTracking()
-            .OrderBy(g => g.FullName)
-            .Select(g => new SelectListItem { Value = g.Id.ToString(), Text = $"{g.FullName} — {g.PhoneNumber}" })
-            .ToListAsync();
-
-        form.BlacklistedGuestIds = await _db.Guests.AsNoTracking()
-            .Where(g => g.IsBlacklisted)
-            .Select(g => g.Id)
-            .ToListAsync();
-
-        form.RoomOptions = await _db.Rooms.AsNoTracking()
-            .Where(r => r.IsActive && r.Status == RoomStatus.Available)
-            .OrderBy(r => r.RoomNumber)
-            .Select(r => new SelectListItem
-            {
-                Value = r.Id.ToString(),
-                Text = $"{r.RoomNumber} — {r.RoomType.Name} ({r.RoomType.BasePricePerNight:N0} ₫/đêm)"
-            })
-            .ToListAsync();
-    }
-
-    public async Task<(ServiceResult Result, int StayId)> WalkInAsync(WalkInViewModel form, int employeeId)
-    {
-        var checkIn = DateTime.Now;
-        if (form.ExpectedCheckOut.Date <= checkIn.Date)
-        {
-            return (ServiceResult.Fail("Ngày đi phải sau hôm nay.", nameof(form.ExpectedCheckOut)), 0);
-        }
-
-        var room = await _db.Rooms.Include(r => r.RoomType).FirstOrDefaultAsync(r => r.Id == form.RoomId);
-        if (room is null || room.Status != RoomStatus.Available || !room.IsActive)
-        {
-            return (ServiceResult.Fail("Phòng không sẵn sàng, chọn phòng khác."), 0);
-        }
-
-        var guests = form.Adults + form.Children;
-        if (guests > room.RoomType.MaxCapacity)
-        {
-            return (ServiceResult.Fail($"{guests} khách vượt sức chứa tối đa của {room.RoomType.Name}."), 0);
-        }
-
-        if (form.ExistingGuestId is null)
-        {
-            if (string.IsNullOrWhiteSpace(form.FullName) || string.IsNullOrWhiteSpace(form.IdNumber)
-                || string.IsNullOrWhiteSpace(form.PhoneNumber))
-            {
-                return (ServiceResult.Fail("Khách mới cần họ tên, số giấy tờ và SĐT."), 0);
-            }
-        }
-
-        // Chỉ khách có sẵn mới tra được danh sách hạn chế; khách mới thì chưa có hồ sơ nào.
-        var walkInBlacklisted = form.ExistingGuestId is int existingId
-            && await _db.Guests.AsNoTracking()
-                .Where(g => g.Id == existingId)
-                .Select(g => g.IsBlacklisted)
-                .FirstOrDefaultAsync();
-
-        var wantsDeposit = form.DepositAmount > 0;
-        var shift = await _shifts.GetOpenShiftAsync(employeeId);
-        if (wantsDeposit && shift is null)
-        {
-            return (ServiceResult.Fail("Thu cọc cần ca đang mở (BR-10). Bỏ trống tiền cọc hoặc mở ca trước."), 0);
-        }
-
-        if (wantsDeposit && form.DepositMethod != PaymentMethod.Cash && string.IsNullOrWhiteSpace(form.TransactionRef))
-        {
-            return (ServiceResult.Fail("Chuyển khoản/Thẻ bắt buộc mã giao dịch.", nameof(form.TransactionRef)), 0);
-        }
-
-        var settings = await _settings.GetPricingSettingsAsync();
-        var nights = _pricing.CountNights(checkIn, form.ExpectedCheckOut);
-
-        string? guestWarning = null;
-
-        var stayId = await _tx.ExecuteAsync(async () =>
-        {
-            int guestId;
-            if (form.ExistingGuestId is not null)
-            {
-                guestId = form.ExistingGuestId.Value;
-            }
-            else
-            {
-                (guestId, guestWarning) = await ResolveGuestAsync(new Guest
-                {
-                    FullName = form.FullName!.Trim(),
-                    IdType = form.IdType,
-                    IdNumber = form.IdNumber!.Trim(),
-                    PhoneNumber = form.PhoneNumber!.Trim(),
-                    Nationality = string.IsNullOrWhiteSpace(form.Nationality) ? "Việt Nam" : form.Nationality.Trim()
-                });
-            }
-
-            var stay = new Stay
-            {
-                RoomId = room.Id,
-                PrimaryGuestId = guestId,
-                ActualCheckIn = checkIn,
-                ExpectedCheckOut = form.ExpectedCheckOut.Date,
-                PricePerNight = room.RoomType.BasePricePerNight,
-                Nights = nights,
-                Status = StayStatus.CheckedIn
-            };
-            _db.Stays.Add(stay);
-            await _db.SaveChangesAsync();
-
-            _db.StayGuests.Add(new StayGuest { StayId = stay.Id, GuestId = guestId, IsPrimary = true });
-
-            var folio = new Folio { StayId = stay.Id, Code = await _numbers.NextFolioCodeAsync() };
-            _db.Folios.Add(folio);
-            await _db.SaveChangesAsync();
-
-            AddRoomChargeLine(folio.Id, room.RoomType.Name, room.RoomType.BasePricePerNight, nights, checkIn);
-            AddEarlyCheckInSurcharge(folio.Id, checkIn, room.RoomType.BasePricePerNight, settings);
-            AddExtraGuestSurcharge(folio.Id, guests, room.RoomType, nights, checkIn);
-
-            room.Status = RoomStatus.Occupied;
-
-            if (wantsDeposit && shift is not null)
-            {
-                var deposit = new Deposit
-                {
-                    StayId = stay.Id,
-                    Amount = form.DepositAmount,
-                    Status = DepositStatus.Held,
-                    ReceivedAt = checkIn
-                };
-                _db.Deposits.Add(deposit);
-                await _db.SaveChangesAsync();
-
-                _db.Payments.Add(new Payment
-                {
-                    Type = PaymentType.Deposit,
-                    Method = form.DepositMethod,
-                    Amount = form.DepositAmount,
-                    TransactionRef = string.IsNullOrWhiteSpace(form.TransactionRef) ? null : form.TransactionRef.Trim(),
-                    PaidAt = checkIn,
-                    CashierShiftId = shift.Id,
-                    DepositId = deposit.Id
-                });
-            }
-
-            _audit.Log("WalkIn", nameof(Stay), stay.Id.ToString(),
-                newValue: $"Khách vãng lai vào phòng {room.RoomNumber}");
-
-            if (walkInBlacklisted)
-            {
-                _audit.Log(AuditActions.OverrideBlacklistWarning, nameof(Stay),
-                    stay.Id.ToString(),
-                    reason: "Khách vãng lai nằm trong danh sách hạn chế");
-            }
-            await _db.SaveChangesAsync();
-            return stay.Id;
-        });
-
-        return (ServiceResult.Ok(warning: guestWarning, message: "Đã check-in khách vãng lai."), stayId);
     }
 
     // ---------- SCR-D04 ----------

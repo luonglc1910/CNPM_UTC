@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using HotelManagement.Web.Models;
+using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
@@ -10,16 +11,20 @@ namespace HotelManagement.Web.Controllers;
 public class HomeController : Controller
 {
     private readonly IAuditService _audit;
+    private readonly IDashboardService _dashboard;
 
-    public HomeController(IAuditService audit)
+    public HomeController(IAuditService audit, IDashboardService dashboard)
     {
         _audit = audit;
+        _dashboard = dashboard;
     }
 
-    public IActionResult Index()
-    {
-        return View();
-    }
+    // SCR-S04 — tổng quan. Vai trò quyết định thẻ doanh thu hiển thị phạm vi nào,
+    // và giới hạn đó được áp ngay trong truy vấn chứ không phải ẩn ở view.
+    public async Task<IActionResult> Index()
+        => View(await _dashboard.BuildAsync(
+            User.GetEmployeeId() ?? 0,
+            User.IsInRole(Roles.Admin)));
 
     /// <summary>
     /// Trang báo không có quyền — SCR-S03. Cookie authentication chuyển hướng tới đây

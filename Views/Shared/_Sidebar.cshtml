@@ -11,38 +11,27 @@
     {
         (null,                    "Tổng quan",            "speedometer2",       "Home",          "Index"),
 
-        ("Danh mục & Cấu hình",   "Loại phòng",           "tags",               "RoomTypes",     "Index"),
-        (null,                    "Phòng",                "door-closed",        "Rooms",         "Index"),
+        ("Danh mục & Cấu hình",   "Phòng",                "door-closed",        "Rooms",         "Index"),
         (null,                    "Dịch vụ",              "cup-hot",            "HotelServices", "Index"),
-        (null,                    "Tồn kho",              "box-seam",           "Inventory",     "Index"),
         (null,                    "Nhân viên",            "people",             "Employees",     "Index"),
         (null,                    "Cấu hình hệ thống",    "sliders",            "Settings",      "Index"),
 
         ("Khách hàng",            "Hồ sơ khách",          "person-vcard",       "Guests",        "Index"),
-        (null,                    "Khai báo tạm trú",     "file-earmark-text",  "Guests",        "Residence"),
 
         ("Đặt phòng",             "Đơn đặt phòng",        "journal-bookmark",   "Reservations",  "Index"),
-        (null,                    "Tra cứu phòng trống",  "calendar-check",     "Reservations",  "Availability"),
         (null,                    "Sơ đồ phòng",          "calendar3-range",    "Reservations",  "RoomChart"),
-        (null,                    "Đơn quá hạn / No-show","person-x",           "Reservations",  "NoShow"),
 
         // Không có mục Check-in ở đây: SCR-D02 là màn hình của một đơn đặt cụ thể
         // (/FrontDesk/CheckIn/{reservationId} — 05-frontdesk.md), gọi trơn không kèm mã đơn
         // thì action trả NotFound. Lối vào đúng là tab "Khách đến hôm nay" của bảng điều
         // khiển ngay dưới, nơi mỗi dòng có nút Check-in.
         ("Lễ tân",                "Bảng điều khiển",      "person-lines-fill",  "FrontDesk",     "Index"),
-        (null,                    "Khách vãng lai",       "person-walking",     "FrontDesk",     "WalkIn"),
 
         ("Buồng phòng",           "Trạng thái dọn phòng", "stars",              "Housekeeping",  "Index"),
-        (null,                    "Yêu cầu phục vụ",      "bell",               "Housekeeping",  "Requests"),
 
         ("Thu ngân & Báo cáo",    "Hóa đơn",              "receipt",            "Billing",       "Index"),
         (null,                    "Ca làm việc",          "cash-stack",         "Shifts",        "Index"),
-        (null,                    "Doanh thu",            "graph-up",           "Reports",       "Revenue"),
-        (null,                    "Công suất phòng",      "pie-chart",          "Reports",       "Occupancy"),
-        (null,                    "Dịch vụ & tồn kho",    "box-seam",           "Reports",       "Services"),
-        (null,                    "Nhân viên / ca",        "person-badge",       "Reports",       "Staff"),
-        (null,                    "Nhật ký thao tác",    "journal-text",       "Reports",       "AuditLog")
+        (null,                    "Báo cáo",             "graph-up",           "Reports",       "Index")
     };
 
     // Lọc trước những mục không có quyền, rồi mới quyết định tiêu đề nhóm nào còn mục để hiện.

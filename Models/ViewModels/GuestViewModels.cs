@@ -275,6 +275,29 @@ public class ResidenceViewModel
     public int RoomCount => Rows.Select(r => r.RoomNumber).Distinct().Count();
 }
 
+/// <summary>
+/// Màn Hồ sơ khách gộp hai tab: danh sách khách (SCR-B01) và khai báo tạm trú (SCR-B04).
+///
+/// Hai tab là hai đường dẫn chứ không phải tab JavaScript: chỉ tab đang mở mới nạp dữ liệu.
+/// Lý do là mở tab tạm trú ghi một dòng nhật ký truy cập dữ liệu cá nhân — nạp sẵn cả hai
+/// thì mỗi lần xem danh sách khách cũng sinh ra một dòng nhật ký sai sự thật.
+/// </summary>
+public class GuestsPageViewModel
+{
+    public const string ListTab = "list";
+    public const string ResidenceTab = "residence";
+
+    public string Tab { get; set; } = ListTab;
+
+    public bool IsResidence => Tab == ResidenceTab;
+
+    /// <summary>Chỉ có giá trị khi đang ở tab danh sách.</summary>
+    public GuestIndexViewModel? List { get; set; }
+
+    /// <summary>Chỉ có giá trị khi đang ở tab khai báo tạm trú.</summary>
+    public ResidenceViewModel? Residence { get; set; }
+}
+
 // ===================== SCR-B05 — Danh sách hạn chế =====================
 
 /// <summary>

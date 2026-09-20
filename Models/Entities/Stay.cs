@@ -3,9 +3,11 @@ using System.ComponentModel.DataAnnotations;
 namespace HotelManagement.Web.Models.Entities;
 
 /// <summary>
-/// Lượt lưu trú thực tế của một phòng — FR-D02, FR-D03.
-/// ReservationId để trống nghĩa là khách vãng lai (walk-in).
+/// Lượt lưu trú thực tế của một phòng — FR-D02.
 /// Mỗi Stay có đúng một Folio, kể cả khi đổi phòng nhiều lần (BR-09).
+///
+/// ReservationId vẫn cho phép trống để đọc được dữ liệu cũ từ khi còn màn hình khách vãng lai
+/// (SCR-D03, đã bỏ). Mọi lượt lưu trú tạo mới đều đi qua check-in của một đơn đặt phòng.
 /// </summary>
 public class Stay : BaseEntity
 {

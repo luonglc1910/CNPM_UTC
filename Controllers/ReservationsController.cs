@@ -18,15 +18,34 @@ public class ReservationsController : AdminControllerBase
         _service = service;
     }
 
-    // SCR-C01
-    public async Task<IActionResult> Index(ReservationIndexViewModel filter, int page = 1)
+    /// <summary>
+    /// SCR-C01 (tất cả đơn) và SCR-C09 (quá hạn / no-show) — hai tab của một màn.
+    /// Mỗi tab giữ bảng và nút riêng, và chỉ tab đang mở mới chạy truy vấn của nó.
+    /// </summary>
+    public async Task<IActionResult> Index(ReservationIndexViewModel filter, int page = 1, string? tab = null)
     {
-        if (filter.HasFilter)
+        var vm = new ReservationsPageViewModel
         {
-            filter.CustomFilter = true;
+            Tab = tab == ReservationsPageViewModel.NoShowTab
+                ? ReservationsPageViewModel.NoShowTab
+                : ReservationsPageViewModel.ListTab
+        };
+
+        if (vm.IsNoShow)
+        {
+            vm.NoShow = await _service.BuildNoShowListAsync();
+        }
+        else
+        {
+            if (filter.HasFilter)
+            {
+                filter.CustomFilter = true;
+            }
+
+            vm.List = await _service.BuildIndexAsync(filter, page);
         }
 
-        return View(await _service.BuildIndexAsync(filter, page));
+        return View(vm);
     }
 
     // SCR-C02
@@ -173,8 +192,9 @@ public class ReservationsController : AdminControllerBase
     public async Task<IActionResult> RoomChart(DateTime? from, int days = 14)
         => View(await _service.BuildRoomChartAsync(from, days));
 
-    public async Task<IActionResult> NoShow()
-        => View(await _service.BuildNoShowListAsync());
+    /// <summary>URL cũ của SCR-C09 trước khi gộp. Giữ để link đã lưu không gãy.</summary>
+    public IActionResult NoShow()
+        => RedirectToAction(nameof(Index), new { tab = ReservationsPageViewModel.NoShowTab });
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -182,7 +202,7 @@ public class ReservationsController : AdminControllerBase
     {
         var result = await _service.MarkNoShowAsync(id, CurrentEmployeeId);
         SetMessage(result);
-        return RedirectToAction(nameof(NoShow));
+        return RedirectToAction(nameof(Index), new { tab = ReservationsPageViewModel.NoShowTab });
     }
 
     [HttpPost]
@@ -191,7 +211,7 @@ public class ReservationsController : AdminControllerBase
     {
         var result = await _service.ExtendHoldAsync(id, hours, CurrentEmployeeId);
         SetMessage(result);
-        return RedirectToAction(nameof(NoShow));
+        return RedirectToAction(nameof(Index), new { tab = ReservationsPageViewModel.NoShowTab });
     }
 
     private int CurrentEmployeeId => User.GetEmployeeId() ?? 0;

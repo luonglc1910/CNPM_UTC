@@ -1,61 +1,45 @@
 @model OccupancyReportViewModel
-@{
-    ViewData["Title"] = "Công suất phòng";
-}
-
-<div class="card mb-3">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
-            <div class="col-sm-4">
-                <label asp-for="From" class="form-label">Từ ngày</label>
-                <input asp-for="From" type="date" class="form-control" />
-            </div>
-            <div class="col-sm-4">
-                <label asp-for="To" class="form-label">Đến ngày</label>
-                <input asp-for="To" type="date" class="form-control" />
-            </div>
-            <div class="col-sm-4">
-                <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Xem báo cáo</button>
-            </div>
-        </form>
-    </div>
-</div>
+@*
+    Nội dung tab Công suất phòng — SCR-G02. Bộ lọc khoảng ngày nằm ở màn chủ,
+    dùng chung với tab Doanh thu.
+*@
 
 <div class="row g-2 mb-3">
     <div class="col-6 col-lg-3">
-        <div class="card h-100"><div class="card-body py-3">
-            <div class="text-muted small">Phòng khai thác được</div>
-            <div class="fs-4 fw-semibold">@Model.UsableRooms</div>
-        </div></div>
+        <div class="stat-card">
+            <div class="stat-label">Phòng khai thác được</div>
+            <div class="stat-value fs-5">@Model.UsableRooms</div>
+        </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="card h-100 border-primary"><div class="card-body py-3">
-            <div class="text-muted small">Công suất bình quân</div>
-            <div class="fs-4 fw-semibold text-primary">@Model.AverageRate.ToString("P1")</div>
-        </div></div>
+        <div class="stat-card">
+            <div class="stat-label">Công suất bình quân</div>
+            <div class="stat-value fs-5">@Model.AverageRate.ToString("P1")</div>
+        </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="card h-100"><div class="card-body py-3">
-            <div class="text-muted small">Phòng-đêm đã bán</div>
-            <div class="fs-4 fw-semibold">@Model.SoldRoomNights</div>
-        </div></div>
+        <div class="stat-card">
+            <div class="stat-label">Phòng-đêm đã bán</div>
+            <div class="stat-value fs-5">@Model.SoldRoomNights</div>
+        </div>
     </div>
     <div class="col-6 col-lg-3">
-        <div class="card h-100"><div class="card-body py-3">
-            <div class="text-muted small">Phòng-đêm khả dụng</div>
-            <div class="fs-4 fw-semibold">@Model.CapacityRoomNights</div>
-        </div></div>
+        <div class="stat-card">
+            <div class="stat-label">Phòng-đêm khả dụng</div>
+            <div class="stat-value fs-5">@Model.CapacityRoomNights</div>
+        </div>
     </div>
 </div>
 
 <p class="text-muted small">
-    Khoảng @Model.From.ToString("dd/MM/yyyy") → @Model.To.ToString("dd/MM/yyyy").
     Mẫu số là số phòng còn khai thác được (loại phòng ngừng khai thác — FR-G03).
 </p>
 
 @if (Model.Truncated)
 {
-    <div class="alert alert-warning small"><i class="bi bi-exclamation-triangle"></i> Khoảng ngày quá dài, chỉ hiển thị 366 ngày đầu.</div>
+    <div class="alert alert-warning small">
+        <i class="bi bi-exclamation-triangle"></i> Khoảng ngày quá dài, chỉ hiển thị 366 ngày đầu.
+    </div>
 }
 
 @if (Model.UsableRooms == 0)
