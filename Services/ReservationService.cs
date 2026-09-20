@@ -1,4 +1,4 @@
-﻿using HotelManagement.Web.Data;
+using HotelManagement.Web.Data;
 using HotelManagement.Web.Models;
 using HotelManagement.Web.Models.Entities;
 using HotelManagement.Web.Models.ViewModels;
@@ -247,10 +247,7 @@ public class ReservationService : IReservationService
             Rooms = prepared.Rooms
         };
 
-        if (confirmNow)
-        {
-            reservation.HoldUntil = await ComputeHoldUntilAsync(form.CheckInDate);
-        }
+        // Cọc đã bị bỏ — không còn HoldUntil.
 
         var primaryGuestBlacklisted = await _db.Guests.AsNoTracking()
             .Where(g => g.Id == form.PrimaryGuestId)
@@ -286,15 +283,12 @@ public class ReservationService : IReservationService
             .Include(x => x.PrimaryGuest)
             .Include(x => x.Rooms).ThenInclude(rr => rr.RoomType)
             .Include(x => x.Rooms).ThenInclude(rr => rr.Room)
-            .Include(x => x.Deposits)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (r is null)
         {
             return null;
         }
-
-        var depositPaid = r.Deposits.Where(d => d.Status == DepositStatus.Held).Sum(d => d.Amount);
         var createdBy = r.CreatedBy is null ? string.Empty
             : await _db.Employees.Where(e => e.Id == r.CreatedBy).Select(e => e.FullName).FirstOrDefaultAsync() ?? string.Empty;
 
@@ -317,16 +311,10 @@ public class ReservationService : IReservationService
                 PricePerNight = rr.PricePerNight,
                 LineTotal = rr.PricePerNight * r.Nights
             }).ToList(),
-            Deposits = r.Deposits.OrderBy(d => d.ReceivedAt).Select(d => new ReservationDepositLine
-            {
-                ReceivedAt = d.ReceivedAt,
-                Amount = d.Amount,
-                Status = d.Status
-            }).ToList(),
-            DepositPaid = depositPaid,
-            EstimatedRemaining = r.EstimatedTotal - depositPaid,
+            DepositPaid = 0m,
+            EstimatedRemaining = r.EstimatedTotal,
             CanEdit = EditableStatuses.Contains(r.Status),
-            CanTakeDeposit = EditableStatuses.Contains(r.Status),
+            CanTakeDeposit = false,
             CanCheckIn = r.Status == ReservationStatus.Confirmed && r.CheckInDate <= today,
             CanCancel = EditableStatuses.Contains(r.Status),
             CanMarkNoShow = r.Status == ReservationStatus.Confirmed && r.CheckInDate <= today
@@ -412,96 +400,13 @@ public class ReservationService : IReservationService
         return (ServiceResult.Ok(message: $"Đã cập nhật đơn {r.Code}."), r.Id);
     }
 
-    // ---------- SCR-C07 ----------
+    // ---------- SCR-C07 — Deposit đã bị bỏ ----------
 
-    public async Task<DepositFormViewModel?> BuildDepositFormAsync(int id, int employeeId)
-    {
-        var r = await _db.Reservations.AsNoTracking()
-            .Include(x => x.PrimaryGuest)
-            .Include(x => x.Deposits)
-            .FirstOrDefaultAsync(x => x.Id == id);
+    public Task<DepositFormViewModel?> BuildDepositFormAsync(int id, int employeeId)
+        => Task.FromResult<DepositFormViewModel?>(null);
 
-        if (r is null || !EditableStatuses.Contains(r.Status))
-        {
-            return null;
-        }
-
-        var alreadyPaid = r.Deposits.Where(d => d.Status == DepositStatus.Held).Sum(d => d.Amount);
-        var suggested = await SuggestedDepositAsync(r);
-
-        return new DepositFormViewModel
-        {
-            ReservationId = r.Id,
-            ReservationCode = r.Code,
-            GuestName = r.PrimaryGuest.FullName,
-            EstimatedTotal = r.EstimatedTotal,
-            AlreadyPaid = alreadyPaid,
-            SuggestedAmount = Math.Max(0, suggested - alreadyPaid),
-            Amount = Math.Max(0, suggested - alreadyPaid),
-            HasOpenShift = await _shifts.GetOpenShiftAsync(employeeId) is not null
-        };
-    }
-
-    public async Task<ServiceResult> TakeDepositAsync(DepositFormViewModel form, int employeeId)
-    {
-        var shift = await _shifts.GetOpenShiftAsync(employeeId);
-        if (shift is null)
-        {
-            return ServiceResult.Fail("Bạn cần mở ca làm việc trước khi thu tiền (BR-10).");
-        }
-
-        var r = await _db.Reservations.FirstOrDefaultAsync(x => x.Id == form.ReservationId);
-        if (r is null || !EditableStatuses.Contains(r.Status))
-        {
-            return ServiceResult.Fail("Chỉ thu cọc cho đơn Nháp hoặc Đã xác nhận.");
-        }
-
-        if (form.Amount <= 0)
-        {
-            return ServiceResult.Fail("Số tiền cọc phải lớn hơn 0.", nameof(form.Amount));
-        }
-
-        if (form.Method != PaymentMethod.Cash && string.IsNullOrWhiteSpace(form.TransactionRef))
-        {
-            return ServiceResult.Fail("Chuyển khoản/Thẻ bắt buộc nhập mã giao dịch.", nameof(form.TransactionRef));
-        }
-
-        await _tx.ExecuteAsync(async () =>
-        {
-            var deposit = new Deposit
-            {
-                ReservationId = r.Id,
-                Amount = form.Amount,
-                Status = DepositStatus.Held,
-                ReceivedAt = DateTime.Now
-            };
-            _db.Deposits.Add(deposit);
-            await _db.SaveChangesAsync();
-
-            _db.Payments.Add(new Payment
-            {
-                Type = PaymentType.Deposit,
-                Method = form.Method,
-                Amount = form.Amount,
-                TransactionRef = Trimmed(form.TransactionRef),
-                PaidAt = DateTime.Now,
-                CashierShiftId = shift.Id,
-                DepositId = deposit.Id,
-                ReservationId = r.Id,
-                Notes = Trimmed(form.Notes)
-            });
-
-            // Đã cọc thì đơn thoát diện hết hạn giữ chỗ (BR-05).
-            r.HoldUntil = null;
-
-            _audit.Log("TakeDeposit", nameof(Reservation), r.Id.ToString(),
-                newValue: $"Cọc {form.Amount:N0} ₫ ({form.Method.ToDisplayName()})");
-
-            await _db.SaveChangesAsync();
-        });
-
-        return ServiceResult.Ok(message: $"Đã thu cọc {form.Amount:N0} ₫ cho đơn {r.Code}.");
-    }
+    public Task<ServiceResult> TakeDepositAsync(DepositFormViewModel form, int employeeId)
+        => Task.FromResult(ServiceResult.Fail("Tính năng thu cọc đã bị vô hiệu."));
 
     // ---------- SCR-C08 ----------
 
@@ -858,11 +763,7 @@ public class ReservationService : IReservationService
         return r.Nights > 0 ? r.EstimatedTotal / r.Nights * nights : r.EstimatedTotal;
     }
 
-    private async Task<DateTime> ComputeHoldUntilAsync(DateTime checkInDate)
-    {
-        var holdHour = await _settings.GetIntAsync(SystemSettingKeys.HoldUntilHour);
-        return checkInDate.Date.AddHours(holdHour);
-    }
+    // ComputeHoldUntilAsync đã bị xóa — cọc không còn được dùng.
 
     private sealed record CancelNumbers(decimal DepositPaid, decimal Fee, decimal Refund, double HoursBeforeArrival, string Policy);
 

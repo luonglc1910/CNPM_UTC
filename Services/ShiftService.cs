@@ -59,6 +59,7 @@ public class ShiftService : IShiftService
             {
                 Id = s.Id,
                 EmployeeName = s.Employee.FullName,
+                Slot = s.Slot,
                 OpenedAt = s.OpenedAt,
                 ClosedAt = s.ClosedAt,
                 Status = s.Status,
@@ -89,10 +90,12 @@ public class ShiftService : IShiftService
             return ServiceResult.Fail("Bạn đang có một ca mở. Đóng ca hiện tại trước khi mở ca mới.");
         }
 
+        var now = DateTime.Now;
         _db.CashierShifts.Add(new CashierShift
         {
             EmployeeId = employeeId,
-            OpenedAt = DateTime.Now,
+            OpenedAt = now,
+            Slot = ShiftSlotExtensions.Resolve(now),
             Status = ShiftStatus.Open,
             OpeningCash = openingCash
         });

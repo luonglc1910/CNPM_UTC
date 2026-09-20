@@ -20,8 +20,6 @@
                 </dd>
                 <dt class="col-sm-3">Thời gian</dt>
                 <dd class="col-sm-9">@Model.CheckInDate.ToString("dd/MM/yyyy") → @Model.CheckOutDate.ToString("dd/MM/yyyy") (@Model.Nights đêm)</dd>
-                <dt class="col-sm-3">Đã cọc</dt>
-                <dd class="col-sm-9">@Model.DepositPaid.ToString("N0") ₫</dd>
             </dl>
             <div class="form-check">
                 <input asp-for="IdVerified" class="form-check-input" />
