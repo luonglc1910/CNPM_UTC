@@ -100,10 +100,16 @@ public class HousekeepingService : IHousekeepingService
             .Select(g => new { RoomId = g.Key, Count = g.Count() })
             .ToDictionaryAsync(x => x.RoomId, x => x.Count);
 
+        // Khoảng [hôm nay, mai) chứ không so bằng: từ BR-13 mốc nhận phòng mang giờ thật
+        // (14:00, hoặc 22:00 với gói qua đêm) nên "== today" tức là == 00:00 sẽ không khớp
+        // bản ghi nào, và bảng dọn phòng mất sạch dấu ưu tiên "có khách đến hôm nay".
+        var tomorrow = today.AddDays(1);
+
         var arrivalRoomIds = await _db.ReservationRooms.AsNoTracking()
             .Where(rr => rr.RoomId != null
                 && rr.Reservation.Status == ReservationStatus.Confirmed
-                && rr.Reservation.CheckInDate == today)
+                && rr.Reservation.CheckInDate >= today
+                && rr.Reservation.CheckInDate < tomorrow)
             .Select(rr => rr.RoomId!.Value)
             .Distinct()
             .ToListAsync();
