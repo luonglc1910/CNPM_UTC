@@ -33,6 +33,12 @@ public interface IFrontDeskService
 
     Task<CheckOutViewModel?> BuildCheckOutAsync(int stayId, bool isAdmin);
     Task<ServiceResult> CheckOutAsync(CheckOutViewModel form, int employeeId, bool isAdmin);
+
+    /// <summary>Trạng thái đơn đặt phòng, null nếu không có đơn. Chỉ dùng để giải thích lỗi.</summary>
+    Task<(ReservationStatus? Status, string? Code)> GetReservationStatusAsync(int reservationId);
+
+    /// <summary>Trạng thái lượt lưu trú, null nếu không có. Chỉ dùng để giải thích lỗi.</summary>
+    Task<StayStatus?> GetStayStatusAsync(int stayId);
 }
 
 /// <inheritdoc />
@@ -855,4 +861,25 @@ public class FrontDeskService : IFrontDeskService
         if (string.IsNullOrWhiteSpace(second)) return first;
         return first + " " + second;
     }
+
+    // ---------- Giải thích lỗi ----------
+    //
+    // Hai hàm dưới chỉ chạy ở nhánh KHÔNG mở được màn hình, để câu thông báo nói đúng lý do
+    // thay vì trả 404 trắng. Đường đi bình thường không gọi tới nên không tốn thêm truy vấn.
+
+    public async Task<(ReservationStatus? Status, string? Code)> GetReservationStatusAsync(int reservationId)
+    {
+        var r = await _db.Reservations.AsNoTracking()
+            .Where(x => x.Id == reservationId)
+            .Select(x => new { x.Status, x.Code })
+            .FirstOrDefaultAsync();
+
+        return r is null ? (null, null) : (r.Status, r.Code);
+    }
+
+    public async Task<StayStatus?> GetStayStatusAsync(int stayId)
+        => await _db.Stays.AsNoTracking()
+            .Where(s => s.Id == stayId)
+            .Select(s => (StayStatus?)s.Status)
+            .FirstOrDefaultAsync();
 }
