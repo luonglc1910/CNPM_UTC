@@ -1,9 +1,94 @@
+@model AvailabilitySearchViewModel
 @{
     ViewData["Title"] = "Tra cứu phòng trống";
 }
 
-<div class="d-flex justify-content-end mb-3">
-    <a class="btn btn-primary" asp-action="Create">Tạo đơn đặt phòng</a>
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-sm-3">
+                <label asp-for="CheckIn" class="form-label">Ngày đến <span class="text-danger">*</span></label>
+                <input asp-for="CheckIn" type="date" class="form-control" />
+            </div>
+            <div class="col-sm-3">
+                <label asp-for="CheckOut" class="form-label">Ngày đi <span class="text-danger">*</span></label>
+                <input asp-for="CheckOut" type="date" class="form-control" />
+            </div>
+            <div class="col-sm-2">
+                <label asp-for="Guests" class="form-label">Số khách</label>
+                <input asp-for="Guests" type="number" min="1" class="form-control" />
+            </div>
+            <div class="col-sm-3">
+                <label asp-for="RoomTypeId" class="form-label">Loại phòng</label>
+                <select asp-for="RoomTypeId" asp-items="Model.RoomTypeOptions" class="form-select">
+                    <option value="">— Tất cả —</option>
+                </select>
+            </div>
+            <div class="col-sm-1">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-search"></i></button>
+            </div>
+        </form>
+    </div>
 </div>
 
-<partial name="_Placeholder" model="@("Tìm phòng trống theo ngày nhận / trả phòng và loại phòng.")" />
+@if (Model.Searched)
+{
+    if (Model.Nights <= 0)
+    {
+        <div class="alert alert-danger">Ngày đi phải sau ngày đến (tối thiểu 1 đêm).</div>
+    }
+    else if (Model.Groups.Count == 0)
+    {
+        <div class="alert alert-warning">Không còn phòng trống nào cho khoảng ngày này. Thử đổi ngày hoặc bỏ lọc loại phòng.</div>
+    }
+    else
+    {
+        <p class="text-muted">Còn phòng cho <strong>@Model.Nights đêm</strong> (@Model.CheckIn!.Value.ToString("dd/MM/yyyy") → @Model.CheckOut!.Value.ToString("dd/MM/yyyy")):</p>
+        @foreach (var g in Model.Groups)
+        {
+            <div class="card mb-2">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-start flex-wrap gap-2">
+                        <div>
+                            <h6 class="mb-1"><code>@g.RoomTypeCode</code> @g.RoomTypeName — còn <strong>@g.AvailableCount</strong> phòng</h6>
+                            <div class="small text-muted">
+                                @g.PricePerNight.ToString("N0") ₫/đêm × @Model.Nights đêm =
+                                <strong>@((g.PricePerNight * Model.Nights).ToString("N0")) ₫</strong>
+                                · sức chứa chuẩn @g.StandardCapacity, tối đa @g.MaxCapacity
+                            </div>
+                            @if (Model.Guests > g.StandardCapacity)
+                            {
+                                <div class="small text-warning"><i class="bi bi-exclamation-triangle"></i> @Model.Guests khách vượt sức chứa chuẩn — sẽ phát sinh phụ thu thêm người.</div>
+                            }
+                            <div class="mt-2 d-flex flex-wrap gap-1">
+                                @foreach (var room in g.AvailableRooms)
+                                {
+                                    <a class="btn btn-sm btn-outline-secondary"
+                                       asp-action="Create"
+                                       asp-route-checkIn="@Model.CheckIn!.Value.ToString("yyyy-MM-dd")"
+                                       asp-route-checkOut="@Model.CheckOut!.Value.ToString("yyyy-MM-dd")"
+                                       asp-route-roomTypeId="@g.RoomTypeId"
+                                       asp-route-roomId="@room.RoomId"
+                                       title="Đặt phòng @room.RoomNumber">
+                                        @room.RoomNumber
+                                        @if (room.NeedsCleaning)
+                                        {
+                                            <i class="bi bi-brush text-warning" title="Cần dọn trước khi nhận"></i>
+                                        }
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                        <a class="btn btn-primary"
+                           asp-action="Create"
+                           asp-route-checkIn="@Model.CheckIn!.Value.ToString("yyyy-MM-dd")"
+                           asp-route-checkOut="@Model.CheckOut!.Value.ToString("yyyy-MM-dd")"
+                           asp-route-roomTypeId="@g.RoomTypeId">
+                            <i class="bi bi-plus-lg"></i> Chọn đặt
+                        </a>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+}

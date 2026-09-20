@@ -71,6 +71,12 @@ public static class SystemSettingKeys
     public const string ChildAgeLimit = "Limit.ChildAgeLimit";
 
     /// <summary>
+    /// Ngưỡng chênh lệch tiền mặt khi đóng ca — SCR-F08. Vượt ngưỡng thì cảnh báo đỏ
+    /// và ghi audit log mức cao.
+    /// </summary>
+    public const string CashDifferenceThreshold = "Limit.CashDifferenceThreshold";
+
+    /// <summary>
     /// Công tắc tổng cho việc bán dịch vụ khi hết tồn — BR-12. Một dịch vụ chỉ bán âm được
     /// khi bật cả tham số này lẫn cờ riêng của dịch vụ đó (SCR-A07).
     /// </summary>

@@ -1,3 +1,4 @@
+@inject HotelManagement.Web.Services.IShiftService ShiftService
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -29,6 +30,23 @@
                 </button>
                 <h1 class="admin-title">@ViewData["Title"]</h1>
                 <div class="ms-auto d-flex align-items-center gap-2">
+                    @* Chỉ báo ca đang mở của người đăng nhập — 00-conventions.md mục 1, BR-10. *@
+                    @if (User.Identity?.IsAuthenticated == true)
+                    {
+                        var openShift = await ShiftService.GetOpenShiftAsync(User.GetEmployeeId() ?? 0);
+                        if (openShift is not null)
+                        {
+                            <a class="badge text-bg-success text-decoration-none" asp-controller="Shifts" asp-action="Index">
+                                <i class="bi bi-cash-stack"></i> Ca #@openShift.Id đang mở
+                            </a>
+                        }
+                        else
+                        {
+                            <a class="badge text-bg-danger text-decoration-none" asp-controller="Shifts" asp-action="Index">
+                                <i class="bi bi-exclamation-circle"></i> Chưa mở ca
+                            </a>
+                        }
+                    }
                     <span class="text-muted small">
                         <i class="bi bi-person-circle"></i>
                         @User.GetDisplayName()

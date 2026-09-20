@@ -1,0 +1,61 @@
+@model ReservationFormViewModel
+@{
+    var isAdminScript = User.IsInRole(Roles.Admin);
+}
+@* JS dựng dòng phòng động cho _Form.cshtml (SCR-C04/C06). Vanilla JS, không cần jQuery. *@
+<script>
+    (function () {
+        const allRooms = @Json.Serialize(Model.AllRooms);
+        const prices = @Json.Serialize(Model.RoomTypePrices);
+        const isAdmin = @(isAdminScript ? "true" : "false");
+
+        function roomOptions(typeId, selectedId) {
+            let html = '<option value="">— Xếp sau —</option>';
+            allRooms.filter(r => String(r.roomTypeId) === String(typeId)).forEach(r => {
+                const sel = selectedId && String(r.roomId) === String(selectedId) ? ' selected' : '';
+                html += '<option value="' + r.roomId + '"' + sel + '>' + r.roomNumber + ' (tầng ' + r.floor + ')</option>';
+            });
+            return html;
+        }
+
+        function reindex() {
+            document.querySelectorAll('#roomLines tbody tr').forEach(function (tr, i) {
+                tr.querySelectorAll('[name]').forEach(function (el) {
+                    el.name = el.name.replace(/Rooms\[[^\]]*\]/, 'Rooms[' + i + ']');
+                });
+            });
+        }
+
+        function wireRow(tr) {
+            const typeSel = tr.querySelector('.js-roomtype');
+            const roomSel = tr.querySelector('.js-room');
+            const priceInp = tr.querySelector('.js-price');
+            typeSel.addEventListener('change', function () {
+                roomSel.innerHTML = roomOptions(typeSel.value, null);
+                if (isAdmin !== 'true' || !priceInp.value || priceInp.value === '0') {
+                    priceInp.value = prices[typeSel.value] || 0;
+                }
+            });
+            tr.querySelector('.js-remove').addEventListener('click', function () {
+                if (document.querySelectorAll('#roomLines tbody tr').length > 1) {
+                    tr.remove();
+                    reindex();
+                }
+            });
+        }
+
+        document.querySelectorAll('#roomLines tbody tr').forEach(wireRow);
+
+        const addBtn = document.getElementById('addRoom');
+        if (addBtn) {
+            addBtn.addEventListener('click', function () {
+                const tbody = document.querySelector('#roomLines tbody');
+                tbody.insertAdjacentHTML('beforeend', document.getElementById('rowTemplate').innerHTML);
+                wireRow(tbody.lastElementChild);
+                reindex();
+            });
+        }
+
+        reindex();
+    })();
+</script>
