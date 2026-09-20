@@ -1,0 +1,148 @@
+@model EmployeeFormViewModel
+@* Form dùng chung cho Thêm và Sửa nhân viên — SCR-A11. *@
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+<input type="hidden" asp-for="Id" />
+
+<div class="row g-3">
+    @if (Model.IsEdit)
+    {
+        <div class="col-md-4">
+            <label class="form-label">Mã nhân viên</label>
+            <input class="form-control" value="@Model.Code" readonly />
+            <div class="form-text">Do hệ thống sinh, không sửa.</div>
+        </div>
+    }
+
+    <div class="col-md-8">
+        <label asp-for="FullName" class="form-label">Họ tên <span class="text-danger">*</span></label>
+        <input asp-for="FullName" class="form-control" placeholder="VD: Trần Văn Nam" autofocus />
+        <span asp-validation-for="FullName" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="PhoneNumber" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+        <input asp-for="PhoneNumber" class="form-control" placeholder="VD: 0912345678" />
+        <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" placeholder="Không bắt buộc" />
+        <span asp-validation-for="Email" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="IdNumber" class="form-label"></label>
+        <input asp-for="IdNumber" class="form-control" placeholder="Không bắt buộc" />
+        <div class="form-text">Nếu có nhập thì phải là duy nhất.</div>
+        <span asp-validation-for="IdNumber" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Role" class="form-label">Vai trò <span class="text-danger">*</span></label>
+        @if (Model.IsSelf)
+        {
+            @* Không tự hạ quyền chính mình — server cũng chặn, đây chỉ là phần trải nghiệm. *@
+            <input class="form-control" value="@Model.Role.ToDisplayName()" readonly />
+            <input type="hidden" asp-for="Role" />
+            <div class="form-text">Không thể tự đổi vai trò của chính mình.</div>
+        }
+        else
+        {
+            <select asp-for="Role" class="form-select">
+                @foreach (var role in Enum.GetValues<EmployeeRole>())
+                {
+                    <option value="@((int)role)" selected="@(Model.Role == role)">@role.ToDisplayName()</option>
+                }
+            </select>
+            <div class="form-text">Đổi vai trò sẽ ghi nhật ký và đăng xuất người đó khỏi mọi phiên.</div>
+        }
+        <span asp-validation-for="Role" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="UserName" class="form-label">Tên đăng nhập <span class="text-danger">*</span></label>
+        @if (Model.IsEdit)
+        {
+            <input asp-for="UserName" class="form-control" readonly />
+            <input type="hidden" asp-for="UserName" />
+            <div class="form-text">Tên đăng nhập không thay đổi được sau khi tạo.</div>
+        }
+        else
+        {
+            <input asp-for="UserName" class="form-control" placeholder="VD: namtv" />
+            <div class="form-text">3–50 ký tự thường, không dấu, không khoảng trắng.</div>
+        }
+        <span asp-validation-for="UserName" class="text-danger small"></span>
+    </div>
+
+    @if (!Model.IsEdit)
+    {
+        <div class="col-md-4">
+            <label asp-for="InitialPassword" class="form-label">
+                Mật khẩu ban đầu <span class="text-danger">*</span>
+            </label>
+            <input asp-for="InitialPassword" class="form-control" />
+            <div class="form-text">≥ 8 ký tự, có cả chữ và số. Người dùng buộc đổi ở lần đăng nhập đầu.</div>
+            <span asp-validation-for="InitialPassword" class="text-danger small"></span>
+        </div>
+    }
+    else
+    {
+        <div class="col-md-4">
+            <label asp-for="Status" class="form-label">Trạng thái <span class="text-danger">*</span></label>
+            @if (Model.IsLocked)
+            {
+                @* Trạng thái "Bị khóa" do nút Khóa/Mở khóa ở danh sách quản — form không đụng tới,
+                   để không có hai đường cùng đổi một thứ. *@
+                <input class="form-control" value="@EmployeeStatus.Locked.ToDisplayName()" readonly />
+                <div class="form-text">Tài khoản đang bị khóa — dùng nút <strong>Mở khóa</strong> ở danh sách.</div>
+            }
+            else if (Model.IsSelf)
+            {
+                <input class="form-control" value="@Model.Status.ToDisplayName()" readonly />
+                <input type="hidden" asp-for="Status" />
+                <div class="form-text">Không thể tự cho chính mình nghỉ việc.</div>
+            }
+            else
+            {
+                <select asp-for="Status" class="form-select">
+                    <option value="@((int)EmployeeStatus.Active)"
+                            selected="@(Model.Status == EmployeeStatus.Active)">
+                        @EmployeeStatus.Active.ToDisplayName()
+                    </option>
+                    <option value="@((int)EmployeeStatus.Resigned)"
+                            selected="@(Model.Status == EmployeeStatus.Resigned)">
+                        @EmployeeStatus.Resigned.ToDisplayName()
+                    </option>
+                </select>
+                @if (Model.HasOpenShift)
+                {
+                    <div class="form-text text-warning">
+                        <i class="bi bi-exclamation-triangle"></i>
+                        Còn ca thu ngân đang mở — phải đóng ca trước khi cho nghỉ việc (BR-10).
+                    </div>
+                }
+            }
+            <span asp-validation-for="Status" class="text-danger small"></span>
+        </div>
+    }
+
+    <div class="col-12">
+        <div class="alert alert-info mb-0 small">
+            <i class="bi bi-info-circle"></i>
+            Nhân viên <strong>không bị xóa cứng</strong> vì mọi giao dịch đều ghi lại người thực hiện —
+            nghỉ việc thì chuyển trạng thái sang "Đã nghỉ".
+            Hệ thống luôn giữ ít nhất <strong>một tài khoản Quản lý đang hoạt động</strong>.
+        </div>
+    </div>
+</div>
+
+<div class="mt-4 d-flex gap-2">
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg"></i> @(Model.IsEdit ? "Cập nhật" : "Thêm nhân viên")
+    </button>
+    <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+</div>

@@ -198,8 +198,7 @@ vẫn đúng: **lưu script kèm BOM UTF-8**, `@($x).Count`, đọc `TempData` n
 ## 6. Làm tiếp từ đâu
 
 Nhóm A chỉ còn phần tài khoản và cấu hình:
-1. **SCR-A10/A11 — Nhân viên**: có ràng buộc riêng (không tự khóa mình, luôn còn ít nhất một
-   Admin hoạt động, không cho nghỉ việc khi còn ca mở).
+1. ~~**SCR-A10/A11 — Nhân viên**~~ — đã làm, xem [`05-employees.md`](05-employees.md).
 2. **SCR-A12 — Cấu hình hệ thống**: giờ chuẩn, VAT, phụ thu, chính sách cọc/hủy — luồng chính
    sẽ đọc các tham số này nên làm trước khi làm đặt phòng thì đỡ phải quay lại sửa.
 3. Rồi tới **SCR-B01…B03 — Hồ sơ khách** và lát cắt dọc luồng chính.

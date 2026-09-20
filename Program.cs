@@ -3,7 +3,6 @@ using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
-using Microsoft.AspNetCore.WebUtilities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.WebEncoders;
 using System.Text.Encodings.Web;
@@ -29,6 +28,10 @@ builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
 builder.Services.AddScoped<IRoomService, RoomService>();
 builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
 builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+
+// Đối chiếu cookie đăng nhập với bản ghi nhân viên ở mỗi request — xem Security/EmployeeCookieEvents.cs.
+builder.Services.AddScoped<EmployeeCookieEvents>();
 
 // Giữ nguyên ký tự tiếng Việt trong HTML thay vì mã hóa thành &#x...;
 builder.Services.Configure<WebEncoderOptions>(options =>
@@ -54,18 +57,10 @@ builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationSc
         options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
         options.Cookie.IsEssential = true;
 
-        // Phân biệt "hết phiên" với "chưa từng đăng nhập": còn cookie mà vẫn bị từ chối
-        // nghĩa là phiên đã hết hạn (00-conventions.md mục 2).
-        options.Events.OnRedirectToLogin = context =>
-        {
-            if (context.Request.Cookies.ContainsKey("HotelAuth"))
-            {
-                context.RedirectUri = QueryHelpers.AddQueryString(context.RedirectUri, "expired", "1");
-            }
-
-            context.Response.Redirect(context.RedirectUri);
-            return Task.CompletedTask;
-        };
+        // Toàn bộ sự kiện nằm trong EmployeeCookieEvents: vừa xử lý chuyển hướng khi hết phiên,
+        // vừa đối chiếu vai trò/trạng thái trong cookie với DB ở mỗi request (SCR-A10, SCR-A11).
+        // Phải dùng EventsType vì lớp đó cần DbContext, tức là phải lấy từ DI theo từng request.
+        options.EventsType = typeof(EmployeeCookieEvents);
     });
 
 // Mặc định mọi endpoint đều phải đăng nhập; trang công khai phải tự đánh [AllowAnonymous].

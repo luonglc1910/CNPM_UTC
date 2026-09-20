@@ -39,6 +39,29 @@ public static class EnumDisplay
         _ => category.ToString()
     };
 
+    public static string ToDisplayName(this EmployeeRole role) => role switch
+    {
+        EmployeeRole.Admin => "Quản lý",
+        EmployeeRole.Receptionist => "Lễ tân",
+        _ => role.ToString()
+    };
+
+    public static string ToDisplayName(this EmployeeStatus status) => status switch
+    {
+        EmployeeStatus.Active => "Đang làm",
+        EmployeeStatus.Resigned => "Đã nghỉ",
+        EmployeeStatus.Locked => "Bị khóa",
+        _ => status.ToString()
+    };
+
+    public static string ToBadgeClass(this EmployeeStatus status) => status switch
+    {
+        EmployeeStatus.Active => "text-bg-success",
+        EmployeeStatus.Resigned => "text-bg-secondary",
+        EmployeeStatus.Locked => "text-bg-danger",
+        _ => "text-bg-light"
+    };
+
     public static string ToDisplayName(this InventoryTransactionType type) => type switch
     {
         InventoryTransactionType.Receive => "Nhập",

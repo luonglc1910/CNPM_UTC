@@ -161,7 +161,8 @@ Xem hướng dẫn chung ở [`01-authentication-authorization.md`](01-authentic
 | 4 | Cột "Khách đang ở" ở SCR-A03 luôn rỗng | Đúng như mong đợi — chưa có `Stay` nào. Link trỏ tới `FrontDesk/Stay` chưa tồn tại, sẽ sống khi làm SCR-D04 |
 | 5 | ~~Chưa có màn hình **Dịch vụ** (SCR-A06/A07)~~ — đã trả xong 20/09/2026 | Xem [`03-catalog-services.md`](03-catalog-services.md) |
 | 6 | ~~Chưa có màn hình **Tồn kho** (A08/A09)~~ — đã trả xong 20/09/2026 | Xem [`04-inventory.md`](04-inventory.md) |
-| 7 | Chưa có màn hình **Nhân viên** (A10/A11), **Cấu hình** (A12) | Nhân bản khuôn mẫu từ `RoomTypeService` là nhanh nhất |
+| 7 | ~~Chưa có màn hình **Nhân viên** (A10/A11)~~ — đã trả xong 20/09/2026 | Xem [`05-employees.md`](05-employees.md) |
+| 8 | Chưa có màn hình **Cấu hình hệ thống** (A12) | Món cuối của nhóm A |
 
 ---
 

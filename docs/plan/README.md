@@ -9,11 +9,12 @@ Mục đích là để lần sau mở ra đọc rồi làm tiếp hoặc sửa l
 | [`02-catalog-rooms.md`](02-catalog-rooms.md) | Danh mục Loại phòng & Phòng (SCR-A01…A05) — kèm khuôn mẫu cho mọi màn hình sau | ✅ Đã xong, đã kiểm thử |
 | [`03-catalog-services.md`](03-catalog-services.md) | Danh mục Dịch vụ (SCR-A06, A07) — kèm tham số quản lý kho và cảnh báo dưới định mức | ✅ Đã xong, đã kiểm thử |
 | [`04-inventory.md`](04-inventory.md) | Tồn kho & phiếu kho (SCR-A08, A09) — nhập kho, điều chỉnh kiểm kê, lịch sử chỉ đọc | ✅ Đã xong, đã kiểm thử |
+| [`05-employees.md`](05-employees.md) | Nhân viên & tài khoản (SCR-A10, A11) — khóa/mở khóa, đặt lại mật khẩu, đổi vai trò là đăng xuất mọi phiên | ✅ Đã xong, đã kiểm thử |
 
 ## Thứ tự làm tiếp
 
-1. **SCR-A10/A11 — Nhân viên**, **SCR-A12 — Cấu hình**: nốt nhóm A. Làm cấu hình trước khi
-   làm đặt phòng thì đỡ phải quay lại sửa, vì luồng chính đọc các tham số ở đó.
+1. **SCR-A12 — Cấu hình hệ thống**: món cuối của nhóm A. Làm trước khi làm đặt phòng thì đỡ
+   phải quay lại sửa, vì luồng chính đọc các tham số ở đó (giờ chuẩn, VAT, phụ thu, cọc/hủy).
 2. **SCR-B01…B03 — Hồ sơ khách**: cần có trước khi làm đặt phòng.
 3. **Lát cắt dọc luồng chính**: tra phòng trống → đặt phòng → check-in → folio → check-out →
    thanh toán. Đây là phần khó và quan trọng nhất (chống trùng phòng BR-06, tính tiền
