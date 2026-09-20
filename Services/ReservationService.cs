@@ -41,6 +41,9 @@ public interface IReservationService
 
     /// <summary>Sơ đồ phòng theo ngày — SCR-C03.</summary>
     Task<RoomChartViewModel> BuildRoomChartAsync(DateTime? from, int days);
+    /// <summary>Trạng thái đơn đặt phòng, null nếu không có. Chỉ dùng để giải thích lỗi.</summary>
+    Task<(ReservationStatus? Status, string? Code)> GetStatusAsync(int reservationId);
+
 }
 
 /// <inheritdoc />
@@ -1123,5 +1126,18 @@ public class ReservationService : IReservationService
         }
 
         return merged;
+    }
+
+    // ---------- Giải thích lỗi ----------
+    // Chỉ chạy khi không mở được màn hình, để nói đúng lý do thay vì trả 404 trắng.
+
+    public async Task<(ReservationStatus? Status, string? Code)> GetStatusAsync(int reservationId)
+    {
+        var r = await _db.Reservations.AsNoTracking()
+            .Where(x => x.Id == reservationId)
+            .Select(x => new { x.Status, x.Code })
+            .FirstOrDefaultAsync();
+
+        return r is null ? (null, null) : (r.Status, r.Code);
     }
 }

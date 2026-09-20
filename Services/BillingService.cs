@@ -40,6 +40,12 @@ public interface IBillingService
 
     Task<MinibarViewModel?> BuildMinibarAsync(int stayId);
     Task<ServiceResult> SaveMinibarAsync(MinibarViewModel form, int employeeId);
+    /// <summary>Trạng thái lượt lưu trú, null nếu không có. Chỉ dùng để giải thích lỗi.</summary>
+    Task<StayStatus?> GetStayStatusAsync(int stayId);
+
+    /// <summary>Trạng thái hóa đơn, null nếu không có. Chỉ dùng để giải thích lỗi.</summary>
+    Task<InvoiceStatus?> GetInvoiceStatusAsync(int invoiceId);
+
 }
 
 /// <inheritdoc />
@@ -977,4 +983,19 @@ public class BillingService : IBillingService
                     : $"{s.Code} — {s.Name} ({s.UnitPrice:N0} ₫)"
             })
             .ToListAsync();
+
+    // ---------- Giải thích lỗi ----------
+    // Chỉ chạy khi không mở được màn hình, để nói đúng lý do thay vì trả 404 trắng.
+
+    public async Task<StayStatus?> GetStayStatusAsync(int stayId)
+        => await _db.Stays.AsNoTracking()
+            .Where(s => s.Id == stayId)
+            .Select(s => (StayStatus?)s.Status)
+            .FirstOrDefaultAsync();
+
+    public async Task<InvoiceStatus?> GetInvoiceStatusAsync(int invoiceId)
+        => await _db.Invoices.AsNoTracking()
+            .Where(i => i.Id == invoiceId)
+            .Select(i => (InvoiceStatus?)i.Status)
+            .FirstOrDefaultAsync();
 }
