@@ -1,27 +1,182 @@
+/* =========================================================================
+   Quản lý Khách sạn — hệ thống giao diện vận hành
+   -------------------------------------------------------------------------
+   Nguyên tắc:
+   1. Màu trạng thái là THÔNG TIN, không phải trang trí. Sáu hue trong nhóm
+      "Bảng màu trạng thái" dưới đây chỉ được dùng cho trạng thái nghiệp vụ,
+      không dùng lại để trang trí chỗ khác.
+   2. Chrome (sidebar, topbar) lùi lại; dữ liệu tiến lên.
+   3. Bo góc phân theo vai trò, không dùng một bán kính cho mọi thứ.
+   4. Viền thay bóng đổ — bóng chỉ dành cho lớp nổi thật sự (offcanvas, sticky).
+
+   Theme bằng biến --bs-* của Bootstrap 5.3 để toàn bộ view sẵn có tự kế thừa,
+   không cần sửa markup và không phải đua specificity với bootstrap.min.css.
+   ========================================================================= */
+
 :root {
-  --sidebar-width: 250px;
-  --sidebar-bg: #1f2937;
-  --sidebar-fg: #cbd5e1;
-  --sidebar-active: #2563eb;
+  /* Chrome */
+  --ink: #14312c;
+  --ink-2: #1c4039;
+  --ink-3: #27544a;
+  --paper: #f2f4f3;
+  --surface: #ffffff;
+  --rule: #dde3e1;
+  --rule-strong: #c6cfcc;
+
+  /* Dấu "bạn đang ở đây" + focus. Chỉ dùng cho việc này. */
+  --brass: #9a7b3f;
+  --brass-bright: #d8b878;
+
+  /* Chữ */
+  --fg: #16211f;
+  --fg-muted: #5e6b68;
+  --fg-faint: #8a9794;
+
+  /* Bảng màu trạng thái — docs/screens/00-conventions.md mục 6.
+     Nghĩa bị chốt bởi spec; ở đây chỉ chỉnh sắc độ cho hài hòa. */
+  --st-available: #2e7d57;   /* Trống            — xanh lá   */
+  --st-reserved: #2a6098;    /* Đã đặt           — xanh dương*/
+  --st-occupied: #ae6318;    /* Đang ở           — cam       */
+  --st-dirty: #6e7875;       /* Chờ dọn          — xám       */
+  --st-maintenance: #a93b38; /* Bảo trì          — đỏ        */
+  --st-outofservice: #2b3330;/* Ngừng khai thác  — đen nhạt  */
+  --st-info: #2a7b8c;
+
+  --sidebar-width: 264px;
+
+  /* Bo góc theo vai trò */
+  --r-control: 6px;
+  --r-card: 10px;
+
+  /* ---- Bootstrap 5.3 ---- */
+  --bs-body-font-family: "Be Vietnam Pro", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --bs-body-font-size: 0.9375rem;
+  --bs-body-font-weight: 400;
+  --bs-body-line-height: 1.55;
+  --bs-body-color: var(--fg);
+  --bs-body-bg: var(--paper);
+  --bs-emphasis-color: var(--fg);
+  --bs-secondary-color: var(--fg-muted);
+  --bs-border-color: var(--rule);
+  --bs-border-radius: var(--r-control);
+  --bs-border-radius-sm: 4px;
+  --bs-border-radius-lg: var(--r-card);
+  --bs-link-color: var(--st-reserved);
+  --bs-link-hover-color: #1d4671;
+  --bs-heading-color: var(--fg);
+
+  --bs-primary: var(--st-reserved);
+  --bs-primary-rgb: 42, 96, 152;
+  --bs-success: var(--st-available);
+  --bs-success-rgb: 46, 125, 87;
+  --bs-warning: var(--st-occupied);
+  --bs-warning-rgb: 174, 99, 24;
+  --bs-secondary: var(--st-dirty);
+  --bs-secondary-rgb: 110, 120, 117;
+  --bs-danger: var(--st-maintenance);
+  --bs-danger-rgb: 169, 59, 56;
+  --bs-dark: var(--st-outofservice);
+  --bs-dark-rgb: 43, 51, 48;
+  --bs-info: var(--st-info);
+  --bs-info-rgb: 42, 123, 140;
+  --bs-light-rgb: 242, 244, 243;
+
+  /* Nền/viền nhạt cho .alert-*, .table-* */
+  --bs-primary-bg-subtle: #e6eef6;
+  --bs-primary-border-subtle: #bed2e6;
+  --bs-primary-text-emphasis: #1d4671;
+  --bs-success-bg-subtle: #e4f1ea;
+  --bs-success-border-subtle: #b8d9c8;
+  --bs-success-text-emphasis: #215c40;
+  --bs-warning-bg-subtle: #fbeedd;
+  --bs-warning-border-subtle: #f0d0a6;
+  --bs-warning-text-emphasis: #8d4f13;
+  --bs-danger-bg-subtle: #f7e5e5;
+  --bs-danger-border-subtle: #e6bdbc;
+  --bs-danger-text-emphasis: #7c2b29;
+  --bs-info-bg-subtle: #e2f0f2;
+  --bs-info-border-subtle: #b5d8de;
+  --bs-info-text-emphasis: #1f5b67;
+  --bs-secondary-bg-subtle: #eceeed;
+  --bs-secondary-border-subtle: #d3d9d7;
+  --bs-secondary-text-emphasis: #4b5552;
+
+  --bs-focus-ring-color: rgba(154, 123, 63, 0.35);
+}
+
+/* Chữ số thẳng hàng ở mọi nơi có số — tiền, số phòng, ngày.
+   Đây là lý do chức năng, không phải hiệu ứng: cột tiền phải so được theo chiều dọc. */
+:root {
+  font-variant-numeric: tabular-nums;
 }
 
 html {
-  font-size: 15px;
+  -webkit-text-size-adjust: 100%;
 }
 
+/* Không đặt -webkit-font-smoothing hay text-rendering ở đây: trên Windows cả hai
+   làm nét chữ mỏng đi và mất subpixel rendering, chữ trông mờ chứ không sắc hơn. */
 body {
-  background: #f3f4f6;
+  background: var(--paper);
+  color: var(--fg);
+  font-family: var(--bs-body-font-family);
 }
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+/* Bỏ qua tới nội dung — bàn phím phải tới được nội dung mà không đi hết sidebar */
+.skip-link {
+  position: absolute;
+  left: -9999px;
+  top: 0;
+  z-index: 1080;
+  background: var(--ink);
+  color: #fff;
+  padding: 0.6rem 1rem;
+  border-radius: 0 0 var(--r-control) 0;
+}
+
+.skip-link:focus {
+  left: 0;
+}
+
+/* ============================ Bố cục khung ============================ */
 
 .admin-shell {
   display: flex;
   min-height: 100vh;
 }
 
-/* Sidebar */
+.admin-main {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* ============================== Sidebar ==============================
+   Nền ink đặc. Mục đang mở được đánh dấu bằng thanh đồng ở mép trái —
+   đây là chỗ duy nhất trong toàn bộ giao diện dùng màu đồng.            */
+
+/* Bootstrap đặt `.offcanvas-lg { background-color: transparent !important }` từ
+   breakpoint lg trở lên, để container tự lo nền. Khai báo thường không thắng được
+   !important dù đứng sau, nên nếu chỉ viết `background: var(--ink)` thì từ 992px
+   sidebar sẽ trong suốt và lòi nền --paper ra: chữ sáng nằm trên nền gần trắng,
+   tỉ lệ tương phản rơi từ 9.81 xuống 1.29. Phải đối lại bằng !important. */
 .admin-sidebar {
-  background: var(--sidebar-bg);
-  color: var(--sidebar-fg);
+  color: #d5e0dc;
+  --bs-offcanvas-bg: var(--ink);
+  --bs-offcanvas-width: var(--sidebar-width);
+  --bs-offcanvas-color: #d5e0dc;
+  --bs-offcanvas-border-width: 0;
+}
+
+.admin-sidebar,
+.admin-sidebar.offcanvas-lg {
+  background-color: var(--ink) !important;
 }
 
 @media (min-width: 992px) {
@@ -32,23 +187,13 @@ body {
     top: 0;
     height: 100vh;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 
-.admin-sidebar.offcanvas-lg {
-  --bs-offcanvas-bg: var(--sidebar-bg);
-  --bs-offcanvas-width: var(--sidebar-width);
-}
-
-.sidebar-brand {
-  color: #fff;
-  font-weight: 600;
-  font-size: 1.15rem;
-  text-decoration: none;
-}
-
 .admin-sidebar .offcanvas-header {
-  padding: 1rem 1.25rem;
+  padding: 1.15rem 1.15rem 0.9rem;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
 }
 
 @media (min-width: 992px) {
@@ -57,93 +202,794 @@ body {
   }
 }
 
+.sidebar-brand {
+  color: #fff;
+  font-weight: 600;
+  font-size: 1.05rem;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.sidebar-brand:hover {
+  color: var(--brass-bright);
+}
+
+.sidebar-brand i {
+  color: var(--brass-bright);
+  font-size: 1.2rem;
+}
+
 .admin-sidebar .offcanvas-body {
-  padding: 0 0.75rem 1rem;
+  padding: 0.5rem 0.75rem 1.5rem;
 }
 
 .sidebar-nav {
   display: flex;
   flex-direction: column;
   width: 100%;
+  gap: 1px;
 }
 
+/* Sentence case có chủ ý: nhãn nhóm viết hoa toàn bộ + giãn chữ là kiểu
+   trang trí mặc định, ở đây nó không thêm thông tin nào. */
 .sidebar-nav .nav-section {
-  margin: 1rem 0.5rem 0.25rem;
+  margin: 1.25rem 0.65rem 0.4rem;
   font-size: 0.75rem;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: #94a3b8;
+  font-weight: 600;
+  /* Không dùng --fg-faint: biến đó được chọn cho nền sáng, đặt lên ink chỉ đạt
+     4.61:1 và trông bạc màu. */
+  color: #a3b7b1;
+}
+
+.sidebar-nav .nav-section:first-child {
+  margin-top: 0.35rem;
 }
 
 .sidebar-nav .nav-link {
-  color: var(--sidebar-fg);
-  padding: 0.45rem 0.75rem;
-  border-radius: 0.375rem;
+  position: relative;
+  color: #d5e0dc;
+  padding: 0.5rem 0.7rem 0.5rem 0.75rem;
+  border-radius: var(--r-control);
+  font-size: 0.9rem;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  transition: background-color 0.12s ease, color 0.12s ease;
 }
 
 .sidebar-nav .nav-link i {
-  width: 1.25rem;
-  display: inline-block;
+  width: 1.1rem;
+  text-align: center;
+  font-size: 1rem;
+  color: #9db4ad;
+  flex-shrink: 0;
 }
 
 .sidebar-nav .nav-link:hover {
   color: #fff;
-  background: rgba(255, 255, 255, 0.06);
+  background: var(--ink-2);
+}
+
+.sidebar-nav .nav-link:hover i {
+  color: #e4ece9;
 }
 
 .sidebar-nav .nav-link.active {
   color: #fff;
-  background: var(--sidebar-active);
+  background: var(--ink-3);
+  font-weight: 500;
 }
 
-/* Main area */
-.admin-main {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
+.sidebar-nav .nav-link.active i {
+  color: var(--brass-bright);
 }
+
+/* Thanh đồng ở mép trái — dấu "đang ở đây".
+   Cao đúng bằng dòng đang mở: thanh thấp hơn sẽ tách rời khỏi pill và đọc như
+   một vệt thừa thay vì một dấu chỉ vị trí. */
+.sidebar-nav .nav-link.active::before {
+  content: "";
+  position: absolute;
+  left: -0.75rem;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 0 2px 2px 0;
+  background: var(--brass-bright);
+}
+
+.sidebar-nav .nav-link:focus-visible {
+  outline: 2px solid var(--brass-bright);
+  outline-offset: -2px;
+}
+
+/* ============================== Topbar ============================== */
 
 .admin-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 1020;
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1.5rem;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  gap: 0.85rem;
+  padding: 0.7rem 1.6rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--rule);
+  min-height: 58px;
 }
 
 .admin-title {
-  font-size: 1.25rem;
+  font-size: 1.15rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
   margin: 0;
+  color: var(--fg);
 }
 
+/* Danh tính người dùng: tên rõ, vai trò phụ. Không viền, không nền — chrome lùi. */
+.topbar-user {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  text-align: right;
+}
+
+.topbar-user-name {
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--fg);
+}
+
+.topbar-user-role {
+  font-size: 0.75rem;
+  color: var(--fg-muted);
+}
+
+.topbar-divider {
+  width: 1px;
+  height: 26px;
+  background: var(--rule);
+  flex-shrink: 0;
+}
+
+/* Chỉ báo ca làm việc. Đây là thông tin chặn nghiệp vụ — chưa mở ca thì
+   thu ngân không thu được tiền — nên nó được đọc như một trạng thái, không
+   phải một cái nhãn nhỏ. */
+.shift-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  text-decoration: none;
+  border: 1px solid transparent;
+  white-space: nowrap;
+}
+
+.shift-pill-open {
+  color: var(--bs-success-text-emphasis);
+  background: var(--bs-success-bg-subtle);
+  border-color: var(--bs-success-border-subtle);
+}
+
+.shift-pill-open:hover {
+  background: #d6e9de;
+  color: var(--bs-success-text-emphasis);
+}
+
+.shift-pill-closed {
+  color: var(--bs-danger-text-emphasis);
+  background: var(--bs-danger-bg-subtle);
+  border-color: var(--bs-danger-border-subtle);
+}
+
+.shift-pill-closed:hover {
+  background: #f2d7d7;
+  color: var(--bs-danger-text-emphasis);
+}
+
+/* ============================= Nội dung ============================= */
+
 .admin-content {
-  padding: 1.5rem;
+  padding: 1.5rem 1.6rem 3rem;
+  flex: 1;
 }
 
 @media (max-width: 575.98px) {
-  .admin-topbar,
+  .admin-topbar {
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
   .admin-content {
     padding-left: 1rem;
     padding-right: 1rem;
   }
 }
 
-.placeholder-card {
-  border-style: dashed;
+/* ============================== Card ==============================
+   Viền mảnh thay bóng đổ. Bóng xám đồng loạt dưới mọi card là dấu hiệu
+   của bộ kit dựng sẵn và không mã hóa thông tin gì.                   */
+
+.card {
+  --bs-card-bg: var(--surface);
+  --bs-card-border-color: var(--rule);
+  --bs-card-border-radius: var(--r-card);
+  --bs-card-inner-border-radius: calc(var(--r-card) - 1px);
+  --bs-card-cap-bg: #f5f8f7;
+  --bs-card-cap-padding-y: 0.75rem;
+  --bs-card-cap-padding-x: 1.1rem;
+  --bs-card-spacer-y: 1.1rem;
+  --bs-card-spacer-x: 1.1rem;
 }
 
-/* Login */
+.card-header {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  border-bottom-color: var(--rule);
+}
+
+/* .shadow-sm rải khắp view: hạ xuống thành viền để không có bóng đồng loạt */
+.card.shadow-sm {
+  box-shadow: none !important;
+}
+
+.placeholder-card {
+  border-style: dashed;
+  border-color: var(--rule-strong);
+  background: transparent;
+}
+
+/* ============================== Bảng ==============================
+   Nhân viên sống ở đây cả ngày. Dày, kẻ mảnh, đầu bảng dính, tiền căn phải. */
+
+.table {
+  --bs-table-bg: transparent;
+  --bs-table-color: var(--fg);
+  --bs-table-border-color: var(--rule);
+  --bs-table-hover-bg: #eef2f1;
+  --bs-table-hover-color: var(--fg);
+  margin-bottom: 0;
+}
+
+.table > thead > tr > th {
+  background: #fafbfb;
+  color: var(--fg-muted);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  padding: 0.6rem 0.75rem;
+  border-bottom: 1px solid var(--rule-strong);
+  white-space: nowrap;
+}
+
+.table > tbody > tr > td {
+  padding: 0.6rem 0.75rem;
+  vertical-align: middle;
+  border-color: var(--rule);
+}
+
+.table > tbody > tr:last-child > td {
+  border-bottom-width: 0;
+}
+
+/* Card bọc bảng: bảng chạy sát mép, bo theo card.
+   Bo ở lớp bọc chứ không ở chính <table>: đặt overflow lên table sẽ cắt phần
+   tràn thay vì để .table-responsive cuộn ngang trên màn hình hẹp. */
+.card > .table-responsive:last-child,
+.card > .table:last-child {
+  border-bottom-left-radius: var(--bs-card-inner-border-radius);
+  border-bottom-right-radius: var(--bs-card-inner-border-radius);
+}
+
+.card > .table-responsive:last-child {
+  overflow-x: auto;
+}
+
+/* Cột số: căn phải để so sánh được theo chiều dọc */
+.table .num,
+.table .text-end {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ============================== Nút ==============================
+   .btn-primary lấy màu từ biến riêng của nó, không từ --bs-primary,
+   nên phải đặt tường minh.                                          */
+
+.btn {
+  --bs-btn-font-weight: 500;
+  --bs-btn-border-radius: var(--r-control);
+  --bs-btn-padding-y: 0.4rem;
+  --bs-btn-padding-x: 0.85rem;
+  --bs-btn-font-size: 0.875rem;
+}
+
+.btn-sm {
+  --bs-btn-padding-y: 0.25rem;
+  --bs-btn-padding-x: 0.6rem;
+  --bs-btn-font-size: 0.8125rem;
+  --bs-btn-border-radius: 5px;
+}
+
+/* Hành động chính = ink. Để nguyên sáu hue trạng thái làm việc của chúng,
+   không cạnh tranh với nút. */
+.btn-primary {
+  --bs-btn-bg: var(--ink);
+  --bs-btn-border-color: var(--ink);
+  --bs-btn-hover-bg: var(--ink-2);
+  --bs-btn-hover-border-color: var(--ink-2);
+  --bs-btn-active-bg: #0f2622;
+  --bs-btn-active-border-color: #0f2622;
+  --bs-btn-disabled-bg: #7d918c;
+  --bs-btn-disabled-border-color: #7d918c;
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--fg);
+  --bs-btn-border-color: var(--rule-strong);
+  --bs-btn-hover-color: var(--fg);
+  --bs-btn-hover-bg: #eaeeed;
+  --bs-btn-hover-border-color: var(--rule-strong);
+  --bs-btn-active-color: var(--fg);
+  --bs-btn-active-bg: #dfe5e3;
+  --bs-btn-active-border-color: var(--rule-strong);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--ink);
+  --bs-btn-border-color: var(--ink);
+  --bs-btn-hover-bg: var(--ink);
+  --bs-btn-hover-border-color: var(--ink);
+  --bs-btn-active-bg: var(--ink);
+  --bs-btn-active-border-color: var(--ink);
+}
+
+.btn-success {
+  --bs-btn-bg: var(--st-available);
+  --bs-btn-border-color: var(--st-available);
+  --bs-btn-hover-bg: #266747;
+  --bs-btn-hover-border-color: #266747;
+}
+
+.btn-danger {
+  --bs-btn-bg: var(--st-maintenance);
+  --bs-btn-border-color: var(--st-maintenance);
+  --bs-btn-hover-bg: #8e312e;
+  --bs-btn-hover-border-color: #8e312e;
+}
+
+.btn-warning {
+  --bs-btn-color: #fff;
+  --bs-btn-bg: var(--st-occupied);
+  --bs-btn-border-color: var(--st-occupied);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: #a85e15;
+  --bs-btn-hover-border-color: #a85e15;
+  --bs-btn-active-color: #fff;
+}
+
+.btn:focus-visible,
+.btn-check:focus-visible + .btn {
+  outline: 2px solid var(--brass);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+
+/* ============================== Badge ==============================
+   Pill chỉ dành cho badge — đây là chỗ duy nhất dùng bo tròn hết cỡ.  */
+
+/* Bootstrap để .badge ở `display:inline-block; line-height:1; vertical-align:baseline`.
+   Với hộp dòng cao đúng 1em, Be Vietnam Pro không đủ chỗ cho dấu chồng của tiếng Việt
+   (ả, ầ, ể) — half-leading âm nên chữ bị đẩy lệch lên trong lớp padding; "Bảo trì" là
+   đúng trường hợp lộ ra rõ nhất. Căn giữa bằng flex và nới line-height. */
+.badge {
+  --bs-badge-font-weight: 500;
+  --bs-badge-padding-y: 0.32em;
+  --bs-badge-padding-x: 0.65em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1.25;
+  min-height: 1.5rem;
+  font-size: 0.75rem;
+  border-radius: 999px;
+  letter-spacing: 0.005em;
+  vertical-align: middle;
+}
+
+/* Bootstrap ẩn badge rỗng; inline-flex không được phép ghi đè điều đó. */
+.badge:empty {
+  display: none;
+}
+
+/* Bootstrap đặt chữ đen trên nền cảnh báo; sắc cam của ta đủ đậm để dùng
+   chữ trắng, giữ độ tương phản đồng nhất với các badge trạng thái khác. */
+.text-bg-warning {
+  color: #fff !important;
+}
+
+/* ============================== Form ============================== */
+
+.form-label {
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  margin-bottom: 0.3rem;
+}
+
+.form-control,
+.form-select {
+  border-color: var(--rule-strong);
+  border-radius: var(--r-control);
+  padding: 0.42rem 0.7rem;
+  font-size: 0.9rem;
+  color: var(--fg);
+  background-color: var(--surface);
+}
+
+.form-control::placeholder {
+  color: var(--fg-faint);
+}
+
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--brass);
+  box-shadow: 0 0 0 3px var(--bs-focus-ring-color);
+}
+
+.form-control:disabled,
+.form-select:disabled {
+  background-color: #f0f3f2;
+  color: var(--fg-muted);
+}
+
+.form-check-input:checked {
+  background-color: var(--ink);
+  border-color: var(--ink);
+}
+
+.form-check-input:focus {
+  border-color: var(--brass);
+  box-shadow: 0 0 0 3px var(--bs-focus-ring-color);
+}
+
+.form-text,
+.text-muted {
+  color: var(--fg-muted) !important;
+}
+
+.input-group-text {
+  background: #f0f3f2;
+  border-color: var(--rule-strong);
+  color: var(--fg-muted);
+  font-size: 0.875rem;
+}
+
+/* ============================== Alert ============================== */
+
+.alert {
+  --bs-alert-border-radius: var(--r-card);
+  border-width: 1px;
+  padding: 0.75rem 1rem;
+  font-size: 0.9rem;
+}
+
+/* ============================ Phân trang ============================ */
+
+.pagination {
+  --bs-pagination-color: var(--fg);
+  --bs-pagination-border-color: var(--rule);
+  --bs-pagination-hover-bg: #eaeeed;
+  --bs-pagination-hover-color: var(--fg);
+  --bs-pagination-hover-border-color: var(--rule-strong);
+  --bs-pagination-active-bg: var(--ink);
+  --bs-pagination-active-border-color: var(--ink);
+  --bs-pagination-disabled-color: var(--fg-faint);
+  --bs-pagination-disabled-border-color: var(--rule);
+  --bs-pagination-border-radius: var(--r-control);
+  --bs-pagination-font-size: 0.875rem;
+  --bs-pagination-focus-box-shadow: 0 0 0 3px var(--bs-focus-ring-color);
+}
+
+/* ============================== Nav tabs ============================== */
+
+.nav-tabs {
+  --bs-nav-tabs-border-color: var(--rule);
+  --bs-nav-tabs-link-active-color: var(--ink);
+  --bs-nav-tabs-link-active-bg: var(--surface);
+  --bs-nav-tabs-link-active-border-color: var(--rule) var(--rule) var(--surface);
+  --bs-nav-link-color: var(--fg-muted);
+  --bs-nav-link-hover-color: var(--ink);
+  --bs-nav-link-font-size: 0.9rem;
+}
+
+.list-group {
+  --bs-list-group-border-color: var(--rule);
+  --bs-list-group-border-radius: var(--r-card);
+  --bs-list-group-active-bg: var(--ink);
+  --bs-list-group-active-border-color: var(--ink);
+}
+
+/* ============================ Ô số liệu ============================
+   Dùng ở Tổng quan. Số là nhân vật chính, nhãn là chú thích.          */
+
+.stat-card {
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: var(--r-card);
+  padding: 1rem 1.1rem;
+  height: 100%;
+}
+
+.stat-label {
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+  margin-bottom: 0.35rem;
+}
+
+.stat-value {
+  font-size: 1.75rem;
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  color: var(--fg);
+  font-variant-numeric: tabular-nums;
+}
+
+.stat-card-empty .stat-value {
+  color: var(--fg-faint);
+  font-weight: 500;
+}
+
+/* ============================ Sơ đồ phòng ============================
+   SCR-C03. Ma trận phòng × ngày; một lượt đặt vẽ thành một dải liền nhờ colspan,
+   nên mắt bắt được khoảng trống giữa hai đơn thay vì phải đếm từng ô.        */
+
+.room-chart {
+  --chart-day-width: 3.1rem;
+  border-collapse: separate;
+  border-spacing: 0;
+  margin-bottom: 0;
+}
+
+.room-chart th,
+.room-chart td {
+  border-bottom: 1px solid var(--rule);
+  padding: 0;
+}
+
+/* Cột phòng dính lại khi cuộn ngang — cuộn sang ngày thứ 40 mà không biết đang ở
+   phòng nào thì bảng vô dụng. */
+.room-chart .room-chart-head {
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  background: var(--surface);
+  border-right: 1px solid var(--rule-strong);
+  padding: 0.4rem 0.75rem;
+  min-width: 8rem;
+  text-align: left;
+  font-weight: 400;
+}
+
+.room-chart thead .room-chart-head {
+  z-index: 3;
+  background: #f5f8f7;
+}
+
+.room-chart-day {
+  width: var(--chart-day-width);
+  min-width: var(--chart-day-width);
+  background: #f5f8f7;
+  text-align: center;
+  padding: 0.35rem 0.2rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--fg-muted);
+  border-bottom: 1px solid var(--rule-strong);
+}
+
+.room-chart-day.is-weekend {
+  background: #eef2f1;
+  color: var(--fg);
+}
+
+.room-chart-dow {
+  font-size: 0.6875rem;
+  font-weight: 400;
+  color: var(--fg-faint);
+  text-transform: lowercase;
+}
+
+.room-chart-cell {
+  height: 2.4rem;
+  border-right: 1px solid var(--rule);
+}
+
+/* Dải đặt phòng: bo hai đầu để đọc ra điểm bắt đầu và kết thúc của một lượt ở. */
+.room-chart-band {
+  display: flex;
+  align-items: center;
+  height: 1.8rem;
+  margin: 0.3rem 2px;
+  padding: 0 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: #fff;
+  text-decoration: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.room-chart-band:hover {
+  color: #fff;
+  filter: brightness(1.08);
+}
+
+/* O trong to xanh la rat nhat: chu thich mau noi "Trong" la xanh la, de o ve trang
+   thi chu thich noi mot dang ma bang ve mot neo. Nhat den muc 30 phong x 14 dem van
+   khong bi ruc. */
+.chart-free {
+  background: #f3faf6;
+}
+
+.chart-reserved .room-chart-band {
+  background: var(--st-reserved);
+}
+
+.chart-occupied .room-chart-band {
+  background: var(--st-occupied);
+}
+
+.chart-blocked .room-chart-band {
+  background: var(--st-maintenance);
+}
+
+/* Ô trống là đích bấm để tạo đơn, nên phải phủ kín ô chứ không chỉ là chữ. */
+.room-chart-link {
+  display: block;
+  height: 100%;
+  min-height: 2.4rem;
+  text-decoration: none;
+}
+
+.room-chart-link:hover {
+  background: var(--bs-success-bg-subtle);
+  box-shadow: inset 0 0 0 1px var(--bs-success-border-subtle);
+}
+
+/* ============================ Chú thích màu ============================
+   Bảng chú thích ở SCR-A03, SCR-C03, SCR-E01.                           */
+
+.status-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem 1rem;
+  align-items: center;
+}
+
+.status-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 0.8125rem;
+  color: var(--fg-muted);
+}
+
+.status-legend-swatch {
+  width: 0.7rem;
+  height: 0.7rem;
+  border-radius: 3px;
+  flex-shrink: 0;
+}
+
+/* =============================== Login ===============================
+   Nền ink đặc: màn duy nhất không có chrome, nên chrome trở thành nền.  */
+
 .login-page {
   min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: 1rem;
+  padding: 1.5rem;
+  background: var(--ink);
 }
 
 .login-card {
   width: 100%;
-  max-width: 380px;
+  max-width: 400px;
+  background: var(--surface);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: var(--r-card);
+}
+
+.login-brand {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.6rem;
+  margin-bottom: 0.35rem;
+  font-size: 1.25rem;
+  font-weight: 600;
+  letter-spacing: -0.015em;
+  color: var(--fg);
+}
+
+.login-brand i {
+  color: var(--brass);
+}
+
+.login-sub {
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--fg-muted);
+  margin-bottom: 1.5rem;
+}
+
+/* ============================ Tiện ích chung ============================ */
+
+a:focus-visible,
+.form-control:focus-visible,
+.form-select:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 1px;
+}
+
+hr {
+  border-color: var(--rule);
+  opacity: 1;
+}
+
+.border {
+  border-color: var(--rule) !important;
+}
+
+::selection {
+  background: rgba(154, 123, 63, 0.22);
+}
+
+/* Thanh cuộn sidebar hòa vào nền ink thay vì cắt một vệt sáng */
+.admin-sidebar::-webkit-scrollbar {
+  width: 8px;
+}
+
+.admin-sidebar::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.14);
+  border-radius: 4px;
+}
+
+.admin-sidebar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  .admin-sidebar,
+  .admin-topbar {
+    display: none !important;
+  }
+
+  .admin-content {
+    padding: 0;
+  }
+
+  body {
+    background: #fff;
+  }
 }

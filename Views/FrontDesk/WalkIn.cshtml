@@ -1,4 +1,4 @@
-@model WalkInViewModel
+﻿@model WalkInViewModel
 @{
     ViewData["Title"] = "Check-in khách vãng lai";
 }
@@ -13,9 +13,19 @@
                 <div class="card-body">
                     <div class="mb-2">
                         <label asp-for="ExistingGuestId" class="form-label">Khách cũ (nếu có)</label>
-                        <select asp-for="ExistingGuestId" asp-items="Model.GuestOptions" class="form-select">
+                        <select asp-for="ExistingGuestId" asp-items="Model.GuestOptions" class="form-select"
+                                id="walkInGuestSelect" data-blacklisted="@System.Text.Json.JsonSerializer.Serialize(Model.BlacklistedGuestIds)">
                             <option value="">— Khách mới, nhập bên dưới —</option>
                         </select>
+                    </div>
+
+                    @* SCR-B05: khách trong danh sách hạn chế phải được cảnh báo ở cả SCR-D03.
+                       Cảnh báo không chặn nút Check-in — quyết định nhận hay từ chối là của con người,
+                       nhưng vẫn tiếp tục thì hệ thống ghi nhật ký việc bỏ qua. *@
+                    <div id="walkInBlacklistWarning" class="alert alert-danger d-none py-2 mb-2" role="alert">
+                        <i class="bi bi-shield-exclamation"></i>
+                        Khách này nằm trong <strong>danh sách hạn chế</strong> — cần quản lý duyệt.
+                        Vẫn tiếp tục thì thao tác sẽ được ghi vào nhật ký.
                     </div>
                     <hr />
                     <div class="row g-2">
@@ -114,4 +124,24 @@
     </div>
 </form>
 
-@section Scripts { <partial name="_ValidationScriptsPartial" /> }
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var select = document.getElementById('walkInGuestSelect');
+            var warning = document.getElementById('walkInBlacklistWarning');
+            if (!select || !warning) { return; }
+
+            var blocked = [];
+            try { blocked = JSON.parse(select.dataset.blacklisted || '[]'); } catch (e) { blocked = []; }
+
+            function sync() {
+                var id = parseInt(select.value, 10);
+                warning.classList.toggle('d-none', !(id && blocked.indexOf(id) !== -1));
+            }
+
+            select.addEventListener('change', sync);
+            sync();
+        })();
+    </script>
+}

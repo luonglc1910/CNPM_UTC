@@ -298,3 +298,81 @@ public class NoShowListViewModel
 {
     public IReadOnlyList<OverdueReservationItem> Items { get; set; } = new List<OverdueReservationItem>();
 }
+
+// ===================== SCR-C03 — Sơ đồ phòng theo ngày =====================
+
+/// <summary>Cách một ô trong sơ đồ được lấp — SCR-C03.</summary>
+public enum RoomChartCellKind
+{
+    /// <summary>Không có gì phủ đêm này — bán được.</summary>
+    Free = 0,
+
+    /// <summary>Có đơn đặt chưa nhận phòng.</summary>
+    Reserved = 1,
+
+    /// <summary>Khách đang ở.</summary>
+    Occupied = 2,
+
+    /// <summary>Phòng không khai thác được cả kỳ: bảo trì hoặc ngừng khai thác.</summary>
+    Blocked = 3
+}
+
+/// <summary>
+/// Một dải liền trong sơ đồ — SCR-C03.
+/// Nhiều đêm của cùng một đơn gộp thành một ô có <see cref="Span"/> để mắt nhìn ra
+/// khoảng trống giữa các đơn, thay vì đếm từng ô rời.
+/// </summary>
+public class RoomChartSegment
+{
+    public RoomChartCellKind Kind { get; set; }
+
+    /// <summary>Ngày bắt đầu dải, tính theo cột đầu tiên nó chiếm.</summary>
+    public DateTime Date { get; set; }
+
+    /// <summary>Số cột (số đêm) dải này chiếm.</summary>
+    public int Span { get; set; } = 1;
+
+    public int? ReservationId { get; set; }
+    public string? ReservationCode { get; set; }
+    public string? GuestName { get; set; }
+    public int Guests { get; set; }
+    public string? StatusLabel { get; set; }
+
+    /// <summary>Nội dung tooltip dựng sẵn ở service để view khỏi ghép chuỗi.</summary>
+    public string? Tooltip { get; set; }
+}
+
+/// <summary>Một dòng phòng trong sơ đồ — SCR-C03.</summary>
+public class RoomChartRow
+{
+    public int RoomId { get; set; }
+    public string RoomNumber { get; set; } = string.Empty;
+    public int Floor { get; set; }
+    public string RoomTypeName { get; set; } = string.Empty;
+    public RoomStatus CurrentStatus { get; set; }
+
+    public IReadOnlyList<RoomChartSegment> Segments { get; set; } = new List<RoomChartSegment>();
+}
+
+/// <summary>Sơ đồ phòng theo ngày — SCR-C03, FR-C02.</summary>
+public class RoomChartViewModel
+{
+    /// <summary>Trần số ngày hiển thị: quá rộng thì bảng tràn ngang và mất tác dụng nhìn nhanh.</summary>
+    public const int MaxDays = 60;
+
+    [Display(Name = "Từ ngày")]
+    [DataType(DataType.Date)]
+    public DateTime From { get; set; }
+
+    [Display(Name = "Số ngày")]
+    public int Days { get; set; } = 14;
+
+    public IReadOnlyList<DateTime> Dates { get; set; } = new List<DateTime>();
+    public IReadOnlyList<RoomChartRow> Rows { get; set; } = new List<RoomChartRow>();
+
+    /// <summary>Bị cắt bớt vì người dùng yêu cầu khoảng rộng hơn trần cho phép.</summary>
+    public bool Truncated { get; set; }
+
+    public int FreeNights => Rows.Sum(r => r.Segments.Where(s => s.Kind == RoomChartCellKind.Free).Sum(s => s.Span));
+    public int TotalNights => Rows.Count * Days;
+}

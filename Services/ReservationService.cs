@@ -1,4 +1,4 @@
-using HotelManagement.Web.Data;
+﻿using HotelManagement.Web.Data;
 using HotelManagement.Web.Models;
 using HotelManagement.Web.Models.Entities;
 using HotelManagement.Web.Models.ViewModels;
@@ -38,6 +38,9 @@ public interface IReservationService
     Task<ServiceResult> ExtendHoldAsync(int id, int hours, int employeeId);
 
     Task FillFormOptionsAsync(ReservationFormViewModel form);
+
+    /// <summary>Sơ đồ phòng theo ngày — SCR-C03.</summary>
+    Task<RoomChartViewModel> BuildRoomChartAsync(DateTime? from, int days);
 }
 
 /// <inheritdoc />
@@ -246,12 +249,25 @@ public class ReservationService : IReservationService
             reservation.HoldUntil = await ComputeHoldUntilAsync(form.CheckInDate);
         }
 
+        var primaryGuestBlacklisted = await _db.Guests.AsNoTracking()
+            .Where(g => g.Id == form.PrimaryGuestId)
+            .Select(g => g.IsBlacklisted)
+            .FirstOrDefaultAsync();
+
         var newId = await _tx.ExecuteAsync(async () =>
         {
             reservation.Code = await _numbers.NextReservationCodeAsync(DateTime.Now);
             _db.Reservations.Add(reservation);
             _audit.Log("CreateReservation", nameof(Reservation), null,
                 newValue: $"{reservation.Code} ({reservation.CheckInDate:dd/MM/yyyy}–{reservation.CheckOutDate:dd/MM/yyyy}, {reservation.Rooms.Count} phòng)");
+
+            // Cảnh báo khách hạn chế không tự chặn (SCR-B05); vẫn tạo đơn thì phải để lại dấu vết
+            // để SCR-G04 đếm được số lần bỏ qua.
+            if (primaryGuestBlacklisted)
+            {
+                _audit.Log(AuditActions.OverrideBlacklistWarning, nameof(Reservation), null,
+                    reason: "Tạo đơn cho khách nằm trong danh sách hạn chế");
+            }
             await _db.SaveChangesAsync();
             return reservation.Id;
         });
@@ -879,4 +895,233 @@ public class ReservationService : IReservationService
 
     private static string? Trimmed(string? value)
         => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
+
+    // ---------- SCR-C03 ----------
+
+    public async Task<RoomChartViewModel> BuildRoomChartAsync(DateTime? from, int days)
+    {
+        var start = (from ?? DateTime.Now).Date;
+
+        var truncated = days > RoomChartViewModel.MaxDays;
+        if (truncated)
+        {
+            days = RoomChartViewModel.MaxDays;
+        }
+
+        if (days < 1)
+        {
+            days = 14;
+        }
+
+        var endExclusive = start.AddDays(days);
+
+        var rooms = await _db.Rooms.AsNoTracking()
+            .Where(r => r.IsActive)
+            .OrderBy(r => r.Floor).ThenBy(r => r.RoomNumber)
+            .Select(r => new
+            {
+                r.Id,
+                r.RoomNumber,
+                r.Floor,
+                r.Status,
+                RoomTypeName = r.RoomType.Name
+            })
+            .ToListAsync();
+
+        // Đơn đã giữ phòng cụ thể. Đơn hủy / no-show / đã trả phòng không còn chiếm chỗ.
+        var booked = await _db.ReservationRooms.AsNoTracking()
+            .Where(rr => rr.RoomId != null
+                && rr.Reservation.CheckInDate < endExclusive
+                && rr.Reservation.CheckOutDate > start
+                && (rr.Reservation.Status == ReservationStatus.Confirmed
+                    || rr.Reservation.Status == ReservationStatus.Draft))
+            .Select(rr => new
+            {
+                RoomId = rr.RoomId!.Value,
+                rr.ReservationId,
+                rr.Reservation.Code,
+                GuestName = rr.Reservation.PrimaryGuest.FullName,
+                Start = rr.Reservation.CheckInDate,
+                End = rr.Reservation.CheckOutDate,
+                Guests = rr.Adults + rr.Children,
+                rr.Reservation.Status
+            })
+            .ToListAsync();
+
+        // Khách đang ở. Chưa trả phòng thì lấy ngày đi dự kiến làm mốc kết thúc.
+        var stays = await _db.Stays.AsNoTracking()
+            .Where(s => s.ActualCheckIn < endExclusive
+                && (s.ActualCheckOut ?? s.ExpectedCheckOut) > start)
+            .Select(s => new
+            {
+                s.RoomId,
+                s.ReservationId,
+                Code = s.Reservation != null ? s.Reservation.Code : null,
+                GuestName = s.PrimaryGuest.FullName,
+                Start = s.ActualCheckIn,
+                End = s.ActualCheckOut ?? s.ExpectedCheckOut,
+                Guests = s.Guests.Count
+            })
+            .ToListAsync();
+
+        var dates = Enumerable.Range(0, days).Select(i => start.AddDays(i)).ToList();
+        var rows = new List<RoomChartRow>(rooms.Count);
+
+        foreach (var room in rooms)
+        {
+            // Dựng từng đêm trước rồi mới gộp dải: gộp thẳng trong lúc duyệt sẽ phải xử lý
+            // riêng trường hợp hai đơn khác nhau nằm sát nhau, rất dễ dính thành một dải sai.
+            var cells = new RoomChartSegment[days];
+
+            for (var i = 0; i < days; i++)
+            {
+                var day = dates[i];
+
+                // Một đêm bị chiếm khi lượt ở bắt đầu trước hoặc trong ngày đó và kết thúc sau ngày đó.
+                var stay = stays.FirstOrDefault(s => s.RoomId == room.Id
+                    && s.Start.Date <= day && s.End.Date > day);
+
+                if (stay is not null)
+                {
+                    cells[i] = new RoomChartSegment
+                    {
+                        Kind = RoomChartCellKind.Occupied,
+                        Date = day,
+                        ReservationId = stay.ReservationId,
+                        ReservationCode = stay.Code,
+                        GuestName = stay.GuestName,
+                        Guests = stay.Guests,
+                        StatusLabel = "Đang ở"
+                    };
+                    continue;
+                }
+
+                var book = booked.FirstOrDefault(b => b.RoomId == room.Id
+                    && b.Start.Date <= day && b.End.Date > day);
+
+                if (book is not null)
+                {
+                    cells[i] = new RoomChartSegment
+                    {
+                        Kind = RoomChartCellKind.Reserved,
+                        Date = day,
+                        ReservationId = book.ReservationId,
+                        ReservationCode = book.Code,
+                        GuestName = book.GuestName,
+                        Guests = book.Guests,
+                        StatusLabel = book.Status.ToDisplayName()
+                    };
+                    continue;
+                }
+
+                // Bảo trì / ngừng khai thác là trạng thái hiện tại của phòng, dữ liệu không có
+                // mốc thời gian, nên phủ toàn kỳ: sơ đồ thà báo thừa còn hơn mời bán phòng đang hỏng.
+                var blocked = room.Status is RoomStatus.Maintenance or RoomStatus.OutOfService;
+
+                cells[i] = new RoomChartSegment
+                {
+                    Kind = blocked ? RoomChartCellKind.Blocked : RoomChartCellKind.Free,
+                    Date = day,
+                    StatusLabel = blocked ? room.Status.ToDisplayName() : null
+                };
+            }
+
+            rows.Add(new RoomChartRow
+            {
+                RoomId = room.Id,
+                RoomNumber = room.RoomNumber,
+                Floor = room.Floor,
+                RoomTypeName = room.RoomTypeName,
+                CurrentStatus = room.Status,
+                Segments = MergeSegments(cells)
+            });
+        }
+
+        return new RoomChartViewModel
+        {
+            From = start,
+            Days = days,
+            Dates = dates,
+            Rows = rows,
+            Truncated = truncated
+        };
+    }
+
+    /// <summary>
+    /// Gộp các đêm liền nhau thuộc cùng một đơn thành một dải — SCR-C03.
+    /// Hai đơn khác nhau nằm sát nhau vẫn phải là hai dải, nếu không sơ đồ sẽ vẽ ra một
+    /// khoảng đặt phòng liền mạch không có thật.
+    /// </summary>
+    private static List<RoomChartSegment> MergeSegments(RoomChartSegment[] cells)
+    {
+        var merged = new List<RoomChartSegment>();
+
+        foreach (var cell in cells)
+        {
+            var last = merged.Count > 0 ? merged[merged.Count - 1] : null;
+
+            var sameRun = last is not null
+                && last.Kind == cell.Kind
+                && last.ReservationId == cell.ReservationId;
+
+            if (sameRun)
+            {
+                last!.Span++;
+                continue;
+            }
+
+            merged.Add(new RoomChartSegment
+            {
+                Kind = cell.Kind,
+                Date = cell.Date,
+                Span = 1,
+                ReservationId = cell.ReservationId,
+                ReservationCode = cell.ReservationCode,
+                GuestName = cell.GuestName,
+                Guests = cell.Guests,
+                StatusLabel = cell.StatusLabel
+            });
+        }
+
+        foreach (var seg in merged)
+        {
+            if (seg.Kind == RoomChartCellKind.Free)
+            {
+                seg.Tooltip = null;
+                continue;
+            }
+
+            if (seg.Kind == RoomChartCellKind.Blocked)
+            {
+                seg.Tooltip = seg.StatusLabel;
+                continue;
+            }
+
+            var parts = new List<string>();
+            if (!string.IsNullOrWhiteSpace(seg.ReservationCode))
+            {
+                parts.Add(seg.ReservationCode!);
+            }
+
+            if (!string.IsNullOrWhiteSpace(seg.GuestName))
+            {
+                parts.Add(seg.GuestName!);
+            }
+
+            if (seg.Guests > 0)
+            {
+                parts.Add(seg.Guests + " khách");
+            }
+
+            if (!string.IsNullOrWhiteSpace(seg.StatusLabel))
+            {
+                parts.Add(seg.StatusLabel!);
+            }
+
+            parts.Add(seg.Span + " đêm");
+            seg.Tooltip = string.Join(" · ", parts);
+        }
+
+        return merged;
+    }
 }

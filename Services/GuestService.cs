@@ -1,4 +1,4 @@
-using System.Text.RegularExpressions;
+﻿using System.Text.RegularExpressions;
 using HotelManagement.Web.Data;
 using HotelManagement.Web.Models;
 using HotelManagement.Web.Models.Entities;
@@ -23,6 +23,12 @@ public interface IGuestService
 
     /// <summary>Tra trùng khi đang nhập — SCR-B02, gọi từ JavaScript.</summary>
     Task<GuestDuplicateCheckResult> CheckDuplicateAsync(string? idNumber, string? phoneNumber, int? excludeId);
+
+    /// <summary>Danh sách khai báo tạm trú của một ngày — SCR-B04.</summary>
+    Task<ResidenceViewModel> BuildResidenceAsync(DateTime? date);
+
+    /// <summary>Đưa vào / gỡ khỏi danh sách hạn chế — SCR-B05.</summary>
+    Task<ServiceResult> SetBlacklistAsync(BlacklistForm form);
 }
 
 /// <inheritdoc />
@@ -462,4 +468,91 @@ public class GuestService : IGuestService
 
     private static string? Join(string? first, string second)
         => string.IsNullOrEmpty(first) ? second : $"{first} {second}";
+
+    // ---------- SCR-B04 ----------
+
+    public async Task<ResidenceViewModel> BuildResidenceAsync(DateTime? date)
+    {
+        var day = (date ?? DateTime.Now).Date;
+        var nextDay = day.AddDays(1);
+
+        // Tiêu chí của spec: mọi lượt lưu trú GIAO với ngày được chọn. Khách nhận phòng
+        // trong ngày hoặc trước đó, và chưa trả phòng trước khi ngày đó bắt đầu.
+        var rows = await _db.StayGuests.AsNoTracking()
+            .Where(sg => sg.Stay.ActualCheckIn < nextDay
+                && (sg.Stay.ActualCheckOut == null || sg.Stay.ActualCheckOut >= day))
+            .OrderBy(sg => sg.Stay.Room.RoomNumber)
+            .ThenByDescending(sg => sg.IsPrimary)
+            .ThenBy(sg => sg.Guest.FullName)
+            .Select(sg => new ResidenceRow
+            {
+                GuestId = sg.GuestId,
+                FullName = sg.Guest.FullName,
+                DateOfBirth = sg.Guest.DateOfBirth,
+                Gender = sg.Guest.Gender,
+                Nationality = sg.Guest.Nationality,
+                IdType = sg.Guest.IdType,
+                IdNumber = sg.Guest.IdNumber,
+                Address = sg.Guest.Address,
+                RoomNumber = sg.Stay.Room.RoomNumber,
+                From = sg.Stay.ActualCheckIn,
+                To = sg.Stay.ActualCheckOut,
+                IsPrimary = sg.IsPrimary
+            })
+            .ToListAsync();
+
+        // Màn hình này hiện số giấy tờ đầy đủ của nhiều người một lúc. Spec xếp nó vào nhóm
+        // "dữ liệu cá nhân" nên mỗi lần mở đều phải trả lời được: ai đọc, ngày nào, lúc nào.
+        await _audit.LogAndSaveAsync(
+            AuditActions.ViewResidenceList,
+            nameof(Guest),
+            entityId: null,
+            reason: $"Ngày {day:dd/MM/yyyy} — {rows.Count} người");
+
+        return new ResidenceViewModel { Date = day, Rows = rows };
+    }
+
+    // ---------- SCR-B05 ----------
+
+    public async Task<ServiceResult> SetBlacklistAsync(BlacklistForm form)
+    {
+        var guest = await _db.Guests.FirstOrDefaultAsync(g => g.Id == form.Id);
+        if (guest is null)
+        {
+            return ServiceResult.Fail("Không tìm thấy hồ sơ khách.");
+        }
+
+        if (guest.IsBlacklisted == form.AddToBlacklist)
+        {
+            return ServiceResult.Fail(form.AddToBlacklist
+                ? $"Khách {guest.FullName} đã nằm trong danh sách hạn chế."
+                : $"Khách {guest.FullName} không nằm trong danh sách hạn chế.");
+        }
+
+        var oldReason = guest.BlacklistReason;
+        var reason = form.Reason.Trim();
+        var note = string.IsNullOrWhiteSpace(form.Notes) ? null : form.Notes.Trim();
+
+        guest.IsBlacklisted = form.AddToBlacklist;
+
+        // Gỡ khỏi danh sách thì xóa lý do cũ: để lại sẽ khiến màn hình chi tiết hiện lý do
+        // hạn chế cho một khách đang bình thường.
+        guest.BlacklistReason = form.AddToBlacklist
+            ? (note is null ? reason : $"{reason} — {note}")
+            : null;
+
+        _audit.Log(
+            form.AddToBlacklist ? AuditActions.BlacklistAdd : AuditActions.BlacklistRemove,
+            nameof(Guest),
+            guest.Id.ToString(),
+            reason: reason,
+            oldValue: oldReason ?? "(không hạn chế)",
+            newValue: guest.BlacklistReason ?? "(không hạn chế)");
+
+        await _db.SaveChangesAsync();
+
+        return ServiceResult.Ok(form.AddToBlacklist
+            ? $"Đã đưa khách {guest.FullName} vào danh sách hạn chế."
+            : $"Đã gỡ khách {guest.FullName} khỏi danh sách hạn chế.");
+    }
 }

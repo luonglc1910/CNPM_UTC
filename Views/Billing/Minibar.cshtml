@@ -1,4 +1,4 @@
-@model MinibarViewModel
+﻿@model MinibarViewModel
 @{
     ViewData["Title"] = $"Kiểm phòng &amp; minibar — Phòng {Model.RoomNumber}";
 }
@@ -12,6 +12,7 @@
         <p class="small text-muted">Nhập số lượng khách đã dùng cho từng mặt hàng minibar. Lưu sẽ đẩy vào folio, trừ tồn kho và đánh dấu đã kiểm phòng (BR-08, BR-12). Không dùng gì thì để 0 và vẫn bấm Lưu để xác nhận đã kiểm.</p>
         <form method="post" asp-action="Minibar">
             <input type="hidden" asp-for="StayId" />
+            <div class="table-responsive">
             <table class="table align-middle">
                 <thead class="table-light"><tr><th>Mặt hàng</th><th class="text-end">Đơn giá</th><th class="text-center">Tồn</th><th style="width: 120px">Đã dùng</th></tr></thead>
                 <tbody>
@@ -31,6 +32,7 @@
                 @if (Model.Lines.Count == 0) { <tr><td colspan="4" class="text-center text-muted py-3">Chưa có mặt hàng minibar (dịch vụ nhóm Minibar có quản lý kho).</td></tr> }
                 </tbody>
             </table>
+            </div>
             <div class="d-flex gap-2">
                 <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Xác nhận đã kiểm phòng</button>
                 <a class="btn btn-outline-secondary" asp-controller="FrontDesk" asp-action="CheckOut" asp-route-stayId="@Model.StayId">Quay lại check-out</a>

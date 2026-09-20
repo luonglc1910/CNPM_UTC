@@ -1,4 +1,4 @@
-@model PaymentViewModel
+﻿@model PaymentViewModel
 @{
     ViewData["Title"] = $"Thanh toán — Phòng {Model.RoomNumber}";
     var s = Model.Summary;
@@ -21,6 +21,7 @@
     <div class="card mb-3">
         <div class="card-header">Cần thu</div>
         <div class="card-body">
+            <div class="table-responsive">
             <table class="table table-sm mb-0">
                 <tbody>
                     <tr><td>Tổng hóa đơn</td><td class="text-end">@s.Total.ToString("N0") ₫</td></tr>
@@ -31,6 +32,7 @@
                     </tr>
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 

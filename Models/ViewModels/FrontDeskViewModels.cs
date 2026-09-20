@@ -1,4 +1,4 @@
-using System.ComponentModel.DataAnnotations;
+﻿using System.ComponentModel.DataAnnotations;
 using HotelManagement.Web.Models.Entities;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -155,6 +155,13 @@ public class WalkInViewModel
 
     public bool HasOpenShift { get; set; }
     public IReadOnlyList<SelectListItem> GuestOptions { get; set; } = new List<SelectListItem>();
+
+    /// <summary>
+    /// Id những khách đang nằm trong danh sách hạn chế — SCR-B05, SCR-D03.
+    /// Gửi cả danh sách xuống thay vì một cờ, để cảnh báo hiện ngay lúc chọn khách
+    /// chứ không phải chờ gửi form rồi mới biết.
+    /// </summary>
+    public IReadOnlyList<int> BlacklistedGuestIds { get; set; } = new List<int>();
     public IReadOnlyList<SelectListItem> RoomOptions { get; set; } = new List<SelectListItem>();
 }
 

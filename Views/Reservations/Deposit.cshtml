@@ -1,4 +1,4 @@
-@model DepositFormViewModel
+﻿@model DepositFormViewModel
 @{
     ViewData["Title"] = $"Thu cọc — {Model.ReservationCode}";
 }
@@ -8,6 +8,7 @@
         <div class="card">
             <div class="card-header">Thu tiền cọc — đơn <code>@Model.ReservationCode</code> (@Model.GuestName)</div>
             <div class="card-body">
+                <div class="table-responsive">
                 <table class="table table-sm">
                     <tbody>
                         <tr><td>Tổng dự kiến</td><td class="text-end">@Model.EstimatedTotal.ToString("N0") ₫</td></tr>
@@ -15,6 +16,7 @@
                         <tr class="fw-semibold"><td>Mức đề xuất</td><td class="text-end">@Model.SuggestedAmount.ToString("N0") ₫</td></tr>
                     </tbody>
                 </table>
+                </div>
 
                 @if (!Model.HasOpenShift)
                 {

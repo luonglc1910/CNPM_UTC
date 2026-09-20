@@ -1,4 +1,4 @@
-using HotelManagement.Web.Models.Entities;
+﻿using HotelManagement.Web.Models.Entities;
 using HotelManagement.Web.Models.ViewModels;
 using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
@@ -116,4 +116,51 @@ public class GuestsController : AdminControllerBase
     [HttpGet]
     public async Task<IActionResult> CheckDuplicate(string? idNumber, string? phoneNumber, int? excludeId)
         => Json(await _service.CheckDuplicateAsync(idNumber, phoneNumber, excludeId));
+
+    /// <summary>
+    /// Danh sách khai báo tạm trú theo ngày — SCR-B04. Service tự ghi nhật ký truy cập
+    /// vì đây là dữ liệu cá nhân của nhiều khách cùng lúc.
+    /// </summary>
+    [HttpGet]
+    public async Task<IActionResult> Residence(DateTime? date)
+        => View(await _service.BuildResidenceAsync(date));
+
+    /// <summary>
+    /// Đưa vào / gỡ khỏi danh sách hạn chế — SCR-B05. Chỉ Admin: đây là quyết định ảnh hưởng
+    /// tới khách, lễ tân chỉ được thấy cảnh báo chứ không được tự đặt.
+    /// </summary>
+    [HttpPost]
+    [Authorize(Roles = Roles.Admin)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Blacklist(int id, BlacklistForm form)
+    {
+        form.Id = id;
+
+        if (!ModelState.IsValid)
+        {
+            // Hộp thoại nằm trên trang chi tiết nên lỗi cũng quay về đó; gửi kèm lỗi đầu tiên
+            // vì modal không giữ lại được ModelState sau redirect.
+            TempData["Error"] = ModelState.Values
+                .SelectMany(v => v.Errors)
+                .Select(e => e.ErrorMessage)
+                .FirstOrDefault() ?? "Dữ liệu không hợp lệ.";
+            return RedirectToAction(nameof(Details), new { id });
+        }
+
+        var result = await _service.SetBlacklistAsync(form);
+        SetMessage(result);
+        return RedirectToAction(nameof(Details), new { id });
+    }
+
+    private void SetMessage(ServiceResult result)
+    {
+        if (result.Succeeded)
+        {
+            TempData["Success"] = result.Message;
+        }
+        else
+        {
+            TempData["Error"] = result.Error;
+        }
+    }
 }

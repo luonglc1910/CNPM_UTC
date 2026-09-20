@@ -1,4 +1,4 @@
-@model CheckOutViewModel
+﻿@model CheckOutViewModel
 @{
     ViewData["Title"] = $"Check-out — Phòng {Model.RoomNumber}";
     var s = Model.Summary;
@@ -66,6 +66,7 @@
         <div class="card">
             <div class="card-header">Tạm tính hiện tại</div>
             <div class="card-body">
+                <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <tbody>
                         <tr><td>Tiền phòng</td><td class="text-end">@s.RoomCharge.ToString("N0") ₫</td></tr>
@@ -78,6 +79,7 @@
                         <tr class="table-light fw-semibold"><td>Số dư phải thu</td><td class="text-end">@s.BalanceDue.ToString("N0") ₫</td></tr>
                     </tbody>
                 </table>
+                </div>
                 <div class="form-text mt-2">Phụ thu trễ giờ được cộng vào folio khi nhấn "Tiếp tục thanh toán".</div>
             </div>
         </div>

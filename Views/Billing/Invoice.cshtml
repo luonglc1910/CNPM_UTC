@@ -1,4 +1,4 @@
-@model InvoiceViewModel
+﻿@model InvoiceViewModel
 @{
     ViewData["Title"] = $"Hóa đơn {Model.Invoice.InvoiceNo}";
     var inv = Model.Invoice;
@@ -45,6 +45,7 @@
         </div>
     </div>
 
+    <div class="table-responsive">
     <table class="table table-sm">
         <thead class="table-light"><tr><th>Nội dung</th><th class="text-center">SL</th><th class="text-end">Đơn giá</th><th class="text-end">Thành tiền</th></tr></thead>
         <tbody>
@@ -59,9 +60,11 @@
         }
         </tbody>
     </table>
+    </div>
 
     <div class="row justify-content-end">
         <div class="col-sm-5">
+            <div class="table-responsive">
             <table class="table table-sm">
                 <tbody>
                     <tr><td>Tạm tính</td><td class="text-end">@inv.SubTotal.ToString("N0") ₫</td></tr>
@@ -75,6 +78,7 @@
                     }
                 </tbody>
             </table>
+            </div>
         </div>
     </div>
 

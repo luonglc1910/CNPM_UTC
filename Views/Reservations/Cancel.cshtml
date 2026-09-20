@@ -1,4 +1,4 @@
-@model CancelReservationViewModel
+﻿@model CancelReservationViewModel
 @{
     ViewData["Title"] = $"Hủy đơn — {Model.ReservationCode}";
 }
@@ -13,6 +13,7 @@
                     <div>Chính sách áp dụng: <strong>@Model.PolicyDescription</strong></div>
                 </div>
 
+                <div class="table-responsive">
                 <table class="table table-sm">
                     <tbody>
                         <tr><td>Đã cọc</td><td class="text-end">@Model.DepositPaid.ToString("N0") ₫</td></tr>
@@ -20,6 +21,7 @@
                         <tr class="fw-semibold"><td>Hoàn lại khách</td><td class="text-end">@Model.RefundAmount.ToString("N0") ₫</td></tr>
                     </tbody>
                 </table>
+                </div>
 
                 @if (Model.DepositPaid > 0 && !Model.HasOpenShift)
                 {

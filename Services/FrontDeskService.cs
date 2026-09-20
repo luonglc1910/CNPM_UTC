@@ -1,4 +1,4 @@
-using HotelManagement.Web.Data;
+﻿using HotelManagement.Web.Data;
 using HotelManagement.Web.Models;
 using HotelManagement.Web.Models.Entities;
 using HotelManagement.Web.Models.ViewModels;
@@ -221,6 +221,11 @@ public class FrontDeskService : IFrontDeskService
             return ServiceResult.Fail("Đơn không ở trạng thái Đã xác nhận nên không check-in được.");
         }
 
+        var guestBlacklisted = await _db.Guests.AsNoTracking()
+            .Where(g => g.Id == reservation.PrimaryGuestId)
+            .Select(g => g.IsBlacklisted)
+            .FirstOrDefaultAsync();
+
         var settings = await _settings.GetPricingSettingsAsync();
         var nights = _pricing.CountNights(reservation.CheckInDate, reservation.CheckOutDate);
         var actualCheckIn = form.ActualCheckIn;
@@ -309,6 +314,15 @@ public class FrontDeskService : IFrontDeskService
             reservation.Status = ReservationStatus.CheckedIn;
             _audit.Log("CheckIn", nameof(Reservation), reservation.Id.ToString(),
                 newValue: $"Nhận phòng lúc {actualCheckIn:dd/MM/yyyy HH:mm}");
+
+            // Cảnh báo khách hạn chế không tự chặn (SCR-B05) — quyết định là của con người.
+            // Nhưng đã bấm tiếp thì phải để lại dấu vết, nếu không SCR-G04 không đếm được.
+            if (guestBlacklisted)
+            {
+                _audit.Log(AuditActions.OverrideBlacklistWarning, nameof(Reservation),
+                    reservation.Id.ToString(),
+                    reason: "Check-in cho khách nằm trong danh sách hạn chế");
+            }
             await _db.SaveChangesAsync();
         });
 
@@ -331,6 +345,11 @@ public class FrontDeskService : IFrontDeskService
         form.GuestOptions = await _db.Guests.AsNoTracking()
             .OrderBy(g => g.FullName)
             .Select(g => new SelectListItem { Value = g.Id.ToString(), Text = $"{g.FullName} — {g.PhoneNumber}" })
+            .ToListAsync();
+
+        form.BlacklistedGuestIds = await _db.Guests.AsNoTracking()
+            .Where(g => g.IsBlacklisted)
+            .Select(g => g.Id)
             .ToListAsync();
 
         form.RoomOptions = await _db.Rooms.AsNoTracking()
@@ -372,6 +391,13 @@ public class FrontDeskService : IFrontDeskService
                 return (ServiceResult.Fail("Khách mới cần họ tên, số giấy tờ và SĐT."), 0);
             }
         }
+
+        // Chỉ khách có sẵn mới tra được danh sách hạn chế; khách mới thì chưa có hồ sơ nào.
+        var walkInBlacklisted = form.ExistingGuestId is int existingId
+            && await _db.Guests.AsNoTracking()
+                .Where(g => g.Id == existingId)
+                .Select(g => g.IsBlacklisted)
+                .FirstOrDefaultAsync();
 
         var wantsDeposit = form.DepositAmount > 0;
         var shift = await _shifts.GetOpenShiftAsync(employeeId);
@@ -461,6 +487,13 @@ public class FrontDeskService : IFrontDeskService
 
             _audit.Log("WalkIn", nameof(Stay), stay.Id.ToString(),
                 newValue: $"Khách vãng lai vào phòng {room.RoomNumber}");
+
+            if (walkInBlacklisted)
+            {
+                _audit.Log(AuditActions.OverrideBlacklistWarning, nameof(Stay),
+                    stay.Id.ToString(),
+                    reason: "Khách vãng lai nằm trong danh sách hạn chế");
+            }
             await _db.SaveChangesAsync();
             return stay.Id;
         });

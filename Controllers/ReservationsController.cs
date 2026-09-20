@@ -1,4 +1,4 @@
-using HotelManagement.Web.Models.ViewModels;
+﻿using HotelManagement.Web.Models.ViewModels;
 using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -168,6 +168,11 @@ public class ReservationsController : AdminControllerBase
 
     // SCR-C09
     [HttpGet]
+    // SCR-C03 — ma trận phòng × ngày, nhìn nhanh khoảng trống để lấp.
+    [HttpGet]
+    public async Task<IActionResult> RoomChart(DateTime? from, int days = 14)
+        => View(await _service.BuildRoomChartAsync(from, days));
+
     public async Task<IActionResult> NoShow()
         => View(await _service.BuildNoShowListAsync());
 

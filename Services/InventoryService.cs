@@ -1,4 +1,4 @@
-using HotelManagement.Web.Data;
+﻿using HotelManagement.Web.Data;
 using HotelManagement.Web.Models;
 using HotelManagement.Web.Models.Entities;
 using HotelManagement.Web.Models.ViewModels;
@@ -300,6 +300,12 @@ public class InventoryService : IInventoryService
                 return ServiceResult.Fail(
                     $"Dịch vụ {service.Code} chỉ còn {service.StockQuantity} {service.Unit}, không đủ để bán {quantity}.");
             }
+
+            // Bán vượt tồn là ngoại lệ được cấu hình cho phép, không phải việc bình thường.
+            // Ghi lại để SCR-G03 đối chiếu được và SCR-G04 đếm được (BR-12).
+            _audit.Log(AuditActions.OverrideNegativeStock, nameof(HotelService),
+                service.Id.ToString(),
+                reason: $"Bán {quantity} {service.Unit} khi chỉ còn {service.StockQuantity}");
         }
 
         service.StockQuantity -= quantity;
