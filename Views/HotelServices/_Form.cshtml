@@ -1,0 +1,159 @@
+@model HotelServiceFormViewModel
+@* Form dùng chung cho Thêm và Sửa dịch vụ — SCR-A07. *@
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+<input type="hidden" asp-for="Id" />
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <label asp-for="Code" class="form-label">Mã dịch vụ <span class="text-danger">*</span></label>
+        @if (Model.IsEdit)
+        {
+            @* Mã không sửa được sau khi tạo; hiển thị khóa và gửi kèm để form không mất giá trị. *@
+            <input asp-for="Code" class="form-control" readonly />
+            <input type="hidden" asp-for="Code" />
+            <div class="form-text">Mã dịch vụ không thay đổi được sau khi tạo.</div>
+        }
+        else
+        {
+            <input asp-for="Code" class="form-control text-uppercase" placeholder="VD: MB005" autofocus />
+            <div class="form-text">2–20 ký tự, chỉ chữ in hoa và số.</div>
+        }
+        <span asp-validation-for="Code" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-8">
+        <label asp-for="Name" class="form-label">Tên dịch vụ <span class="text-danger">*</span></label>
+        <input asp-for="Name" class="form-control" placeholder="VD: Nước suối 500ml" />
+        <span asp-validation-for="Name" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Category" class="form-label">Nhóm dịch vụ <span class="text-danger">*</span></label>
+        <select asp-for="Category" class="form-select">
+            @foreach (var category in Enum.GetValues<ServiceCategory>())
+            {
+                <option value="@((int)category)" selected="@(Model.Category == category)">
+                    @category.ToDisplayName()
+                </option>
+            }
+        </select>
+        <span asp-validation-for="Category" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="UnitPrice" class="form-label">Đơn giá (₫) <span class="text-danger">*</span></label>
+        <input asp-for="UnitPrice" class="form-control" type="number" min="0" step="1000" />
+        <span asp-validation-for="UnitPrice" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Unit" class="form-label">Đơn vị tính <span class="text-danger">*</span></label>
+        <input asp-for="Unit" class="form-control" list="unit-suggestions" placeholder="VD: lon" />
+        <datalist id="unit-suggestions">
+            @foreach (var unit in HotelServiceFormViewModel.UnitSuggestions)
+            {
+                <option value="@unit"></option>
+            }
+        </datalist>
+        <span asp-validation-for="Unit" class="text-danger small"></span>
+    </div>
+
+    <div class="col-12">
+        <div class="form-check">
+            <input asp-for="IsStockManaged" class="form-check-input" id="is-stock-managed" />
+            <label asp-for="IsStockManaged" class="form-check-label"></label>
+        </div>
+        <div class="form-text">
+            Bật thì mỗi lần bán sẽ trừ tồn kho (BR-12). Nhập và điều chỉnh tồn làm ở màn hình Tồn kho.
+        </div>
+    </div>
+
+    @* Hai trường chỉ có nghĩa khi bật kho — ẩn/hiện bằng JS, và server cũng tự đưa về 0/false nếu tắt. *@
+    <div class="col-12" id="stock-fields" hidden="@(!Model.IsStockManaged)">
+        <div class="card bg-body-tertiary border-0">
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label asp-for="MinStockLevel" class="form-label"></label>
+                        <input asp-for="MinStockLevel" class="form-control" type="number" min="0" />
+                        <div class="form-text">Tồn xuống bằng hoặc dưới mức này thì danh sách tô vàng cảnh báo.</div>
+                        <span asp-validation-for="MinStockLevel" class="text-danger small"></span>
+                    </div>
+
+                    <div class="col-md-6 d-flex align-items-center">
+                        <div>
+                            <div class="form-check">
+                                <input asp-for="AllowNegativeStock" class="form-check-input" />
+                                <label asp-for="AllowNegativeStock" class="form-check-label"></label>
+                            </div>
+                            <div class="form-text">Mặc định không cho bán khi hết hàng; chỉ Admin bật được (BR-12).</div>
+                        </div>
+                    </div>
+
+                    @if (Model.IsEdit)
+                    {
+                        <div class="col-12">
+                            <span class="text-muted small">
+                                Tồn hiện tại: <strong>@Model.StockQuantity</strong> @Model.Unit —
+                                thay đổi tồn phải lập phiếu nhập hoặc phiếu điều chỉnh ở màn hình Tồn kho.
+                            </span>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @if (Model.IsEdit)
+    {
+        <div class="col-12">
+            <div class="form-check">
+                <input asp-for="IsActive" class="form-check-input" />
+                <label asp-for="IsActive" class="form-check-label"></label>
+            </div>
+        </div>
+
+        <div class="col-12">
+            <div class="alert alert-info mb-0 small">
+                <i class="bi bi-info-circle"></i>
+                Sửa đơn giá <strong>không ảnh hưởng hồi tố</strong>: các dòng dịch vụ đã ghi vào folio
+                giữ nguyên đơn giá lúc ghi nhận. Giá mới chỉ áp cho lần ghi nhận sau đây.
+                @if (Model.HasFolioHistory)
+                {
+                    <br />
+                    <span>Dịch vụ này <strong>đã phát sinh giao dịch</strong> nên chỉ ngừng sử dụng được, không xóa.</span>
+                }
+            </div>
+        </div>
+    }
+    else
+    {
+        <div class="col-12">
+            <div class="alert alert-info mb-0 small">
+                <i class="bi bi-info-circle"></i>
+                Dịch vụ có quản lý kho luôn bắt đầu với tồn bằng <strong>0</strong>.
+                Phải nhập kho ở màn hình Tồn kho thì mới bán được.
+            </div>
+        </div>
+    }
+</div>
+
+<div class="mt-4 d-flex gap-2">
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg"></i> @(Model.IsEdit ? "Cập nhật" : "Thêm dịch vụ")
+    </button>
+    <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+</div>
+
+<script>
+    (function () {
+        var toggle = document.getElementById('is-stock-managed');
+        var fields = document.getElementById('stock-fields');
+
+        toggle.addEventListener('change', function () {
+            fields.hidden = !toggle.checked;
+        });
+    })();
+</script>

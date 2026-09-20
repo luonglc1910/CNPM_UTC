@@ -159,14 +159,15 @@ Xem hướng dẫn chung ở [`01-authentication-authorization.md`](01-authentic
 | 2 | **Cảnh báo đổi loại phòng khi có đơn tương lai** chưa chạy thật | Logic có trong `RoomService.UpdateAsync` + ô xác nhận trong `_Form.cshtml`, nhưng chưa test được vì cần dữ liệu đặt phòng; nhánh `GetFutureReservationsAsync` **đã** được kiểm qua SCR-A05 |
 | 3 | **Chặn đổi loại phòng khi đang có khách** chưa chạy thật | Cần có `Stay` thật; sẽ kiểm được sau khi làm check-in (SCR-D02) |
 | 4 | Cột "Khách đang ở" ở SCR-A03 luôn rỗng | Đúng như mong đợi — chưa có `Stay` nào. Link trỏ tới `FrontDesk/Stay` chưa tồn tại, sẽ sống khi làm SCR-D04 |
-| 5 | Chưa có màn hình **Dịch vụ** (SCR-A06/A07), **Tồn kho** (A08/A09), **Nhân viên** (A10/A11), **Cấu hình** (A12) | Nhân bản khuôn mẫu từ `RoomTypeService` là nhanh nhất |
+| 5 | ~~Chưa có màn hình **Dịch vụ** (SCR-A06/A07)~~ — đã trả xong 20/09/2026 | Xem [`03-catalog-services.md`](03-catalog-services.md) |
+| 6 | Chưa có màn hình **Tồn kho** (A08/A09), **Nhân viên** (A10/A11), **Cấu hình** (A12) | Nhân bản khuôn mẫu từ `RoomTypeService` là nhanh nhất |
 
 ---
 
 ## 7. Làm tiếp từ đâu
 
 Theo thứ tự ở [`README.md`](README.md):
-1. **SCR-A06/A07 — Dịch vụ**: gần như bản sao của Loại phòng, thêm phần tồn kho.
+1. ~~**SCR-A06/A07 — Dịch vụ**~~ — đã làm, xem [`03-catalog-services.md`](03-catalog-services.md).
 2. **SCR-B01…B03 — Hồ sơ khách**: cần trước khi làm đặt phòng.
 3. **Lát cắt dọc luồng chính**: SCR-C02 tra phòng trống → SCR-C04 đặt phòng → SCR-D02 check-in →
    SCR-F02 folio → SCR-D08 check-out → SCR-F05 thanh toán. Đây mới là phần khó và quan trọng nhất.

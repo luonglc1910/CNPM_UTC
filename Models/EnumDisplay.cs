@@ -38,4 +38,15 @@ public static class EnumDisplay
         ServiceCategory.Other => "Khác",
         _ => category.ToString()
     };
+
+    /// <summary>Màu nhãn nhóm dịch vụ trên SCR-A06 — chỉ để đọc bảng cho nhanh.</summary>
+    public static string ToBadgeClass(this ServiceCategory category) => category switch
+    {
+        ServiceCategory.FoodAndBeverage => "text-bg-success",
+        ServiceCategory.Minibar => "text-bg-primary",
+        ServiceCategory.Laundry => "text-bg-info",
+        ServiceCategory.Transport => "text-bg-warning",
+        ServiceCategory.Other => "text-bg-secondary",
+        _ => "text-bg-light"
+    };
 }

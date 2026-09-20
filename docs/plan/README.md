@@ -7,12 +7,15 @@ Mục đích là để lần sau mở ra đọc rồi làm tiếp hoặc sửa l
 |---|---|---|
 | [`01-authentication-authorization.md`](01-authentication-authorization.md) | Đăng nhập, phân quyền theo vai trò, đổi mật khẩu, audit log, menu tự ẩn theo quyền | ✅ Đã xong, đã kiểm thử |
 | [`02-catalog-rooms.md`](02-catalog-rooms.md) | Danh mục Loại phòng & Phòng (SCR-A01…A05) — kèm khuôn mẫu cho mọi màn hình sau | ✅ Đã xong, đã kiểm thử |
+| [`03-catalog-services.md`](03-catalog-services.md) | Danh mục Dịch vụ (SCR-A06, A07) — kèm tham số quản lý kho và cảnh báo dưới định mức | ✅ Đã xong, đã kiểm thử |
 
 ## Thứ tự làm tiếp
 
-1. **SCR-A06/A07 — Dịch vụ**: gần như bản sao của Loại phòng, thêm phần tồn kho.
-2. **SCR-B01…B03 — Hồ sơ khách**: cần có trước khi làm đặt phòng.
-3. **Lát cắt dọc luồng chính**: tra phòng trống → đặt phòng → check-in → folio → check-out →
+1. **SCR-A08/A09 — Tồn kho**: nhập kho và điều chỉnh kiểm kê; chưa có thì dịch vụ có quản lý
+   kho không bán được vì tồn luôn bằng 0.
+2. **SCR-A10/A11 — Nhân viên**, **SCR-A12 — Cấu hình**: nốt nhóm A.
+3. **SCR-B01…B03 — Hồ sơ khách**: cần có trước khi làm đặt phòng.
+4. **Lát cắt dọc luồng chính**: tra phòng trống → đặt phòng → check-in → folio → check-out →
    thanh toán. Đây là phần khó và quan trọng nhất (chống trùng phòng BR-06, tính tiền
    BR-02/BR-03, transaction lúc check-out). Đừng dồn quá nhiều thời gian vào màn hình danh mục.
 
