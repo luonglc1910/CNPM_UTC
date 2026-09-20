@@ -1,48 +1,88 @@
+@inject HotelManagement.Web.Security.IScreenAccess Screens
 @{
     var controller = ViewContext.RouteData.Values["controller"] as string;
     var action = ViewContext.RouteData.Values["action"] as string;
 
-    string Active(string c, string? a = null) =>
-        string.Equals(controller, c, StringComparison.OrdinalIgnoreCase)
-        && (a is null || string.Equals(action, a, StringComparison.OrdinalIgnoreCase))
-            ? "active" : "";
 
-    // Với 2 vai trò, mọi nhóm nghiệp vụ đều mở cho cả Admin lẫn Lễ tân.
-    // Chỉ còn hai chỗ giới hạn cho Admin: danh mục Nhân viên và nhóm Báo cáo.
-    // (Các màn hình danh mục lễ tân chỉ được xem — nút Thêm/Sửa ẩn ngay trong màn hình đó.)
-    var isAdmin = User.IsInRole(Roles.Admin);
+    // Khai báo menu theo nhóm. Không có điều kiện quyền nào viết tay ở đây:
+    // mỗi mục tự hỏi IScreenAccess, vốn đọc thẳng [Authorize] trên controller/action.
+    // Thêm màn hình mới chỉ cần thêm một dòng; đổi quyền chỉ cần sửa controller.
+    var menu = new (string? Section, string Label, string Icon, string Controller, string Action)[]
+    {
+        (null,                    "Tổng quan",            "speedometer2",       "Home",          "Index"),
+
+        ("Danh mục & Cấu hình",   "Loại phòng",           "tags",               "RoomTypes",     "Index"),
+        (null,                    "Phòng",                "door-closed",        "Rooms",         "Index"),
+        (null,                    "Dịch vụ",              "cup-hot",            "HotelServices", "Index"),
+        (null,                    "Nhân viên",            "people",             "Employees",     "Index"),
+
+        ("Đặt phòng",             "Đơn đặt phòng",        "journal-bookmark",   "Reservations",  "Index"),
+        (null,                    "Tra cứu phòng trống",  "calendar-check",     "Reservations",  "Availability"),
+
+        ("Lễ tân",                "Khách đang lưu trú",   "person-lines-fill",  "FrontDesk",     "Index"),
+        (null,                    "Check-in",             "box-arrow-in-right", "FrontDesk",     "CheckIn"),
+        (null,                    "Khách vãng lai",       "person-walking",     "FrontDesk",     "WalkIn"),
+
+        ("Buồng phòng",           "Trạng thái dọn phòng", "stars",              "Housekeeping",  "Index"),
+        (null,                    "Yêu cầu phục vụ",      "bell",               "Housekeeping",  "Requests"),
+
+        ("Thu ngân & Báo cáo",    "Hóa đơn",              "receipt",            "Billing",       "Index"),
+        (null,                    "Doanh thu",            "graph-up",           "Reports",       "Revenue"),
+        (null,                    "Công suất phòng",      "pie-chart",          "Reports",       "Occupancy")
+    };
+
+    // Lọc trước những mục không có quyền, rồi mới quyết định tiêu đề nhóm nào còn mục để hiện.
+    var visible = new List<(string? Section, string Label, string Icon, string Controller, string Action)>();
+    string? currentSection = null;
+
+    foreach (var item in menu)
+    {
+        if (item.Section is not null)
+        {
+            currentSection = item.Section;
+        }
+
+        if (await Screens.CanAccessAsync(item.Controller, item.Action))
+        {
+            visible.Add((currentSection, item.Label, item.Icon, item.Controller, item.Action));
+        }
+    }
+
+    // Controller chỉ có một mục trong menu thì mục đó sáng ở mọi trang con của controller
+    // (đang ở /Rooms/Create thì "Phòng" vẫn sáng). Controller có nhiều mục thì phải khớp
+    // cả action, nếu không ba mục của Lễ tân sẽ cùng sáng một lúc.
+    var singleEntryControllers = visible
+        .GroupBy(x => x.Controller, StringComparer.OrdinalIgnoreCase)
+        .Where(g => g.Count() == 1)
+        .Select(g => g.Key)
+        .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+    string Active(string c, string a) =>
+        string.Equals(controller, c, StringComparison.OrdinalIgnoreCase)
+        && (singleEntryControllers.Contains(c)
+            || string.Equals(action, a, StringComparison.OrdinalIgnoreCase))
+            ? "active" : "";
 }
 
 <nav class="sidebar-nav">
-    <a class="nav-link @Active("Home")" asp-controller="Home" asp-action="Index"><i class="bi bi-speedometer2"></i> Tổng quan</a>
-
-    <div class="nav-section">Danh mục &amp; Cấu hình</div>
-    <a class="nav-link @Active("RoomTypes")" asp-controller="RoomTypes" asp-action="Index"><i class="bi bi-tags"></i> Loại phòng</a>
-    <a class="nav-link @Active("Rooms")" asp-controller="Rooms" asp-action="Index"><i class="bi bi-door-closed"></i> Phòng</a>
-    <a class="nav-link @Active("HotelServices")" asp-controller="HotelServices" asp-action="Index"><i class="bi bi-cup-hot"></i> Dịch vụ</a>
-    @if (isAdmin)
-    {
-        <a class="nav-link @Active("Employees")" asp-controller="Employees" asp-action="Index"><i class="bi bi-people"></i> Nhân viên</a>
+    @{
+        string? renderedSection = null;
     }
-
-    <div class="nav-section">Đặt phòng</div>
-    <a class="nav-link @Active("Reservations", "Index")" asp-controller="Reservations" asp-action="Index"><i class="bi bi-journal-bookmark"></i> Đơn đặt phòng</a>
-    <a class="nav-link @Active("Reservations", "Availability")" asp-controller="Reservations" asp-action="Availability"><i class="bi bi-calendar-check"></i> Tra cứu phòng trống</a>
-
-    <div class="nav-section">Lễ tân</div>
-    <a class="nav-link @Active("FrontDesk", "Index")" asp-controller="FrontDesk" asp-action="Index"><i class="bi bi-person-lines-fill"></i> Khách đang lưu trú</a>
-    <a class="nav-link @Active("FrontDesk", "CheckIn")" asp-controller="FrontDesk" asp-action="CheckIn"><i class="bi bi-box-arrow-in-right"></i> Check-in</a>
-    <a class="nav-link @Active("FrontDesk", "WalkIn")" asp-controller="FrontDesk" asp-action="WalkIn"><i class="bi bi-person-walking"></i> Khách vãng lai</a>
-
-    <div class="nav-section">Buồng phòng</div>
-    <a class="nav-link @Active("Housekeeping", "Index")" asp-controller="Housekeeping" asp-action="Index"><i class="bi bi-stars"></i> Trạng thái dọn phòng</a>
-    <a class="nav-link @Active("Housekeeping", "Requests")" asp-controller="Housekeeping" asp-action="Requests"><i class="bi bi-bell"></i> Yêu cầu phục vụ</a>
-
-    <div class="nav-section">Thu ngân &amp; Báo cáo</div>
-    <a class="nav-link @Active("Billing")" asp-controller="Billing" asp-action="Index"><i class="bi bi-receipt"></i> Hóa đơn</a>
-    @if (isAdmin)
+    @foreach (var item in visible)
     {
-        <a class="nav-link @Active("Reports", "Revenue")" asp-controller="Reports" asp-action="Revenue"><i class="bi bi-graph-up"></i> Doanh thu</a>
-        <a class="nav-link @Active("Reports", "Occupancy")" asp-controller="Reports" asp-action="Occupancy"><i class="bi bi-pie-chart"></i> Công suất phòng</a>
+        @* Tiêu đề nhóm chỉ hiện khi nhóm đó thực sự còn mục nào đi qua được bộ lọc quyền. *@
+        if (item.Section != renderedSection)
+        {
+            renderedSection = item.Section;
+            if (item.Section is not null)
+            {
+                <div class="nav-section">@item.Section</div>
+            }
+        }
+
+        <a class="nav-link @Active(item.Controller, item.Action)"
+           asp-controller="@item.Controller" asp-action="@item.Action">
+            <i class="bi bi-@item.Icon"></i> @item.Label
+        </a>
     }
 </nav>

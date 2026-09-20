@@ -21,6 +21,8 @@ builder.Services.AddControllersWithViews(options =>
 
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<IAuditService, AuditService>();
+// Menu trái hỏi dịch vụ này để biết mục nào được hiện — xem Security/ScreenAccess.cs.
+builder.Services.AddScoped<IScreenAccess, ScreenAccess>();
 
 // Giữ nguyên ký tự tiếng Việt trong HTML thay vì mã hóa thành &#x...;
 builder.Services.Configure<WebEncoderOptions>(options =>
