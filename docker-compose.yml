@@ -34,12 +34,12 @@ services:
         " 2>/dev/null && echo '[init] sa password -> 123456'
 
         $$SQLCMD -S localhost -U sa -P "123456" -C -N -b -Q "
-          IF DB_ID(N'AppDb') IS NULL
+          IF DB_ID(N'HotelManagementDb') IS NULL
           BEGIN
-            CREATE DATABASE [AppDb] COLLATE Vietnamese_CI_AS;
-            ALTER DATABASE [AppDb] SET RECOVERY SIMPLE;
+            CREATE DATABASE [HotelManagementDb] COLLATE Vietnamese_CI_AS;
+            ALTER DATABASE [HotelManagementDb] SET RECOVERY SIMPLE;
           END
-        " && echo '[init] AppDb ready'
+        " && echo '[init] HotelManagementDb ready'
 
         wait $$SQLPID
     healthcheck:
