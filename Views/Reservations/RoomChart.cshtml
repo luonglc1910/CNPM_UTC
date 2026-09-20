@@ -27,8 +27,10 @@
                     }
                 </select>
             </div>
-            <div class="col-12 col-md-3 d-flex gap-2">
-                <button type="submit" class="btn btn-primary"><i class="bi bi-calendar3"></i> Xem sơ đồ</button>
+            @* col-md-auto chứ không phải col-md-3: hai nút cộng lại rộng hơn 3 cột, mà nút sau
+               có text-nowrap nên nó giữ nguyên bề rộng và ép chữ nút trước xuống dòng, đẩy cao độ hàng lệch. *@
+            <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary text-nowrap"><i class="bi bi-calendar3"></i> Xem sơ đồ</button>
                 @* SCR-C02 không còn ở menu — vào từ đây và từ Đơn đặt phòng.
                    Sơ đồ cho thấy phòng nào hổng; tra cứu cho biết giá và sức chứa từng loại. *@
                 <a class="btn btn-outline-secondary text-nowrap" asp-action="Availability">
