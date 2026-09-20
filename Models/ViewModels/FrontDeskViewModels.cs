@@ -39,20 +39,11 @@ public class InHouseItem
     public DateTime ExpectedCheckOut { get; set; }
 }
 
-public class RoomGridItem
-{
-    public int RoomId { get; set; }
-    public string RoomNumber { get; set; } = string.Empty;
-    public int Floor { get; set; }
-    public RoomStatus Status { get; set; }
-}
-
 public class FrontDeskDashboardViewModel
 {
     public IReadOnlyList<ArrivalItem> Arrivals { get; set; } = new List<ArrivalItem>();
     public IReadOnlyList<DepartureItem> Departures { get; set; } = new List<DepartureItem>();
     public IReadOnlyList<InHouseItem> InHouse { get; set; } = new List<InHouseItem>();
-    public IReadOnlyList<RoomGridItem> Rooms { get; set; } = new List<RoomGridItem>();
 
     public int AvailableCount { get; set; }
     public int OccupiedCount { get; set; }
@@ -96,73 +87,6 @@ public class CheckInViewModel
     public DateTime ActualCheckIn { get; set; } = DateTime.Now;
 
     public List<CheckInRoomAssignment> Rooms { get; set; } = new();
-}
-
-// ---------- SCR-D03 ----------
-
-public class WalkInViewModel
-{
-    [Display(Name = "Khách có sẵn")]
-    public int? ExistingGuestId { get; set; }
-
-    // Khách mới (khi ExistingGuestId trống)
-    [Display(Name = "Họ tên")]
-    [MaxLength(100)]
-    public string? FullName { get; set; }
-
-    [Display(Name = "Loại giấy tờ")]
-    public GuestIdType IdType { get; set; } = GuestIdType.CitizenId;
-
-    [Display(Name = "Số giấy tờ")]
-    [MaxLength(20)]
-    public string? IdNumber { get; set; }
-
-    [Display(Name = "SĐT")]
-    [MaxLength(20)]
-    public string? PhoneNumber { get; set; }
-
-    [Display(Name = "Quốc tịch")]
-    [MaxLength(50)]
-    public string Nationality { get; set; } = "Việt Nam";
-
-    [Display(Name = "Phòng")]
-    [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn phòng.")]
-    public int RoomId { get; set; }
-
-    [Display(Name = "Ngày đi dự kiến")]
-    [DataType(DataType.Date)]
-    public DateTime ExpectedCheckOut { get; set; } = DateTime.Now.Date.AddDays(1);
-
-    [Display(Name = "Người lớn")]
-    [Range(1, 50)]
-    public int Adults { get; set; } = 1;
-
-    [Display(Name = "Trẻ em")]
-    [Range(0, 50)]
-    public int Children { get; set; }
-
-    // Đặt cọc tùy chọn
-    [Display(Name = "Tiền cọc")]
-    [Range(0, double.MaxValue)]
-    public decimal DepositAmount { get; set; }
-
-    [Display(Name = "Phương thức")]
-    public PaymentMethod DepositMethod { get; set; } = PaymentMethod.Cash;
-
-    [Display(Name = "Mã giao dịch")]
-    [MaxLength(50)]
-    public string? TransactionRef { get; set; }
-
-    public bool HasOpenShift { get; set; }
-    public IReadOnlyList<SelectListItem> GuestOptions { get; set; } = new List<SelectListItem>();
-
-    /// <summary>
-    /// Id những khách đang nằm trong danh sách hạn chế — SCR-B05, SCR-D03.
-    /// Gửi cả danh sách xuống thay vì một cờ, để cảnh báo hiện ngay lúc chọn khách
-    /// chứ không phải chờ gửi form rồi mới biết.
-    /// </summary>
-    public IReadOnlyList<int> BlacklistedGuestIds { get; set; } = new List<int>();
-    public IReadOnlyList<SelectListItem> RoomOptions { get; set; } = new List<SelectListItem>();
 }
 
 // ---------- SCR-D04 ----------

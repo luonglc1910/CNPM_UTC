@@ -23,6 +23,12 @@ sẽ **không lặp lại** những nội dung này.
 └───────────────┴──────────────────────────────────────────────────────┘
 ```
 
+- **Menu trái gọn còn 13 mục** (20/09/2026, trước đó 23). Những màn trả lời cùng một
+  câu hỏi dùng chung một mục menu và chuyển giữa nhau bằng thanh tab ngay trong vùng nội dung:
+  Phòng ↔ Loại phòng · Dịch vụ ↔ Tồn kho · Hồ sơ khách ↔ Khai báo tạm trú · Đơn đặt phòng ↔
+  Quá hạn/No-show · Dọn phòng ↔ Yêu cầu phục vụ · bốn báo cáo dưới một mục "Báo cáo".
+  Không màn nào bị bỏ chức năng; mọi URL cũ vẫn sống (chuyển hướng về tab tương ứng).
+  SCR-C02 (tra cứu phòng trống) rời menu, vào từ SCR-C01 và SCR-C03.
 - **Menu trái tự ẩn mục không có quyền.** Ẩn menu chỉ là lớp tiện dụng, không phải bảo mật —
   quyền vẫn phải chặn ở controller bằng `[Authorize(Roles = "...")]`.
 - **Thanh trên** hiển thị ca làm việc đang mở của người đăng nhập (chỉ với Admin/Lễ tân).
@@ -89,7 +95,7 @@ giá trị cũ → giá trị mới, lý do (nếu có), thời điểm, địa 
 
 ## 8. Quy ước chặn thao tác theo ca làm việc
 
-Mọi màn hình có thu / hoàn tiền (SCR-C07, SCR-F05, SCR-F07, và phần thu cọc của SCR-D03)
+Mọi màn hình có thu / hoàn tiền (SCR-C07, SCR-F05, SCR-F07)
 đều kiểm tra trước: **người dùng phải có một ca đang mở**. Nếu chưa, màn hình hiển thị cảnh báo
 và nút "Mở ca làm việc" thay cho form thu tiền (BR-10).
 

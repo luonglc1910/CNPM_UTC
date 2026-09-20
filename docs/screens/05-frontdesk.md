@@ -14,7 +14,7 @@
 | **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-D01 |
 
-### Bố cục — 4 tab
+### Bố cục — 3 tab
 
 **Tab 1 — Khách đến hôm nay (mặc định)**
 Mã đơn · Khách · SĐT · Loại phòng · Phòng đã giữ · Số khách · Đã cọc · Trạng thái ·
@@ -30,9 +30,13 @@ Dòng có giờ trả đã quá 12:00 mà chưa check-out được **tô vàng**
 Phòng · Khách · Ngày vào · Ngày đi dự kiến · Số khách · Tạm tính folio ·
 nút Ghi dịch vụ · Đổi phòng · Gia hạn.
 
-**Tab 4 — Phòng trống**
-Lưới phòng theo tầng, màu theo trạng thái; nhấp phòng `Available` → mở SCR-D03 (Walk-in)
-với phòng điền sẵn.
+~~**Tab 4 — Phòng trống**~~ — **đã bỏ** (20/09/2026).
+
+Sau khi bỏ SCR-D03, tab này không còn thao tác nào — chỉ là lưới số phòng kèm nhãn trạng thái,
+trùng hoàn toàn với SCR-E01 (bảng buồng phòng) vốn có đủ nút bắt đầu dọn / hoàn tất.
+Nhìn phòng trống theo thời gian thì dùng SCR-C03 (Sơ đồ phòng).
+
+Thanh chỉ số đầu trang vẫn đếm đủ Trống / Đang ở / Chờ dọn / Bảo trì như cũ.
 
 ### Thanh trạng thái nhanh (đầu trang)
 `Trống: 12 · Đang ở: 25 · Chờ dọn: 5 · Bảo trì: 2 · Đến: 8 · Đi: 6`
@@ -102,38 +106,22 @@ với phòng điền sẵn.
 
 ---
 
-## SCR-D03 — Check-in khách vãng lai (Walk-in)
+## SCR-D03 — Check-in khách vãng lai (Walk-in) — **ĐÃ BỎ**
 
-| | |
-|---|---|
-| **URL** | `GET/POST /FrontDesk/WalkIn` |
-| **Quyền** | Admin, Lễ tân |
-| **Yêu cầu** | FR-D03, BR-07, BR-10 |
-
-### Mục đích
-Gộp *tạo khách + chọn phòng + nhận cọc + check-in* vào **một màn hình, một lần lưu** —
-vì khách đang đứng chờ ở quầy.
-
-### Các khối
-1. **Khách**: ô tìm nhanh theo CCCD/SĐT (khách cũ quay lại) hoặc nhập mới
-   (họ tên `*`, loại & số giấy tờ `*`, SĐT `*`, quốc tịch `*`).
-2. **Phòng & thời gian**: chọn phòng từ danh sách `Available` · ngày đi dự kiến `*`
-   (mặc định hôm sau) · số khách `*`. Hiển thị giá/đêm và số đêm tự tính.
-3. **Khách ở cùng**: như bước 3 của SCR-D02.
-4. **Đặt cọc** (tùy chọn): số tiền · phương thức · mã giao dịch nếu chuyển khoản/thẻ.
-
-### Luồng xử lý (một transaction)
-Tạo `Guest` (nếu mới) → tạo `Stay` + `StayGuest` → tạo `Folio` → ghi nhận `Deposit`/`Payment`
-gắn ca hiện tại (nếu có thu cọc) → phòng chuyển `Occupied` → audit log.
-
-**Không tạo `Reservation`** cho khách vãng lai — Stay đứng độc lập.
-
-### Quy tắc
-- Thu cọc yêu cầu **ca đang mở** (BR-10). Nếu chưa mở ca, vẫn cho check-in nhưng phần thu cọc
-  bị vô hiệu hóa kèm nhắc mở ca.
-- Nếu tất cả phòng đều bận → màn hình hiện thông báo và liên kết sang SCR-C02 để tra ngày khác.
+> Bỏ ngày 20/09/2026 theo yêu cầu: khách sạn không nhận khách vãng lai.
+> Toàn bộ code của màn hình này (view, hai action, ba method service, view model) đã gỡ khỏi
+> nguồn; lấy lại được từ lịch sử git nếu cần.
+>
+> **Hệ quả:** mọi lượt lưu trú tạo mới đều phải đi qua check-in của một đơn đặt phòng (SCR-D02).
+> Không còn đường nào tạo `Stay` mà không có `Reservation`. Cột `Stay.ReservationId` và
+> `Deposit.StayId` vẫn cho phép trống để đọc dữ liệu đã sinh ra trước khi bỏ màn hình này.
+>
+> Khách tới quầy rồi mới đặt vẫn phục vụ được: tạo đơn ở SCR-C04 với nguồn
+> `ReservationSource.WalkIn` ("Trực tiếp tại quầy"), rồi check-in như bình thường.
+> Enum đó **không** bị bỏ — nó là nguồn của đơn đặt, không phải màn hình này.
 
 ---
+
 
 ## SCR-D04 — Chi tiết lượt lưu trú
 

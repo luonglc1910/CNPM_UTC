@@ -41,14 +41,14 @@ Ký hiệu quyền: **A** = Admin, **L** = Lễ tân.
 
 | Mã | Màn hình | URL | A | L |
 |---|---|---|:-:|:-:|
-| SCR-A01 | Danh sách loại phòng | `/RoomTypes` | ✔ | R |
+| SCR-A01 | Danh sách loại phòng | `/RoomTypes` — tab của SCR-A03 | ✔ | R |
 | SCR-A02 | Thêm / sửa loại phòng | `/RoomTypes/Create`, `/Edit/{id}` | ✔ | — |
 | SCR-A03 | Danh sách phòng | `/Rooms` | ✔ | R |
 | SCR-A04 | Thêm / sửa phòng | `/Rooms/Create`, `/Edit/{id}` | ✔ | — |
 | SCR-A05 | Đổi trạng thái phòng | `/Rooms/UpdateStatus/{id}` | ✔ | ✔ |
 | SCR-A06 | Danh sách dịch vụ | `/HotelServices` | ✔ | R |
 | SCR-A07 | Thêm / sửa dịch vụ | `/HotelServices/Create`, `/Edit/{id}` | ✔ | — |
-| SCR-A08 | Tồn kho | `/Inventory` | ✔ | R |
+| SCR-A08 | Tồn kho | `/Inventory` — tab của SCR-A06 | ✔ | R |
 | SCR-A09 | Nhập kho / điều chỉnh kho | `/Inventory/Receive`, `/Adjust` | ✔ | — |
 | SCR-A10 | Danh sách nhân viên | `/Employees` | ✔ | — |
 | SCR-A11 | Thêm / sửa nhân viên | `/Employees/Create`, `/Edit/{id}` | ✔ | — |
@@ -61,7 +61,7 @@ Ký hiệu quyền: **A** = Admin, **L** = Lễ tân.
 | SCR-B01 | Danh sách khách | `/Guests` | ✔ | ✔ |
 | SCR-B02 | Thêm / sửa hồ sơ khách | `/Guests/Create`, `/Edit/{id}` | ✔ | ✔ |
 | SCR-B03 | Chi tiết khách & lịch sử lưu trú | `/Guests/Details/{id}` | ✔ | ✔ |
-| SCR-B04 | Khai báo tạm trú theo ngày | `/Guests/Residence` | ✔ | ✔ |
+| SCR-B04 | Khai báo tạm trú theo ngày | `/Guests?tab=residence` | ✔ | ✔ |
 | SCR-B05 | Đưa vào / gỡ khỏi blacklist | `/Guests/Blacklist/{id}` | ✔ | — |
 
 ### Nhóm C — Đặt phòng
@@ -69,14 +69,14 @@ Ký hiệu quyền: **A** = Admin, **L** = Lễ tân.
 | Mã | Màn hình | URL | A | L |
 |---|---|---|:-:|:-:|
 | SCR-C01 | Danh sách đơn đặt phòng | `/Reservations` | ✔ | ✔ |
-| SCR-C02 | Tra cứu phòng trống | `/Reservations/Availability` | ✔ | ✔ |
+| SCR-C02 | Tra cứu phòng trống | `/Reservations/Availability` — không ở menu | ✔ | ✔ |
 | SCR-C03 | Sơ đồ phòng theo ngày | `/Reservations/RoomChart` | ✔ | ✔ |
 | SCR-C04 | Tạo đơn đặt phòng | `/Reservations/Create` | ✔ | ✔ |
 | SCR-C05 | Chi tiết đơn đặt phòng | `/Reservations/Details/{id}` | ✔ | ✔ |
 | SCR-C06 | Sửa đơn đặt phòng | `/Reservations/Edit/{id}` | ✔ | ✔ |
 | SCR-C07 | Thu tiền cọc | `/Reservations/Deposit/{id}` | ✔ | ✔ |
 | SCR-C08 | Hủy đơn đặt phòng | `/Reservations/Cancel/{id}` | ✔ | ✔ |
-| SCR-C09 | Danh sách đơn quá hạn / No-show | `/Reservations/NoShow` | ✔ | ✔ |
+| SCR-C09 | Danh sách đơn quá hạn / No-show | `/Reservations?tab=noshow` | ✔ | ✔ |
 
 ### Nhóm D — Lễ tân
 
@@ -84,7 +84,7 @@ Ký hiệu quyền: **A** = Admin, **L** = Lễ tân.
 |---|---|---|:-:|:-:|
 | SCR-D01 | Bảng điều khiển lễ tân | `/FrontDesk` | ✔ | ✔ |
 | SCR-D02 | Check-in khách có đặt trước | `/FrontDesk/CheckIn/{reservationId}` | ✔ | ✔ |
-| SCR-D03 | Check-in khách vãng lai | `/FrontDesk/WalkIn` | ✔ | ✔ |
+| ~~SCR-D03~~ | ~~Check-in khách vãng lai~~ — **đã bỏ** | — | — | — |
 | SCR-D04 | Chi tiết lượt lưu trú | `/FrontDesk/Stay/{id}` | ✔ | ✔ |
 | SCR-D05 | Thêm khách vào phòng | `/FrontDesk/AddGuest/{stayId}` | ✔ | ✔ |
 | SCR-D06 | Đổi phòng | `/FrontDesk/ChangeRoom/{stayId}` | ✔ | ✔ |
@@ -98,7 +98,7 @@ Ký hiệu quyền: **A** = Admin, **L** = Lễ tân.
 | SCR-E01 | Bảng trạng thái buồng phòng | `/Housekeeping` | ✔ | ✔ |
 | SCR-E02 | Kiểm minibar khi trả phòng | `/Housekeeping/MinibarUsage/{stayId}` | ✔ | ✔ |
 | SCR-E03 | Tạo yêu cầu (báo hỏng / phục vụ) | `/Housekeeping/CreateRequest` | ✔ | ✔ |
-| SCR-E04 | Danh sách yêu cầu | `/Housekeeping/Requests` | ✔ | ✔ |
+| SCR-E04 | Danh sách yêu cầu | `/Housekeeping/Requests` — tab của SCR-E01 | ✔ | ✔ |
 
 ### Nhóm F — Thu ngân
 
@@ -118,8 +118,8 @@ Ký hiệu quyền: **A** = Admin, **L** = Lễ tân.
 
 | Mã | Màn hình | URL | A | L |
 |---|---|---|:-:|:-:|
-| SCR-G01 | Báo cáo doanh thu | `/Reports/Revenue` | ✔ | — |
-| SCR-G02 | Báo cáo công suất phòng | `/Reports/Occupancy` | ✔ | — |
+| SCR-G01 | Báo cáo doanh thu | `/Reports` (tab Doanh thu) | ✔ | — |
+| SCR-G02 | Báo cáo công suất phòng | `/Reports?tab=occupancy` | ✔ | — |
 | SCR-G03 | Báo cáo dịch vụ & tồn kho | `/Reports/Services` | ✔ | — |
 | SCR-G04 | Báo cáo theo nhân viên / ca | `/Reports/Staff` | ✔ | — |
 | SCR-G05 | Nhật ký thao tác (Audit log) | `/Reports/AuditLog` | ✔ | — |

@@ -105,21 +105,30 @@ trang chủ theo vai trò. Có ghi audit log (mức Warning) mỗi lần bị ch
 Cho người trực ca nhìn thấy trong 5 giây: hôm nay còn bao nhiêu phòng bán được, ai sắp đến,
 ai sắp đi, có việc gì đang tồn.
 
-### Bố cục
+### Bố cục — **đã sửa 20/09/2026**
 
 ```
-┌─ Hàng thẻ số liệu ───────────────────────────────────────────────┐
-│ [Phòng trống 12] [Đang ở 25] [Chờ dọn 5] [Bảo trì 2]            │
-│ [Khách đến hôm nay 8] [Khách đi hôm nay 6] [Doanh thu hôm nay]   │
-├─ Cột trái ───────────────────┬─ Cột phải ────────────────────────┤
-│ Danh sách khách đến hôm nay  │ Danh sách khách đi hôm nay        │
-│ (mã đơn, khách, loại phòng,  │ (phòng, khách, giờ trả dự kiến,   │
-│  nút Check-in)               │  số dư phải thu, nút Check-out)   │
-├──────────────────────────────┴───────────────────────────────────┤
-│ Việc cần xử lý: phòng chờ dọn quá 2 giờ · đơn quá hạn giữ chỗ ·  │
-│ yêu cầu bảo trì chưa xử lý · hàng tồn dưới định mức              │
-└──────────────────────────────────────────────────────────────────┘
+┌─ Hàng thẻ trạng thái phòng ──────────────────────────────┐
+│ [Phòng trống] [Đang ở] [Chờ dọn] [Bảo trì]                      │
+├─ Hàng thẻ hôm nay ───────────────────────────────────┤
+│ [Khách đến] [Khách đi] [Doanh thu hôm nay]                    │
+├─ Việc cần xử lý ───────────────────────────────────┤
+│ n  Phòng chờ dọn            → SCR-E01                        │
+│ n  Đơn quá hạn giữ chỗ      → SCR-C09                        │
+│ n  Yêu cầu chưa xử lý        → SCR-E04                        │
+│ n  Hàng tồn dưới định mức    → SCR-A08                        │
+└────────────────────────────────────────────────┘
 ```
+
+> **Bỏ hai bảng khách đến / khách đi.** Bản đặc tả trước đây vẽ hai bảng này kèm nút
+> Check-in / Check-out. Đó đúng là tab 1 và tab 2 của SCR-D01 — giữ cả hai nơi thì mỗi lần
+> đổi nghiệp vụ phải sửa hai chỗ, và trái với đợt gọn màn hình cùng ngày. Thay vào đó
+> mỗi con số trên thẻ bấm được, dẫn thẳng sang màn có bảng và nút.
+>
+> **Bỏ điều kiện "phòng chờ dọn quá 2 giờ".** `Room` không lưu mốc chuyển trạng thái;
+> `BaseEntity.UpdatedAt` đổi vì bất kỳ sửa đổi nào trên phòng nên dùng nó sẽ cho số sai một
+> cách âm thầm. Hiện đếm toàn bộ phòng `Dirty`. Muốn đúng đặc tả thì phải thêm cột
+> `Room.StatusChangedAt` — một migration, chưa làm.
 
 ### Dữ liệu và cách tính
 

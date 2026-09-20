@@ -297,7 +297,7 @@ khách sạn không đáp ứng được / lý do khác) · Ghi chú.
 
 | | |
 |---|---|
-| **URL** | `GET /Reservations/NoShow` |
+| **URL** | `GET /Reservations?tab=noshow` — tab của SCR-C01 |
 | **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-C08, BR-05 |
 

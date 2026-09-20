@@ -299,6 +299,25 @@ public class NoShowListViewModel
     public IReadOnlyList<OverdueReservationItem> Items { get; set; } = new List<OverdueReservationItem>();
 }
 
+/// <summary>
+/// Màn Đơn đặt phòng gộp hai tab: tất cả đơn (SCR-C01) và quá hạn / no-show (SCR-C09).
+///
+/// Hai tab là hai đường dẫn, mỗi tab giữ nguyên bảng và nút của mình. Gộp thành một bảng
+/// sẽ phải thêm hai cột và ba nút chỉ có nghĩa với đơn quá hạn vào một bảng vốn đã mười cột.
+/// </summary>
+public class ReservationsPageViewModel
+{
+    public const string ListTab = "all";
+    public const string NoShowTab = "noshow";
+
+    public string Tab { get; set; } = ListTab;
+
+    public bool IsNoShow => Tab == NoShowTab;
+
+    public ReservationIndexViewModel? List { get; set; }
+    public NoShowListViewModel? NoShow { get; set; }
+}
+
 // ===================== SCR-C03 — Sơ đồ phòng theo ngày =====================
 
 /// <summary>Cách một ô trong sơ đồ được lấp — SCR-C03.</summary>
