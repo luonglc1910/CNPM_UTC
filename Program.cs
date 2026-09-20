@@ -32,6 +32,9 @@ builder.Services.AddScoped<IInventoryService, InventoryService>();
 builder.Services.AddScoped<IEmployeeService, EmployeeService>();
 builder.Services.AddScoped<ISettingsService, SettingsService>();
 
+// Nghiệp vụ khách hàng.
+builder.Services.AddScoped<IGuestService, GuestService>();
+
 // Đối chiếu cookie đăng nhập với bản ghi nhân viên ở mỗi request — xem Security/EmployeeCookieEvents.cs.
 builder.Services.AddScoped<EmployeeCookieEvents>();
 

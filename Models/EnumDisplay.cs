@@ -39,6 +39,22 @@ public static class EnumDisplay
         _ => category.ToString()
     };
 
+    public static string ToDisplayName(this GuestIdType type) => type switch
+    {
+        GuestIdType.CitizenId => "CCCD",
+        GuestIdType.IdCard => "CMND",
+        GuestIdType.Passport => "Hộ chiếu",
+        _ => type.ToString()
+    };
+
+    public static string ToDisplayName(this Gender gender) => gender switch
+    {
+        Gender.Male => "Nam",
+        Gender.Female => "Nữ",
+        Gender.Other => "Khác",
+        _ => gender.ToString()
+    };
+
     public static string ToDisplayName(this EmployeeRole role) => role switch
     {
         EmployeeRole.Admin => "Quản lý",

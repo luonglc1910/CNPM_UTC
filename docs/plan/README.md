@@ -11,15 +11,17 @@ Mục đích là để lần sau mở ra đọc rồi làm tiếp hoặc sửa l
 | [`04-inventory.md`](04-inventory.md) | Tồn kho & phiếu kho (SCR-A08, A09) — nhập kho, điều chỉnh kiểm kê, lịch sử chỉ đọc | ✅ Đã xong, đã kiểm thử |
 | [`05-employees.md`](05-employees.md) | Nhân viên & tài khoản (SCR-A10, A11) — khóa/mở khóa, đặt lại mật khẩu, đổi vai trò là đăng xuất mọi phiên | ✅ Đã xong, đã kiểm thử |
 | [`06-system-settings.md`](06-system-settings.md) | Cấu hình hệ thống (SCR-A12) — 6 nhóm tham số, logo, khôi phục mặc định từng nhóm. **Đóng lại nhóm A** | ✅ Đã xong, đã kiểm thử |
+| [`07-guests.md`](07-guests.md) | Hồ sơ khách (SCR-B01…B03) — che số giấy tờ, tra trùng khi nhập, lịch sử lưu trú & thống kê | ✅ Đã xong, đã kiểm thử (B04, B05 để sau) |
 
 ## Thứ tự làm tiếp
 
-Nhóm A (danh mục & cấu hình) đã xong toàn bộ SCR-A01…A12.
+Nhóm A đã xong toàn bộ SCR-A01…A12; nhóm B đã xong SCR-B01…B03.
 
-1. **SCR-B01…B03 — Hồ sơ khách**: cần có trước khi làm đặt phòng.
-2. **Lát cắt dọc luồng chính**: tra phòng trống → đặt phòng → check-in → folio → check-out →
+1. **Lát cắt dọc luồng chính**: tra phòng trống → đặt phòng → check-in → folio → check-out →
    thanh toán. Đây là phần khó và quan trọng nhất (chống trùng phòng BR-06, tính tiền
    BR-02/BR-03, transaction lúc check-out). Đừng dồn quá nhiều thời gian vào màn hình danh mục.
+2. **SCR-B04 (khai báo tạm trú)** và **SCR-B05 (danh sách hạn chế)**: hai màn hình còn nợ của
+   nhóm B, làm được bất cứ lúc nào vì không chặn đường luồng chính.
 
 Khuôn mẫu code để nhân bản (Service, ServiceResult, PagedList, form dùng chung, ẩn nút theo quyền)
 mô tả ở [`02-catalog-rooms.md`](02-catalog-rooms.md) mục 2.

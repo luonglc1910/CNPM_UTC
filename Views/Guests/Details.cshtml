@@ -1,0 +1,259 @@
+@model GuestDetailsViewModel
+@{
+    ViewData["Title"] = $"Khách: {Model.FullName}";
+    var isAdmin = User.IsInRole(Roles.Admin);
+}
+
+<div class="d-flex justify-content-between align-items-start mb-3">
+    <div>
+        <h5 class="mb-1">
+            @Model.FullName
+            @if (Model.IsLoyal)
+            {
+                <span class="badge text-bg-success">Khách quen — @Model.CompletedStayCount lần ở</span>
+            }
+            @if (Model.IsBlacklisted)
+            {
+                <span class="badge text-bg-danger">Hạn chế</span>
+            }
+            @if (Model.IsStaying)
+            {
+                <span class="badge text-bg-warning">Đang lưu trú</span>
+            }
+        </h5>
+    </div>
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a>
+        <a class="btn btn-primary" asp-action="Edit" asp-route-id="@Model.Id">
+            <i class="bi bi-pencil"></i> Sửa hồ sơ
+        </a>
+    </div>
+</div>
+
+@if (Model.IsBlacklisted)
+{
+    <div class="alert alert-danger">
+        <i class="bi bi-shield-exclamation"></i>
+        Khách nằm trong <strong>danh sách hạn chế</strong>. Khi đặt phòng hoặc check-in cho khách này
+        cần quản lý duyệt.
+        @if (isAdmin)
+        {
+            <div class="small mt-1">Lý do: @(Model.BlacklistReason ?? "(không ghi lý do)")</div>
+        }
+        else
+        {
+            @* Lễ tân chỉ thấy nhãn, không thấy lý do chi tiết (SCR-B03). *@
+            <div class="small mt-1 text-muted">Lý do chi tiết chỉ quản lý xem được.</div>
+        }
+    </div>
+}
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header"><i class="bi bi-person-vcard"></i> Thông tin khách</div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-5">Giấy tờ</dt>
+                    @* Đây là một trong hai nơi được phép hiện số giấy tờ đầy đủ (SCR-B01). *@
+                    <dd class="col-7">@Model.IdType.ToDisplayName() <code>@Model.IdNumber</code></dd>
+
+                    <dt class="col-5">Ngày sinh</dt>
+                    <dd class="col-7">@(Model.DateOfBirth?.ToString("dd/MM/yyyy") ?? "—")</dd>
+
+                    <dt class="col-5">Giới tính</dt>
+                    <dd class="col-7">@(Model.Gender?.ToDisplayName() ?? "—")</dd>
+
+                    <dt class="col-5">Quốc tịch</dt>
+                    <dd class="col-7">@Model.Nationality</dd>
+
+                    <dt class="col-5">Số điện thoại</dt>
+                    <dd class="col-7">@Model.PhoneNumber</dd>
+
+                    <dt class="col-5">Email</dt>
+                    <dd class="col-7">@(Model.Email ?? "—")</dd>
+
+                    <dt class="col-5">Địa chỉ thường trú</dt>
+                    <dd class="col-7">@(Model.Address ?? "—")</dd>
+
+                    <dt class="col-5">Ghi chú</dt>
+                    <dd class="col-7">@(Model.Notes ?? "—")</dd>
+                </dl>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-7">
+        <div class="row g-3">
+            <div class="col-6 col-xl-3">
+                <div class="card text-center h-100"><div class="card-body">
+                    <div class="fs-4 fw-semibold">@Model.CompletedStayCount</div>
+                    <div class="text-muted small">Số lần lưu trú</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="card text-center h-100"><div class="card-body">
+                    <div class="fs-4 fw-semibold">@Model.TotalNights</div>
+                    <div class="text-muted small">Tổng số đêm</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="card text-center h-100"><div class="card-body">
+                    <div class="fs-4 fw-semibold">@Model.TotalSpending.ToString("N0") ₫</div>
+                    <div class="text-muted small">Tổng chi tiêu</div>
+                </div></div>
+            </div>
+            <div class="col-6 col-xl-3">
+                <div class="card text-center h-100"><div class="card-body">
+                    <div class="fs-4 fw-semibold">
+                        @(Model.LastStayAt?.ToString("dd/MM/yyyy") ?? "—")
+                    </div>
+                    <div class="text-muted small">Lần ở gần nhất</div>
+                </div></div>
+            </div>
+        </div>
+
+        <p class="text-muted small mt-2 mb-0">
+            Tổng chi tiêu chỉ cộng hóa đơn đã thanh toán của những lượt khách này <strong>đứng tên</strong>;
+            hóa đơn đã hủy không được tính.
+        </p>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mt-4" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-stays" type="button">
+            Lịch sử lưu trú (@Model.Stays.Count)
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-reservations" type="button">
+            Đơn đặt phòng (@Model.Reservations.Count)
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-notes" type="button">
+            Ghi chú
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content border border-top-0 rounded-bottom p-3">
+    <div class="tab-pane fade show active" id="tab-stays">
+        @if (Model.Stays.Count == 0)
+        {
+            <p class="text-muted mb-0">Khách chưa từng lưu trú.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Ngày vào</th>
+                            <th>Ngày ra</th>
+                            <th>Phòng</th>
+                            <th class="text-center">Số đêm</th>
+                            <th>Vai trò</th>
+                            <th class="text-end">Hóa đơn</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var stay in Model.Stays)
+                    {
+                        <tr>
+                            <td>@stay.CheckIn.ToString("dd/MM/yyyy HH:mm")</td>
+                            <td>
+                                @if (stay.CheckOut is not null)
+                                {
+                                    @stay.CheckOut.Value.ToString("dd/MM/yyyy HH:mm")
+                                }
+                                else
+                                {
+                                    <span class="badge text-bg-warning">Đang ở</span>
+                                }
+                            </td>
+                            <td>@stay.RoomNumber <span class="text-muted small">@stay.RoomTypeName</span></td>
+                            <td class="text-center">@stay.Nights</td>
+                            <td>
+                                @if (stay.IsPrimaryGuest)
+                                {
+                                    <span class="badge text-bg-secondary">Đứng tên</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted small">Ở cùng</span>
+                                }
+                            </td>
+                            <td class="text-end">
+                                @if (stay.InvoiceNo is not null)
+                                {
+                                    <span class="@(stay.InvoiceStatus == InvoiceStatus.Void ? "text-decoration-line-through text-muted" : "")">
+                                        <code>@stay.InvoiceNo</code> @stay.InvoiceTotal?.ToString("N0") ₫
+                                    </span>
+                                    @if (stay.InvoiceStatus == InvoiceStatus.Void)
+                                    {
+                                        <span class="badge text-bg-danger">Đã hủy</span>
+                                    }
+                                }
+                                else
+                                {
+                                    <span class="text-muted">—</span>
+                                }
+                            </td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="tab-pane fade" id="tab-reservations">
+        @if (Model.Reservations.Count == 0)
+        {
+            <p class="text-muted mb-0">Khách chưa có đơn đặt phòng nào.</p>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-sm table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã đơn</th>
+                            <th>Ngày đến</th>
+                            <th>Ngày đi</th>
+                            <th class="text-center">Số đêm</th>
+                            <th>Trạng thái</th>
+                            <th class="text-end">Tổng dự kiến</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    @foreach (var reservation in Model.Reservations)
+                    {
+                        <tr>
+                            <td><code>@reservation.Code</code></td>
+                            <td>@reservation.CheckInDate.ToString("dd/MM/yyyy")</td>
+                            <td>@reservation.CheckOutDate.ToString("dd/MM/yyyy")</td>
+                            <td class="text-center">@reservation.Nights</td>
+                            <td>@reservation.Status</td>
+                            <td class="text-end">@reservation.EstimatedTotal.ToString("N0") ₫</td>
+                        </tr>
+                    }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+
+    <div class="tab-pane fade" id="tab-notes">
+        @if (string.IsNullOrWhiteSpace(Model.Notes))
+        {
+            <p class="text-muted mb-0">Chưa có ghi chú nào cho khách này.</p>
+        }
+        else
+        {
+            <p class="mb-0">@Model.Notes</p>
+        }
+    </div>
+</div>

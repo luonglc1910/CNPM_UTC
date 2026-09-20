@@ -191,7 +191,7 @@ Tài khoản test: `admin` / `letan`, mật khẩu `matkhau123`.
 
 | # | Món nợ | Ghi chú |
 |---|---|---|
-| 1 | **Chưa ai đọc các tham số này** | Màn hình đã lưu đủ, nhưng giờ chuẩn / VAT / phụ thu / cọc / hạn mức sẽ chỉ thực sự có tác dụng khi làm nhóm C–F. Cần một lớp đọc cấu hình có cache (đọc DB mỗi lần tính tiền là phí) — nên làm ngay ở màn hình đầu tiên dùng tới |
+| 1 | **Gần như chưa ai đọc các tham số này** | Nơi đọc đầu tiên là nhãn "Khách quen" ở SCR-B03 (xem [`07-guests.md`](07-guests.md) mục 2.8). Giờ chuẩn / VAT / phụ thu / cọc vẫn chờ nhóm C–F. Cần một lớp đọc cấu hình **có cache** (hiện mỗi lần hỏi là nạp cả 26 tham số) — nên làm ngay ở màn hình tính tiền đầu tiên |
 | 2 | Lượt lưu trú chưa **chốt tham số lúc check-in** | Màn hình nhắc đúng luật "chỉ áp cho lượt mới", nhưng chỗ thực thi nằm ở `Stay` khi làm SCR-D02: phải chép giờ chuẩn và mức phụ thu vào lượt lưu trú, không đọc cấu hình hiện hành lúc tính tiền |
 | 3 | Logo chưa được in ở đâu | Sẽ dùng khi làm hóa đơn (SCR-F06) |
 | 4 | Không có kiểm tra ảnh thật | Chỉ tin `ContentType` do trình duyệt gửi; file `.exe` đổi tên kèm content-type `image/png` vẫn qua được. Muốn chắc thì đọc vài byte đầu (magic number) |
