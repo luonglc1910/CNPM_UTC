@@ -93,7 +93,7 @@
                         </td>
                         <td><input name="Rooms[@i].Adults" value="@line.Adults" type="number" min="1" class="form-control form-control-sm" /></td>
                         <td><input name="Rooms[@i].Children" value="@line.Children" type="number" min="0" class="form-control form-control-sm" /></td>
-                        <td><input name="Rooms[@i].PricePerNight" value="@line.PricePerNight" type="number" min="0" step="1000" class="form-control form-control-sm js-price" readonly="@(!isAdmin)" /></td>
+                        <td><input name="Rooms[@i].PricePerNight" value="@line.PricePerNight" type="number" min="0" step="any" class="form-control form-control-sm js-price" readonly="@(!isAdmin)" /></td>
                         <td><button type="button" class="btn btn-sm btn-outline-danger js-remove"><i class="bi bi-trash"></i></button></td>
                     </tr>
                 }
@@ -154,7 +154,7 @@
         </td>
         <td><input name="Rooms[__INDEX__].Adults" value="1" type="number" min="1" class="form-control form-control-sm" /></td>
         <td><input name="Rooms[__INDEX__].Children" value="0" type="number" min="0" class="form-control form-control-sm" /></td>
-        <td><input name="Rooms[__INDEX__].PricePerNight" value="0" type="number" min="0" step="1000" class="form-control form-control-sm js-price" readonly="@(!isAdmin)" /></td>
+        <td><input name="Rooms[__INDEX__].PricePerNight" value="0" type="number" min="0" step="any" class="form-control form-control-sm js-price" readonly="@(!isAdmin)" /></td>
         <td><button type="button" class="btn btn-sm btn-outline-danger js-remove"><i class="bi bi-trash"></i></button></td>
     </tr>
 </template>

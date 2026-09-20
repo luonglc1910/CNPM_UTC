@@ -22,7 +22,7 @@
                             <label asp-for="OpenForm.OpeningCash" class="form-label">
                                 Quỹ tiền mặt đầu ca (₫) <span class="text-danger">*</span>
                             </label>
-                            <input asp-for="OpenForm.OpeningCash" class="form-control" type="number" min="0" step="1000" autofocus />
+                            <input asp-for="OpenForm.OpeningCash" class="form-control" type="number" min="0" step="any" autofocus />
                             <span asp-validation-for="OpenForm.OpeningCash" class="text-danger small"></span>
                         </div>
                         <button type="submit" class="btn btn-primary">
@@ -70,7 +70,7 @@
                             <label asp-for="CloseForm.CountedCash" class="form-label">
                                 Tiền mặt đếm thực tế (₫) <span class="text-danger">*</span>
                             </label>
-                            <input asp-for="CloseForm.CountedCash" id="countedCash" class="form-control" type="number" min="0" step="1000" />
+                            <input asp-for="CloseForm.CountedCash" id="countedCash" class="form-control" type="number" min="0" step="any" />
                         </div>
 
                         <div class="alert alert-secondary py-2" id="differenceBox">

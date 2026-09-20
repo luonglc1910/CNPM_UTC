@@ -33,7 +33,7 @@
 
                         <div class="mb-3">
                             <label asp-for="Amount" class="form-label">Số tiền cọc <span class="text-danger">*</span></label>
-                            <input asp-for="Amount" type="number" min="1" step="1000" class="form-control" autofocus />
+                            <input asp-for="Amount" type="number" min="1" step="any" class="form-control" autofocus />
                             <span asp-validation-for="Amount" class="text-danger small"></span>
                         </div>
 
