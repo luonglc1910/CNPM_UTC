@@ -1,9 +1,100 @@
+@model FolioDetailViewModel
 @{
-    ViewData["Title"] = "Bảng kê tạm tính";
+    ViewData["Title"] = $"Folio — Phòng {Model.RoomNumber}";
+    var isAdmin = User.IsInRole(Roles.Admin);
+    var s = Model.Summary;
 }
 
-<div class="d-flex justify-content-end mb-3">
-    <a class="btn btn-primary" asp-action="Index">Quay lại</a>
+<div class="d-flex flex-wrap gap-2 mb-3">
+    <div class="me-auto">
+        <h5 class="mb-0"><code>@s.FolioCode</code> · Phòng @Model.RoomNumber (@Model.RoomTypeName)</h5>
+        <span class="text-muted small">@Model.GuestName · @Model.ActualCheckIn.ToString("dd/MM HH:mm") → @Model.ExpectedCheckOut.ToString("dd/MM/yyyy") (@Model.Nights đêm) @(s.IsLocked ? "· Đã khóa" : "")</span>
+    </div>
+    @if (Model.CanEdit)
+    {
+        <a class="btn btn-sm btn-outline-primary" asp-action="AddCharge" asp-route-stayId="@Model.StayId"><i class="bi bi-plus-lg"></i> Thêm chi phí</a>
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Discount" asp-route-stayId="@Model.StayId"><i class="bi bi-percent"></i> Giảm giá</a>
+        <form method="post" asp-action="LockFolio" class="d-inline">
+            <input type="hidden" name="stayId" value="@Model.StayId" />
+            <button class="btn btn-sm btn-outline-dark"><i class="bi bi-lock"></i> Khóa folio</button>
+        </form>
+    }
+    else if (s.IsLocked && Model.InvoiceId is null && isAdmin)
+    {
+        <form method="post" asp-action="UnlockFolio" class="d-inline">
+            <input type="hidden" name="stayId" value="@Model.StayId" />
+            <button class="btn btn-sm btn-outline-warning"><i class="bi bi-unlock"></i> Mở khóa</button>
+        </form>
+    }
+    @if (s.IsLocked && Model.InvoiceId is null)
+    {
+        <a class="btn btn-sm btn-primary" asp-action="Payment" asp-route-stayId="@Model.StayId">Thanh toán</a>
+    }
+    @if (Model.InvoiceId is not null)
+    {
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Invoice" asp-route-id="@Model.InvoiceId">Xem hóa đơn</a>
+    }
 </div>
 
-<partial name="_Placeholder" model="@("Chi tiết các khoản phí của phòng: tiền phòng, dịch vụ, minibar, phụ phí, đã thanh toán.")" />
+<div class="row g-3">
+    <div class="col-lg-8">
+        <div class="card"><div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light"><tr><th>Ngày</th><th>Loại</th><th>Nội dung</th><th class="text-center">SL</th><th class="text-end">Đơn giá</th><th class="text-end">Thành tiền</th><th></th></tr></thead>
+                <tbody>
+                @foreach (var l in Model.Lines)
+                {
+                    <tr class="@(l.IsVoided ? "text-decoration-line-through text-muted" : "")">
+                        <td>@l.ChargedAt.ToString("dd/MM")</td>
+                        <td>@l.ItemType.ToDisplayName()</td>
+                        <td>@l.Description</td>
+                        <td class="text-center">@l.Quantity</td>
+                        <td class="text-end">@l.UnitPrice.ToString("N0")</td>
+                        <td class="text-end">@l.Amount.ToString("N0")</td>
+                        <td class="text-end">
+                            @if (Model.CanEdit && !l.IsVoided && !l.IsRoomCharge)
+                            {
+                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#void-@l.Id"><i class="bi bi-trash"></i></button>
+                                <div class="modal fade" id="void-@l.Id" tabindex="-1">
+                                    <div class="modal-dialog"><div class="modal-content">
+                                        <form method="post" asp-action="VoidLine">
+                                            <div class="modal-header"><h5 class="modal-title">Hủy dòng chi phí</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                            <div class="modal-body">
+                                                <input type="hidden" name="folioItemId" value="@l.Id" />
+                                                <input type="hidden" name="stayId" value="@Model.StayId" />
+                                                <p class="small">@l.Description — @l.Amount.ToString("N0") ₫</p>
+                                                <label class="form-label">Lý do hủy <span class="text-danger">*</span></label>
+                                                <input name="reason" class="form-control" required />
+                                            </div>
+                                            <div class="modal-footer"><button class="btn btn-danger">Hủy dòng</button></div>
+                                        </form>
+                                    </div></div>
+                                </div>
+                            }
+                        </td>
+                    </tr>
+                }
+                @if (Model.Lines.Count == 0) { <tr><td colspan="7" class="text-center text-muted py-4">Chưa có dòng chi phí.</td></tr> }
+                </tbody>
+            </table>
+        </div></div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card"><div class="card-body">
+            <table class="table table-sm mb-0">
+                <tbody>
+                    <tr><td>Tiền phòng</td><td class="text-end">@s.RoomCharge.ToString("N0") ₫</td></tr>
+                    <tr><td>Dịch vụ</td><td class="text-end">@s.ServiceCharge.ToString("N0") ₫</td></tr>
+                    <tr><td>Phụ thu</td><td class="text-end">@s.SurchargeAmount.ToString("N0") ₫</td></tr>
+                    <tr><td>Giảm giá</td><td class="text-end">-@s.DiscountAmount.ToString("N0") ₫</td></tr>
+                    <tr class="fw-semibold"><td>Tạm tính</td><td class="text-end">@s.SubTotal.ToString("N0") ₫</td></tr>
+                    <tr><td>VAT @((s.TaxRate * 100).ToString("0.#"))%</td><td class="text-end">@s.TaxAmount.ToString("N0") ₫</td></tr>
+                    <tr class="fw-semibold"><td>Tổng (làm tròn)</td><td class="text-end">@s.Total.ToString("N0") ₫</td></tr>
+                    <tr><td>Đã cọc</td><td class="text-end">-@s.DepositApplied.ToString("N0") ₫</td></tr>
+                    <tr class="table-light fw-semibold"><td>Số dư phải thu</td><td class="text-end">@s.BalanceDue.ToString("N0") ₫</td></tr>
+                </tbody>
+            </table>
+        </div></div>
+    </div>
+</div>

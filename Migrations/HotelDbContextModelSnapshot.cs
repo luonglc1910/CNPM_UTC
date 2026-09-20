@@ -139,6 +139,11 @@ namespace HotelManagement.Web.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("EmployeeId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Shift_OpenPerEmployee")
+                        .HasFilter("[Status] = 1");
+
                     b.HasIndex("EmployeeId", "Status");
 
                     b.ToTable("CashierShifts");
@@ -593,6 +598,11 @@ namespace HotelManagement.Web.Migrations
 
                     b.HasIndex("AssignedTo");
 
+                    b.HasIndex("RoomId")
+                        .IsUnique()
+                        .HasDatabaseName("UX_Housekeeping_OpenPerRoom")
+                        .HasFilter("[Status] IN (1, 2)");
+
                     b.HasIndex("StayId");
 
                     b.HasIndex("RoomId", "Status");
@@ -656,6 +666,10 @@ namespace HotelManagement.Web.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<decimal>("AmountPaid")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("CashierShiftId")
                         .HasColumnType("int");
 
@@ -664,6 +678,10 @@ namespace HotelManagement.Web.Migrations
 
                     b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("DebtAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("DepositAmount")
                         .HasPrecision(18, 2)
@@ -747,6 +765,35 @@ namespace HotelManagement.Web.Migrations
                     b.HasIndex("IssuedAt", "Status");
 
                     b.ToTable("Invoices");
+                });
+
+            modelBuilder.Entity("HotelManagement.Web.Models.Entities.NumberSequence", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<long>("LastValue")
+                        .HasColumnType("bigint");
+
+                    b.Property<string>("Period")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("Prefix")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Prefix", "Period")
+                        .IsUnique();
+
+                    b.ToTable("NumberSequences");
                 });
 
             modelBuilder.Entity("HotelManagement.Web.Models.Entities.Payment", b =>

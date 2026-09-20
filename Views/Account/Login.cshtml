@@ -8,15 +8,23 @@
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="color-scheme" content="light" />
     <title>Đăng nhập - Quản lý Khách sạn</title>
     <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700&display=swap" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
 </head>
 <body>
     <div class="login-page">
-        <div class="card login-card shadow-sm">
+        <div class="login-card">
             <div class="card-body p-4">
-                <h1 class="h4 mb-4 text-center">Quản lý Khách sạn</h1>
+                <div class="login-brand">
+                    <i class="bi bi-building"></i> Quản lý Khách sạn
+                </div>
+                <p class="login-sub">Đăng nhập để vào ca làm việc</p>
 
                 @if (TempData["Info"] is string info)
                 {
@@ -40,7 +48,7 @@
                         <input asp-for="Password" class="form-control" autocomplete="current-password" />
                         <span asp-validation-for="Password" class="text-danger small"></span>
                     </div>
-                    <div class="form-check mb-3">
+                    <div class="form-check mb-4">
                         <input asp-for="RememberMe" class="form-check-input" />
                         <label asp-for="RememberMe" class="form-check-label"></label>
                     </div>

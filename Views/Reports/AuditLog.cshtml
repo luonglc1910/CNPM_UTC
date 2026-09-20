@@ -1,0 +1,172 @@
+﻿@model AuditLogReportViewModel
+@{
+    ViewData["Title"] = "Nhật ký thao tác";
+
+    // Nhãn tiếng Việt cho những hành động hay gặp. Hành động chưa có nhãn thì hiện nguyên tên
+    // kỹ thuật — thà thấy "AssignServiceRequest" còn hơn thấy ô trống.
+    var labels = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        ["LoginSucceeded"] = "Đăng nhập",
+        ["LoginFailed"] = "Đăng nhập sai",
+        ["Logout"] = "Đăng xuất",
+        ["PasswordChanged"] = "Đổi mật khẩu",
+        ["AccessDenied"] = "Bị chặn 403",
+        ["CreateReservation"] = "Tạo đơn đặt",
+        ["UpdateReservation"] = "Sửa đơn đặt",
+        ["CancelReservation"] = "Hủy đơn",
+        ["CancelReservationWaiveFee"] = "Hủy đơn, miễn phí hủy",
+        ["MarkNoShow"] = "Đánh dấu no-show",
+        ["TakeDeposit"] = "Thu cọc",
+        ["CheckIn"] = "Check-in",
+        ["WalkIn"] = "Khách vãng lai",
+        ["ChangeRoom"] = "Đổi phòng",
+        ["ExtendStay"] = "Gia hạn lưu trú",
+        ["CheckOutLockFolio"] = "Check-out",
+        ["ApplyDiscount"] = "Giảm giá",
+        ["VoidFolioLine"] = "Hủy dòng chi phí",
+        ["VoidInvoice"] = "Hủy hóa đơn",
+        ["OpenShift"] = "Mở ca",
+        ["CloseShift"] = "Đóng ca",
+        ["CloseShiftLargeDifference"] = "Đóng ca lệch quỹ lớn",
+        ["ReceiveInventory"] = "Nhập kho",
+        ["AdjustInventory"] = "Điều chỉnh kho",
+        ["OverrideBlacklistWarning"] = "Bỏ qua cảnh báo khách hạn chế",
+        ["OverrideNegativeStock"] = "Bán khi hết tồn",
+        ["BlacklistAdd"] = "Đưa vào danh sách hạn chế",
+        ["BlacklistRemove"] = "Gỡ khỏi danh sách hạn chế",
+        ["ViewResidenceList"] = "Xem danh sách tạm trú",
+        ["ViewGuestProfile"] = "Xem hồ sơ khách",
+        ["ChangeSetting"] = "Sửa cấu hình",
+        ["CreateEmployee"] = "Tạo nhân viên",
+        ["ChangeEmployeeRole"] = "Đổi vai trò",
+        ["ResetEmployeePassword"] = "Đặt lại mật khẩu"
+    };
+
+    string Label(string action) => labels.TryGetValue(action, out var v) ? v : action;
+
+    // Hành động cần chú ý khi rà soát: bỏ qua cảnh báo, hủy tiền, lệch quỹ.
+    var flagged = new HashSet<string>(StringComparer.Ordinal)
+    {
+        "OverrideBlacklistWarning", "OverrideNegativeStock", "VoidInvoice", "VoidFolioLine",
+        "CloseShiftLargeDifference", "CancelReservationWaiveFee", "LoginFailed", "AccessDenied"
+    };
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-6 col-md-2">
+                <label asp-for="From" class="form-label">Từ ngày</label>
+                <input asp-for="From" type="date" class="form-control" />
+            </div>
+            <div class="col-6 col-md-2">
+                <label asp-for="To" class="form-label">Đến ngày</label>
+                <input asp-for="To" type="date" class="form-control" />
+            </div>
+            <div class="col-12 col-md-2">
+                <label asp-for="UserName" class="form-label">Người thực hiện</label>
+                <select asp-for="UserName" class="form-select">
+                    <option value="">Tất cả</option>
+                    @foreach (var u in Model.UserOptions)
+                    {
+                        <option value="@u" selected="@(Model.UserName == u)">@u</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-3">
+                <label asp-for="ActionType" class="form-label">Loại hành động</label>
+                <select asp-for="ActionType" class="form-select">
+                    <option value="">Tất cả</option>
+                    @foreach (var a in Model.ActionOptions)
+                    {
+                        <option value="@a" selected="@(Model.ActionType == a)">@Label(a)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-12 col-md-2">
+                <label asp-for="EntityId" class="form-label">Mã đối tượng</label>
+                <input asp-for="EntityId" class="form-control" placeholder="Mã đơn, số HĐ, phòng" />
+            </div>
+            <div class="col-12 col-md-1">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i></button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<p class="text-muted small">
+    Khoảng @Model.From.ToString("dd/MM/yyyy") → @Model.To.ToString("dd/MM/yyyy") ·
+    <strong>@Model.Items.TotalItems</strong> bản ghi.
+    Nhật ký chỉ ghi thêm — không sửa, không xóa, kể cả Admin (NFR-07).
+</p>
+
+@if (Model.Items.TotalItems == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        <p class="mb-0">Không có thao tác nào khớp bộ lọc.</p>
+    </div></div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Thời điểm</th>
+                        <th>Người thực hiện</th>
+                        <th>Hành động</th>
+                        <th>Đối tượng</th>
+                        <th>Giá trị cũ → mới</th>
+                        <th>Lý do</th>
+                        <th>IP</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var r in Model.Items.Items)
+                {
+                    <tr>
+                        <td class="text-nowrap small">@r.CreatedAt.ToString("dd/MM/yyyy HH:mm:ss")</td>
+                        <td class="text-nowrap">
+                            @r.UserName
+                            @if (r.UserRole is not null)
+                            {
+                                <div class="text-muted small">@r.UserRole.Value.ToDisplayName()</div>
+                            }
+                        </td>
+                        <td>
+                            @if (flagged.Contains(r.Action))
+                            {
+                                <span class="badge text-bg-danger">@Label(r.Action)</span>
+                            }
+                            else
+                            {
+                                <span>@Label(r.Action)</span>
+                            }
+                        </td>
+                        <td class="text-nowrap small">
+                            @r.EntityType
+                            @if (!string.IsNullOrEmpty(r.EntityId))
+                            {
+                                <span class="text-muted">#@r.EntityId</span>
+                            }
+                        </td>
+                        <td class="small">
+                            @if (r.HasValueChange)
+                            {
+                                <span class="text-muted">@(r.OldValue ?? "(trống)")</span>
+                                <span class="mx-1">→</span>
+                                <span class="fw-semibold">@(r.NewValue ?? "(trống)")</span>
+                            }
+                        </td>
+                        <td class="small">@r.Reason</td>
+                        <td class="text-nowrap small text-muted">@r.IpAddress</td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <partial name="_Pager" model="@((Model.Items.Page, Model.Items.TotalPages, Model.Items.TotalItems))" />
+}

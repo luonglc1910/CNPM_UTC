@@ -45,19 +45,19 @@
 
     <div class="col-md-6">
         <label asp-for="BasePricePerNight" class="form-label">Giá / đêm (₫) <span class="text-danger">*</span></label>
-        <input asp-for="BasePricePerNight" class="form-control" type="number" min="0" step="1000" />
+        <input asp-for="BasePricePerNight" class="form-control" type="number" min="0" step="any" />
         <span asp-validation-for="BasePricePerNight" class="text-danger small"></span>
     </div>
 
     <div class="col-md-6">
         <label asp-for="ExtraGuestFeePerNight" class="form-label"></label>
-        <input asp-for="ExtraGuestFeePerNight" class="form-control" type="number" min="0" step="1000" />
+        <input asp-for="ExtraGuestFeePerNight" class="form-control" type="number" min="0" step="any" />
         <span asp-validation-for="ExtraGuestFeePerNight" class="text-danger small"></span>
     </div>
 
     <div class="col-md-6">
         <label asp-for="ExtraBedFeePerNight" class="form-label"></label>
-        <input asp-for="ExtraBedFeePerNight" class="form-control" type="number" min="0" step="1000" />
+        <input asp-for="ExtraBedFeePerNight" class="form-control" type="number" min="0" step="any" />
         <span asp-validation-for="ExtraBedFeePerNight" class="text-danger small"></span>
     </div>
 

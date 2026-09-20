@@ -1,0 +1,37 @@
+@model ExtendStayViewModel
+@{
+    ViewData["Title"] = $"Gia hạn — Phòng {Model.RoomNumber}";
+}
+
+<div class="row"><div class="col-lg-6">
+    <div class="card"><div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        <form method="post" asp-action="Extend">
+            <input type="hidden" asp-for="StayId" />
+            <div class="mb-2">
+                <label class="form-label">Ngày đi hiện tại</label>
+                <input class="form-control" value="@Model.CurrentCheckOut.ToString("dd/MM/yyyy")" readonly />
+            </div>
+            <div class="mb-2">
+                <label asp-for="NewCheckOut" class="form-label">Ngày đi mới <span class="text-danger">*</span></label>
+                <input asp-for="NewCheckOut" type="date" class="form-control" />
+                <span asp-validation-for="NewCheckOut" class="text-danger small"></span>
+            </div>
+            <div class="mb-2">
+                <label asp-for="ExtraNightPrice" class="form-label">Giá/đêm cho đêm thêm</label>
+                <input asp-for="ExtraNightPrice" type="number" min="0" step="any" class="form-control" readonly="@(!Model.IsAdmin)" />
+                <div class="form-text">Mặc định theo giá đã chốt @Model.PricePerNight.ToString("N0") ₫. @(Model.IsAdmin ? "Admin sửa được." : "")</div>
+            </div>
+            <div class="mb-2">
+                <label asp-for="Notes" class="form-label">Ghi chú</label>
+                <input asp-for="Notes" class="form-control" />
+            </div>
+            <div class="alert alert-secondary small">Hệ thống kiểm tra phòng có trống trong các đêm thêm (BR-06). Nếu vướng đơn khác sẽ báo để đổi phòng.</div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-primary">Gia hạn</button>
+                <a class="btn btn-outline-secondary" asp-action="Stay" asp-route-id="@Model.StayId">Hủy</a>
+            </div>
+        </form>
+    </div></div>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }

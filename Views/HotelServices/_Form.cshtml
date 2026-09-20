@@ -44,7 +44,7 @@
 
     <div class="col-md-4">
         <label asp-for="UnitPrice" class="form-label">Đơn giá (₫) <span class="text-danger">*</span></label>
-        <input asp-for="UnitPrice" class="form-control" type="number" min="0" step="1000" />
+        <input asp-for="UnitPrice" class="form-control" type="number" min="0" step="any" />
         <span asp-validation-for="UnitPrice" class="text-danger small"></span>
     </div>
 

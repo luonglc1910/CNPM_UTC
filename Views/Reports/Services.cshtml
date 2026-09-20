@@ -1,0 +1,231 @@
+﻿@model ServicesReportViewModel
+@{
+    ViewData["Title"] = "Báo cáo dịch vụ & tồn kho";
+}
+
+<div class="card mb-3">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-sm-4 col-md-3">
+                <label asp-for="From" class="form-label">Từ ngày</label>
+                <input asp-for="From" type="date" class="form-control" />
+            </div>
+            <div class="col-sm-4 col-md-3">
+                <label asp-for="To" class="form-label">Đến ngày</label>
+                <input asp-for="To" type="date" class="form-control" />
+            </div>
+            <div class="col-sm-4 col-md-3">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Xem báo cáo</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* Chốt kiểm soát BR-12: sổ sách phải khớp giao dịch. Lệch nghĩa là có phiếu kho ghi sai,
+   nên cảnh báo đặt ngay đầu trang chứ không giấu trong tab. *@
+@if (Model.HasMismatch)
+{
+    <div class="alert alert-danger" role="alert">
+        <strong><i class="bi bi-exclamation-octagon"></i> Tồn kho không khớp giao dịch.</strong>
+        @Model.MismatchRows.Count() dịch vụ có tồn hệ thống khác với tồn suy từ phiếu kho:
+        @string.Join(", ", Model.MismatchRows.Select(m => $"{m.Code} ({m.Variance:+#;-#;0})")).
+        Nghĩa là tồn đã thay đổi mà không đi qua phiếu nào — cần rà lại trước khi tin số liệu bên dưới.
+    </div>
+}
+
+<div class="row g-2 mb-3">
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-label">Doanh thu dịch vụ</div>
+            <div class="stat-value fs-4">@Model.TotalRevenue.ToString("N0") ₫</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-label">Số lượng đã bán</div>
+            <div class="stat-value fs-4">@Model.TotalQuantity.ToString("N0")</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-label">Dịch vụ có phát sinh</div>
+            <div class="stat-value fs-4">@Model.Sales.Count</div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="stat-card">
+            <div class="stat-label">Dịch vụ quản lý kho</div>
+            <div class="stat-value fs-4">@Model.Stock.Count</div>
+        </div>
+    </div>
+</div>
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-sales" type="button">
+            Dịch vụ bán chạy (@Model.Sales.Count)
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-stock" type="button">
+            Tồn kho (@Model.Stock.Count)
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade show active" id="tab-sales">
+        @if (Model.Sales.Count == 0)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-5">
+                <p class="mb-0">Không có dịch vụ nào được bán trong khoảng đã chọn.</p>
+            </div></div>
+        }
+        else
+        {
+            @if (Model.ByCategory.Count > 1)
+            {
+                <div class="card mb-3">
+                    <div class="card-header">Theo nhóm dịch vụ</div>
+                    <div class="card-body">
+                        @foreach (var c in Model.ByCategory)
+                        {
+                            <div class="d-flex align-items-center gap-3 mb-2">
+                                <div style="width: 10rem" class="small">@c.Category.ToDisplayName()</div>
+                                <div class="progress flex-grow-1" style="height: 0.9rem">
+                                    <div class="progress-bar" role="progressbar" style="width: @(c.Share.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                                </div>
+                                <div class="text-end small" style="width: 9rem">
+                                    @c.Revenue.ToString("N0") ₫
+                                    <span class="text-muted">(@c.Share.ToString("0.#")%)</span>
+                                </div>
+                            </div>
+                        }
+                    </div>
+                </div>
+            }
+
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã</th>
+                                <th>Dịch vụ</th>
+                                <th>Nhóm</th>
+                                <th class="text-end">Số lượng</th>
+                                <th class="text-end">Doanh thu</th>
+                                <th style="width: 22%">Tỷ trọng</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var s in Model.Sales)
+                        {
+                            var width = Model.MaxRevenue == 0 ? 0 : (double)(s.Revenue / Model.MaxRevenue) * 100;
+                            <tr>
+                                <td class="text-nowrap">@s.Code</td>
+                                <td>@s.Name</td>
+                                <td class="text-nowrap small text-muted">@s.Category.ToDisplayName()</td>
+                                <td class="text-end">@s.Quantity.ToString("N0")</td>
+                                <td class="text-end fw-semibold">@s.Revenue.ToString("N0")</td>
+                                <td>
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="progress flex-grow-1" style="height: 0.75rem">
+                                            <div class="progress-bar" role="progressbar" style="width: @(width.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture))%"></div>
+                                        </div>
+                                        <span class="small text-muted text-nowrap" style="width: 3rem">@s.Share.ToString("0.#")%</span>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                        <tfoot class="table-light fw-semibold">
+                            <tr>
+                                <td colspan="3">Tổng cộng</td>
+                                <td class="text-end">@Model.TotalQuantity.ToString("N0")</td>
+                                <td class="text-end">@Model.TotalRevenue.ToString("N0")</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="tab-pane fade" id="tab-stock">
+        @if (Model.Stock.Count == 0)
+        {
+            <div class="card"><div class="card-body text-center text-muted py-5">
+                <p class="mb-0">Chưa có dịch vụ nào bật quản lý tồn kho.</p>
+            </div></div>
+        }
+        else
+        {
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Mã</th>
+                                <th>Dịch vụ</th>
+                                <th>Đơn vị</th>
+                                <th class="text-end">Tồn đầu</th>
+                                <th class="text-end">Nhập</th>
+                                <th class="text-end">Bán</th>
+                                <th class="text-end">Hoàn</th>
+                                <th class="text-end">Điều chỉnh</th>
+                                <th class="text-end">Theo giao dịch</th>
+                                <th class="text-end">Tồn hệ thống</th>
+                                <th class="text-end">Tối thiểu</th>
+                                <th>Cảnh báo</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                        @foreach (var s in Model.Stock)
+                        {
+                            var rowClass = s.Mismatch ? "table-danger"
+                                : s.IsOutOfStock ? "table-danger"
+                                : s.IsLow ? "table-warning" : "";
+                            <tr class="@rowClass">
+                                <td class="text-nowrap">@s.Code</td>
+                                <td>@s.Name</td>
+                                <td class="small text-muted">@s.Unit</td>
+                                <td class="text-end">@s.Opening.ToString("N0")</td>
+                                <td class="text-end">@s.Received.ToString("N0")</td>
+                                <td class="text-end">@s.Sold.ToString("N0")</td>
+                                <td class="text-end">@s.Returned.ToString("N0")</td>
+                                <td class="text-end">@s.Adjusted.ToString("N0")</td>
+                                <td class="text-end @(s.Mismatch ? "text-danger" : "text-muted")">@s.Computed.ToString("N0")</td>
+                                <td class="text-end fw-semibold">@s.BookStock.ToString("N0")</td>
+                                <td class="text-end text-muted">@s.MinStockLevel.ToString("N0")</td>
+                                <td class="small">
+                                    @if (s.Mismatch)
+                                    {
+                                        <span class="badge text-bg-danger">Lệch @s.Variance.ToString("+#;-#;0")</span>
+                                    }
+                                    else if (s.IsOutOfStock)
+                                    {
+                                        <span class="badge text-bg-danger">Hết hàng</span>
+                                    }
+                                    else if (s.IsLow)
+                                    {
+                                        <span class="badge text-bg-warning">Sắp hết</span>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <p class="text-muted small mt-2">
+                Quy tắc đối chiếu: <code>tồn đầu + nhập − bán + hoàn ± điều chỉnh</code> phải bằng
+                <strong>tồn hệ thống</strong>. Cột "Theo giao dịch" suy từ sổ phiếu kho, cột "Tồn hệ thống"
+                là con số đang dùng để chặn bán. Hai cột lệch nhau nghĩa là tồn bị thay đổi mà
+                không qua phiếu nào (BR-12). Chỉ đối chiếu khi kỳ kéo tới hôm nay.
+            </p>
+        }
+    </div>
+</div>

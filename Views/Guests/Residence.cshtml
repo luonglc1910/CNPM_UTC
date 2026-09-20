@@ -1,0 +1,123 @@
+@model ResidenceViewModel
+@{
+    ViewData["Title"] = "Khai báo tạm trú";
+}
+
+<div class="card mb-3 d-print-none">
+    <div class="card-body">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-sm-4 col-md-3">
+                <label asp-for="Date" class="form-label">Ngày</label>
+                <input asp-for="Date" type="date" name="date" class="form-control" />
+            </div>
+            <div class="col-sm-4 col-md-3">
+                <button type="submit" class="btn btn-primary"><i class="bi bi-search"></i> Xem danh sách</button>
+            </div>
+            <div class="col-sm-4 col-md-6 text-sm-end">
+                <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> In danh sách
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@* Khách thiếu ngày sinh hoặc địa chỉ thường trú thì tờ khai không nộp được, nên cảnh báo
+   đặt trước bảng để lễ tân bổ sung rồi mới in. *@
+@if (Model.IncompleteCount > 0)
+{
+    <div class="alert alert-warning d-print-none" role="alert">
+        <strong><i class="bi bi-exclamation-triangle"></i> @Model.IncompleteCount người thiếu thông tin bắt buộc.</strong>
+        Các dòng tô đỏ còn thiếu ngày sinh hoặc địa chỉ thường trú. Bổ sung hồ sơ trước khi in,
+        nếu không tờ khai sẽ bị trả lại.
+    </div>
+}
+
+<div class="d-flex justify-content-between align-items-end mb-2">
+    <div>
+        <h2 class="h5 mb-1">Danh sách khách lưu trú ngày @Model.Date.ToString("dd/MM/yyyy")</h2>
+        <p class="text-muted small mb-0">
+            @Model.Rows.Count người · @Model.RoomCount phòng.
+            Gồm cả khách ở cùng phòng, không chỉ người đứng tên đơn.
+        </p>
+    </div>
+</div>
+
+@if (Model.Rows.Count == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        <p class="mb-0">Không có khách nào lưu trú trong ngày @Model.Date.ToString("dd/MM/yyyy").</p>
+    </div></div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 3rem">STT</th>
+                        <th>Họ tên</th>
+                        <th>Ngày sinh</th>
+                        <th>Giới tính</th>
+                        <th>Quốc tịch</th>
+                        <th>Giấy tờ</th>
+                        <th>Địa chỉ thường trú</th>
+                        <th>Phòng</th>
+                        <th>Từ</th>
+                        <th>Đến</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @{ var stt = 0; }
+                @foreach (var r in Model.Rows)
+                {
+                    stt++;
+                    <tr class="@(r.IsIncomplete ? "table-danger" : "")">
+                        <td>@stt</td>
+                        <td>
+                            @r.FullName
+                            @if (r.IsPrimary)
+                            {
+                                <span class="badge text-bg-secondary ms-1 d-print-none">đứng tên</span>
+                            }
+                        </td>
+                        <td class="text-nowrap">
+                            @if (r.DateOfBirth is null)
+                            {
+                                <span class="text-danger">thiếu</span>
+                            }
+                            else
+                            {
+                                @r.DateOfBirth.Value.ToString("dd/MM/yyyy")
+                            }
+                        </td>
+                        <td>@(r.Gender?.ToDisplayName() ?? "—")</td>
+                        <td>@r.Nationality</td>
+                        <td class="text-nowrap small">@r.IdType.ToDisplayName() @r.IdNumber</td>
+                        <td>
+                            @if (string.IsNullOrWhiteSpace(r.Address))
+                            {
+                                <span class="text-danger">thiếu</span>
+                            }
+                            else
+                            {
+                                @r.Address
+                            }
+                        </td>
+                        <td>@r.RoomNumber</td>
+                        <td class="text-nowrap small">@r.From.ToString("dd/MM/yyyy HH:mm")</td>
+                        <td class="text-nowrap small">
+                            @(r.To?.ToString("dd/MM/yyyy HH:mm") ?? "đang ở")
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <p class="text-muted small mt-2 d-print-none">
+        Mỗi lần mở trang này đều được ghi vào nhật ký thao tác — đây là dữ liệu cá nhân của khách.
+    </p>
+}

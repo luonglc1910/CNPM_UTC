@@ -1,9 +1,125 @@
+@model RequestListViewModel
 @{
-    ViewData["Title"] = "Yêu cầu phục vụ";
+    ViewData["Title"] = "Danh sách yêu cầu";
+    var currentEmployeeId = User.GetEmployeeId();
 }
 
-<div class="d-flex justify-content-end mb-3">
-    <a class="btn btn-primary" asp-action="CreateRequest">Ghi nhận yêu cầu</a>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+        <input type="hidden" name="customFilter" value="true" />
+        <div>
+            <label asp-for="Type" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="Type" class="form-select form-select-sm">
+                <option value="">— Tất cả —</option>
+                @foreach (var t in Enum.GetValues<RequestType>())
+                {
+                    <option value="@((int)t)" selected="@(Model.Type == t)">@t.ToDisplayName()</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label asp-for="Status" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="Status" class="form-select form-select-sm">
+                <option value="">— Tất cả —</option>
+                @foreach (var s in Enum.GetValues<RequestStatus>())
+                {
+                    <option value="@((int)s)" selected="@(Model.Status == s)">@s.ToDisplayName()</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label asp-for="Priority" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="Priority" class="form-select form-select-sm">
+                <option value="">— Tất cả —</option>
+                @foreach (var p in Enum.GetValues<RequestPriority>())
+                {
+                    <option value="@((int)p)" selected="@(Model.Priority == p)">@p.ToDisplayName()</option>
+                }
+            </select>
+        </div>
+        <button type="submit" class="btn btn-outline-secondary btn-sm mb-1"><i class="bi bi-funnel"></i> Lọc</button>
+        @if (Model.HasFilter)
+        {
+            <a class="btn btn-link btn-sm mb-1" asp-action="Requests">Bỏ lọc</a>
+        }
+    </form>
+
+    <a class="btn btn-primary" asp-action="CreateRequest"><i class="bi bi-plus-lg"></i> Tạo yêu cầu</a>
 </div>
 
-<partial name="_Placeholder" model="@("Danh sách yêu cầu dọn phòng / thêm đồ chưa xử lý.")" />
+@if (Model.Results.TotalItems == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        <p class="mb-0">Không có yêu cầu nào khớp bộ lọc.</p>
+    </div></div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã</th>
+                        <th>Loại</th>
+                        <th>Phòng</th>
+                        <th>Mô tả</th>
+                        <th>Mức độ</th>
+                        <th>Trạng thái</th>
+                        <th>Người xử lý</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var r in Model.Results.Items)
+                {
+                    var isOpen = r.Status == RequestStatus.New || r.Status == RequestStatus.InProgress;
+                    <tr class="@(r.Priority == RequestPriority.Urgent && isOpen ? "table-danger" : "")">
+                        <td><code>@r.Code</code></td>
+                        <td>@r.Type.ToDisplayName()</td>
+                        <td>@r.RoomNumber</td>
+                        <td class="small" style="max-width: 260px">@r.Description</td>
+                        <td><span class="badge @r.Priority.ToBadgeClass()">@r.Priority.ToDisplayName()</span></td>
+                        <td><span class="badge @r.Status.ToBadgeClass()">@r.Status.ToDisplayName()</span></td>
+                        <td class="small">@(r.AssignedName ?? "—")</td>
+                        <td class="text-end text-nowrap">
+                            @if (isOpen)
+                            {
+                                @if (r.Status == RequestStatus.New && currentEmployeeId is not null)
+                                {
+                                    <form method="post" asp-action="AssignRequest" class="d-inline">
+                                        <input type="hidden" name="id" value="@r.Id" />
+                                        <input type="hidden" name="assignTo" value="@currentEmployeeId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-primary" title="Nhận xử lý"><i class="bi bi-person-check"></i></button>
+                                    </form>
+                                }
+                                <form method="post" asp-action="CompleteRequest" class="d-inline">
+                                    <input type="hidden" name="id" value="@r.Id" />
+                                    @if (r.RoomIsUnderMaintenance)
+                                    {
+                                        <input type="hidden" name="roomFixed" value="true" />
+                                    }
+                                    <button type="submit" class="btn btn-sm btn-outline-success"
+                                            title="@(r.RoomIsUnderMaintenance ? "Hoàn thành & mở bán lại phòng" : "Hoàn thành")">
+                                        <i class="bi bi-check2-circle"></i>
+                                    </button>
+                                </form>
+                                <form method="post" asp-action="CancelRequest" class="d-inline"
+                                      onsubmit="return confirm('Hủy yêu cầu @r.Code?');">
+                                    <input type="hidden" name="id" value="@r.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Hủy"><i class="bi bi-x-lg"></i></button>
+                                </form>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">@(r.CompletedAt?.ToString("dd/MM HH:mm"))</span>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" />
+}

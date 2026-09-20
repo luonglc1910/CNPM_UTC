@@ -108,7 +108,13 @@ public enum SurchargeType
 public enum InvoiceStatus
 {
     Settled = 1,
-    Void = 2
+    Void = 2,
+
+    /// <summary>
+    /// Đã chốt nhưng khách chưa trả đủ, phần còn thiếu ghi công nợ — REQUIREMENTS mục 6.3, SCR-D08.
+    /// Chỉ Admin được ghi nhận, bắt buộc lý do và có audit log.
+    /// </summary>
+    Debt = 3
 }
 
 public enum PaymentMethod

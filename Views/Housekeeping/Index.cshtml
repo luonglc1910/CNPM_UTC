@@ -1,9 +1,120 @@
+@model HousekeepingBoardViewModel
 @{
-    ViewData["Title"] = "Trạng thái dọn phòng";
+    ViewData["Title"] = "Trạng thái buồng phòng";
 }
 
-<div class="d-flex justify-content-end mb-3">
-    <a class="btn btn-primary" asp-action="Requests">Yêu cầu phục vụ</a>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+        <div>
+            <label asp-for="Floor" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="Floor" class="form-select form-select-sm">
+                <option value="">— Tất cả —</option>
+                @foreach (var f in Model.FloorOptions)
+                {
+                    <option value="@f" selected="@(Model.Floor == f)">Tầng @f</option>
+                }
+            </select>
+        </div>
+        <div>
+            <label asp-for="Status" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="Status" class="form-select form-select-sm">
+                <option value="">— Tất cả —</option>
+                @foreach (var s in Enum.GetValues<RoomStatus>())
+                {
+                    <option value="@((int)s)" selected="@(Model.Status == s)">@s.ToDisplayName()</option>
+                }
+            </select>
+        </div>
+        <div class="form-check mb-2">
+            <input asp-for="OnlyActionable" class="form-check-input" />
+            <label asp-for="OnlyActionable" class="form-check-label small"></label>
+        </div>
+        <button type="submit" class="btn btn-outline-secondary btn-sm mb-2"><i class="bi bi-funnel"></i> Lọc</button>
+    </form>
+
+    <div class="d-flex gap-2">
+        <a class="btn btn-outline-danger" asp-action="CreateRequest"><i class="bi bi-tools"></i> Báo hỏng / Yêu cầu</a>
+        <a class="btn btn-outline-primary" asp-action="Requests"><i class="bi bi-list-check"></i> Danh sách yêu cầu</a>
+    </div>
 </div>
 
-<partial name="_Placeholder" model="@("Bảng trạng thái dọn dẹp của tất cả các phòng (bẩn, đang dọn, sạch, đã kiểm tra).")" />
+@if (Model.Floors.Count == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        <p class="mb-0">Không có phòng nào khớp bộ lọc. Bỏ chọn "Chỉ hiện phòng cần xử lý" để xem tất cả.</p>
+    </div></div>
+}
+else
+{
+    foreach (var floor in Model.Floors)
+    {
+        <h6 class="mt-3">Tầng @floor.Floor</h6>
+        <div class="row g-2">
+            @foreach (var room in floor.Rooms)
+            {
+                <div class="col-6 col-md-4 col-lg-3 col-xl-2">
+                    <div class="card h-100 @(room.IsUrgentArrival ? "border-danger" : "")">
+                        <div class="card-body p-2">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <strong>@room.RoomNumber</strong>
+                                <span class="badge @room.Status.ToBadgeClass()">@room.Status.ToDisplayName()</span>
+                            </div>
+                            <div class="small text-muted">@room.RoomTypeName</div>
+
+                            @if (room.IsUrgentArrival)
+                            {
+                                <div class="badge text-bg-danger mt-1">Gấp — có khách nhận hôm nay</div>
+                            }
+                            @if (room.IsBeingCleaned)
+                            {
+                                <div class="small text-primary mt-1"><i class="bi bi-brush"></i> Đang dọn @(room.CleaningStartedAt?.ToString("HH:mm"))</div>
+                            }
+                            else if (room.Status == RoomStatus.Dirty && room.DirtySince is not null)
+                            {
+                                <div class="small text-muted mt-1">Chờ dọn từ @room.DirtySince.Value.ToString("dd/MM HH:mm")</div>
+                            }
+                            @if (room.Status == RoomStatus.Maintenance && !string.IsNullOrWhiteSpace(room.StatusNote))
+                            {
+                                <div class="small text-danger mt-1" title="@room.StatusNote">@room.StatusNote</div>
+                            }
+                            @if (room.OpenRequestCount > 0)
+                            {
+                                <div class="small mt-1"><span class="badge text-bg-warning">@room.OpenRequestCount yêu cầu mở</span></div>
+                            }
+
+                            <div class="d-grid gap-1 mt-2">
+                                @if (room.Status == RoomStatus.Dirty && !room.IsBeingCleaned)
+                                {
+                                    <form method="post" asp-action="StartCleaning">
+                                        <input type="hidden" name="roomId" value="@room.RoomId" />
+                                        <button type="submit" class="btn btn-sm btn-primary w-100"><i class="bi bi-brush"></i> Bắt đầu dọn</button>
+                                    </form>
+                                }
+                                @if (room.Status == RoomStatus.Dirty && room.IsBeingCleaned)
+                                {
+                                    <form method="post" asp-action="CompleteCleaning">
+                                        <input type="hidden" name="roomId" value="@room.RoomId" />
+                                        <button type="submit" class="btn btn-sm btn-success w-100"><i class="bi bi-check2"></i> Dọn xong</button>
+                                    </form>
+                                }
+                                @if (room.Status == RoomStatus.Maintenance)
+                                {
+                                    <form method="post" asp-action="MarkRepaired">
+                                        <input type="hidden" name="roomId" value="@room.RoomId" />
+                                        <button type="submit" class="btn btn-sm btn-outline-success w-100"><i class="bi bi-wrench"></i> Đã sửa xong</button>
+                                    </form>
+                                }
+                                @if (room.Status != RoomStatus.Occupied && room.Status != RoomStatus.OutOfService)
+                                {
+                                    <a class="btn btn-sm btn-outline-danger w-100" asp-action="CreateRequest" asp-route-roomId="@room.RoomId">
+                                        <i class="bi bi-tools"></i> Báo hỏng
+                                    </a>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+}

@@ -62,7 +62,8 @@ public static class SystemSettingDefaults
         (SystemSettingKeys.ReceptionistMaxDiscountRate, "0.1", Groups.Limit, "Hạn mức giảm giá của lễ tân theo tỷ lệ"),
         (SystemSettingKeys.AllowSellWhenOutOfStock, "false", Groups.Limit, "Cho phép bán dịch vụ khi hết tồn - BR-12"),
         (SystemSettingKeys.LoyalGuestStayThreshold, "3", Groups.Limit, "Số lần lưu trú để được gắn nhãn khách quen"),
-        (SystemSettingKeys.ChildAgeLimit, "12", Groups.Limit, "Tuổi tối đa tính là trẻ em, không thu phụ thu thêm người")
+        (SystemSettingKeys.ChildAgeLimit, "12", Groups.Limit, "Tuổi tối đa tính là trẻ em, không thu phụ thu thêm người"),
+        (SystemSettingKeys.CashDifferenceThreshold, "50000", Groups.Limit, "Ngưỡng chênh lệch tiền mặt khi đóng ca - vượt thì cảnh báo - SCR-F08")
     };
 
     /// <summary>Nhãn tiếng Việt của nhóm, dùng cho thông báo và nhật ký.</summary>

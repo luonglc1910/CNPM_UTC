@@ -1,0 +1,33 @@
+@model VoidInvoiceViewModel
+@{
+    ViewData["Title"] = $"Hủy hóa đơn {Model.InvoiceNo}";
+}
+
+<div class="row"><div class="col-lg-6">
+    <div class="card border-danger"><div class="card-body">
+        <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+        @if (!Model.HasOpenShift)
+        {
+            <div class="alert alert-warning py-2 small">Cần mở ca để hủy hóa đơn (điều chỉnh gắn ca hiện tại). <a asp-controller="Shifts" asp-action="Index">Mở ca</a></div>
+        }
+        <p>Hủy hóa đơn <code>@Model.InvoiceNo</code> — @Model.GuestName — tổng <strong>@Model.TotalAmount.ToString("N0") ₫</strong>.</p>
+        <p class="small text-muted">Không xóa dữ liệu; hóa đơn giữ số và bị loại khỏi báo cáo doanh thu. Sổ ca cũ không đổi hồi tố.</p>
+        <form method="post" asp-action="VoidInvoice">
+            <input type="hidden" asp-for="InvoiceId" />
+            <div class="mb-2">
+                <label asp-for="Reason" class="form-label">Lý do hủy (≥ 10 ký tự) <span class="text-danger">*</span></label>
+                <textarea asp-for="Reason" class="form-control" rows="2"></textarea>
+                <span asp-validation-for="Reason" class="text-danger small"></span>
+            </div>
+            <div class="form-check mb-3">
+                <input asp-for="Confirmed" class="form-check-input" />
+                <label asp-for="Confirmed" class="form-check-label">Tôi hiểu thao tác này không thể hoàn tác</label>
+            </div>
+            <div class="d-flex gap-2">
+                <button type="submit" class="btn btn-danger">Xác nhận hủy hóa đơn</button>
+                <a class="btn btn-outline-secondary" asp-action="Invoice" asp-route-id="@Model.InvoiceId">Quay lại</a>
+            </div>
+        </form>
+    </div></div>
+</div></div>
+@section Scripts { <partial name="_ValidationScriptsPartial" /> }
