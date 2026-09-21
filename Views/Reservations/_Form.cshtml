@@ -79,7 +79,12 @@
                         </div>
                     </div>
 
+                    @* Hidden input: khi chọn Theo giờ, JS gán ngày vào đây và xóa name khỏi ô nhìn thấy được,
+                       để form chỉ submit một CheckInDate duy nhất và backend không bị lỗi binding. *@
+                    <input type="hidden" id="CheckInDateHourlyHidden" />
+
                     <div class="form-text mt-2" id="rentalHint"></div>
+
                 </div>
             </div>
         </div>

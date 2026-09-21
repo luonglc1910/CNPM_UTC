@@ -1,4 +1,4 @@
-﻿@model CheckOutViewModel
+@model CheckOutViewModel
 @{
     ViewData["Title"] = $"Check-out — Phòng {Model.RoomNumber}";
     var s = Model.Summary;
@@ -120,7 +120,47 @@
                     <tbody>
                         <tr><td>Tiền phòng</td><td class="text-end">@s.RoomCharge.ToString("N0") ₫</td></tr>
                         <tr><td>Dịch vụ</td><td class="text-end">@s.ServiceCharge.ToString("N0") ₫</td></tr>
-                        <tr><td>Phụ thu</td><td class="text-end">@s.SurchargeAmount.ToString("N0") ₫</td></tr>
+                        <tr>
+                            <td>
+                                Phụ thu
+                                @if (s.SurchargeLines.Count > 0)
+                                {
+                                    <button type="button" class="btn btn-link btn-sm p-0 ms-1 text-muted"
+                                            data-bs-toggle="collapse" data-bs-target="#surchargeDetail"
+                                            aria-expanded="false">
+                                        <i class="bi bi-chevron-down"></i>
+                                    </button>
+                                }
+                            </td>
+                            <td class="text-end">@s.SurchargeAmount.ToString("N0") ₫</td>
+                        </tr>
+                        @if (s.SurchargeLines.Count > 0)
+                        {
+                            <tr>
+                                <td colspan="2" class="p-0">
+                                    <div class="collapse show" id="surchargeDetail">
+                                        <table class="table table-sm mb-0 table-borderless">
+                                            <tbody>
+                                                @foreach (var line in s.SurchargeLines)
+                                                {
+                                                    <tr class="text-muted small">
+                                                        <td class="ps-3">
+                                                            <i class="bi bi-arrow-return-right me-1"></i>@line.Description
+                                                            @if (line.IsPending)
+                                                            {
+                                                                <span class="badge text-bg-warning ms-1" title="Chưa ghi vào folio, sẽ áp dụng khi bấm Tiếp tục thanh toán">Dự kiến</span>
+                                                            }
+                                                        </td>
+                                                        <td class="text-end">@line.Amount.ToString("N0") ₫</td>
+                                                    </tr>
+                                                }
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+
                         <tr><td>Giảm giá</td><td class="text-end">-@s.DiscountAmount.ToString("N0") ₫</td></tr>
                         <tr><td>VAT</td><td class="text-end">@s.TaxAmount.ToString("N0") ₫</td></tr>
                         <tr class="fw-semibold"><td>Tổng</td><td class="text-end">@s.Total.ToString("N0") ₫</td></tr>
@@ -128,7 +168,8 @@
                     </tbody>
                 </table>
                 </div>
-                <div class="form-text mt-2">Phụ thu trễ giờ được cộng vào folio khi nhấn "Tiếp tục thanh toán".</div>
+
+
             </div>
         </div>
     </div>

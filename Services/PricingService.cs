@@ -175,6 +175,14 @@ public interface IPricingService
     /// </summary>
     SurchargeLine? OvernightOverstaySurcharge(DateTime packageEnd, DateTime actualCheckOut, decimal priceExtraHour, PricingSettings s);
 
+    /// <summary>
+    /// Phụ thu vào sớm cho gói qua đêm — tính số giờ từ giờ vào thực tế đến giờ kết thúc gói (packageEnd),
+    /// với cùng luật làm tròn và cùng đơn giá giờ như phụ thu ra trễ — BR-13.
+    /// Trả null nếu vào đúng giờ khai mạc gói hoặc muộn hơn.
+    /// </summary>
+    SurchargeLine? OvernightEarlyCheckInSurcharge(DateTime actualCheckIn, DateTime packageStart, decimal priceExtraHour, PricingSettings s);
+
+
     /// <summary>Phụ thu nhận phòng sớm theo giờ nhận thực tế; null nếu nhận đúng giờ chuẩn trở đi — BR-03.</summary>
     SurchargeLine? EarlyCheckInSurcharge(TimeOnly actualCheckIn, decimal pricePerNight, PricingSettings s);
 
@@ -323,6 +331,29 @@ public class PricingService : IPricingService
             Type = SurchargeType.OvernightOverstay,
             Amount = amount,
             Description = $"Quá gói qua đêm {over.SpanText} (sau {packageEnd:HH\\:mm}) — tính {over.Hours} giờ × {priceExtraHour:N0} ₫"
+        };
+    }
+
+    public SurchargeLine? OvernightEarlyCheckInSurcharge(
+        DateTime actualCheckIn, DateTime packageStart, decimal priceExtraHour, PricingSettings s)
+    {
+        // Vào đúng giờ khai mạc hoặc muộn hơn thì không có phụ thu vào sớm.
+        if (actualCheckIn >= packageStart)
+        {
+            return null;
+        }
+
+        // Tính từ giờ vào thực tế đến giờ khai mạc gói, dùng cùng luật làm tròn.
+        // packageEnd (10:00) là giờ kết thúc gói mà khách được ở thê — vào sớm từ
+        // actualCheckIn đến packageStart tức là chiếm phòng ngoài gói, tính theo giờ.
+        var early = CountHours(actualCheckIn, packageStart, s);
+        var amount = priceExtraHour * early.Hours;
+
+        return new SurchargeLine
+        {
+            Type = SurchargeType.EarlyCheckIn,
+            Amount = amount,
+            Description = $"Vào sớm {early.SpanText} (trước {packageStart:HH\\:mm}) — tính {early.Hours} giờ × {priceExtraHour:N0} ₫"
         };
     }
 

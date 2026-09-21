@@ -1,4 +1,6 @@
-﻿@model StayDetailViewModel
+@using HotelManagement.Web.Models.ViewModels
+@using HotelManagement.Web.Models.Entities
+@model StayDetailViewModel
 @{
     ViewData["Title"] = $"Lưu trú — Phòng {Model.RoomNumber}";
     var s = Model.Summary;
@@ -27,9 +29,41 @@
             <div class="card-body">
                 <dl class="row mb-0">
                     <dt class="col-sm-4">Phòng</dt><dd class="col-sm-8">@Model.RoomNumber (@Model.RoomTypeName)</dd>
-                    <dt class="col-sm-4">Giá/đêm đã chốt</dt><dd class="col-sm-8">@Model.Stay.PricePerNight.ToString("N0") ₫</dd>
+                    <dt class="col-sm-4">
+                        @(Model.Stay.RentalType switch {
+                            RentalType.Overnight => "Giá gói qua đêm",
+                            RentalType.Hourly    => "Giá giờ đầu",
+                            _                    => "Giá/đêm đã chốt"
+                        })
+                    </dt>
+                    <dd class="col-sm-8">
+                        @{
+                            decimal displayPrice = Model.Stay.RentalType switch {
+                                RentalType.Overnight => Model.Stay.PriceOvernight,
+                                RentalType.Hourly    => Model.Stay.PriceFirstHour,
+                                _                    => Model.Stay.PricePerNight
+                            };
+                        }
+                        @displayPrice.ToString("N0") ₫
+                    </dd>
+
                     <dt class="col-sm-4">Vào</dt><dd class="col-sm-8">@Model.Stay.ActualCheckIn.ToString("dd/MM/yyyy HH:mm")</dd>
-                    <dt class="col-sm-4">Đi dự kiến</dt><dd class="col-sm-8">@Model.Stay.ExpectedCheckOut.ToString("dd/MM/yyyy") (@Model.Stay.Nights đêm)</dd>
+                    <dt class="col-sm-4">Đi dự kiến</dt>
+                    <dd class="col-sm-8">
+                        @if (Model.Stay.RentalType == RentalType.Hourly)
+                        {
+                            @:Tính giờ khi trả phòng
+                        }
+                        else if (Model.Stay.RentalType == RentalType.Overnight)
+                        {
+                            @:@Model.Stay.ExpectedCheckOut.ToString("dd/MM/yyyy") (gói qua đêm)
+                        }
+                        else
+                        {
+                            @:@Model.Stay.ExpectedCheckOut.ToString("dd/MM/yyyy") (@Model.Stay.Nights đêm)
+                        }
+                    </dd>
+
                     <dt class="col-sm-4">Khách ở cùng</dt>
                     <dd class="col-sm-8">
                         <ul class="mb-0 ps-3">@foreach (var g in Model.Guests) { <li>@g</li> }</ul>
@@ -58,7 +92,41 @@
                 <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <tbody>
-                        <tr><td>Tiền phòng</td><td class="text-end">@s.RoomCharge.ToString("N0") ₫</td></tr>
+                        <tr>
+                            <td>
+                                @if (s.RoomLines.Count > 1)
+                                {
+                                    <a class="text-decoration-none d-flex align-items-center gap-1"
+                                       data-bs-toggle="collapse" href="#roomBreakdown" role="button">
+                                        Tiền phòng <i class="bi bi-chevron-down small"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    @:Tiền phòng
+                                }
+                            </td>
+                            <td class="text-end">@s.RoomCharge.ToString("N0") ₫</td>
+                        </tr>
+                        @if (s.RoomLines.Count > 1)
+                        {
+                            <tr class="collapse show" id="roomBreakdown">
+                                <td colspan="2" class="py-0 ps-3">
+                                    <table class="table table-sm table-borderless mb-0 text-secondary small">
+                                        <tbody>
+                                            @foreach (var line in s.RoomLines)
+                                            {
+                                                <tr>
+                                                    <td>@line.Description</td>
+                                                    <td class="text-end text-nowrap">@line.Amount.ToString("N0") ₫</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        }
+
                         <tr><td>Dịch vụ</td><td class="text-end">@s.ServiceCharge.ToString("N0") ₫</td></tr>
                         <tr><td>Phụ thu</td><td class="text-end">@s.SurchargeAmount.ToString("N0") ₫</td></tr>
                         <tr><td>Giảm giá</td><td class="text-end">-@s.DiscountAmount.ToString("N0") ₫</td></tr>

@@ -3,8 +3,8 @@
     Đổi nhãn và ẩn hiện ô thời gian theo hình thức thuê (BR-13) — SCR-C04/C06.
 
     Cả ba hình thức chỉ nhập ngày, nhưng ý nghĩa khác nhau nên nhãn và câu giải thích phải đổi
-    theo: theo ngày cần cả ngày đến lẫn ngày đi, theo giờ chỉ cần ngày (đồng hồ chạy từ lúc
-    check-in), qua đêm chỉ cần biết là đêm ngày nào.
+    theo: theo ngày cần cả ngày đến lẫn ngày đi, theo giờ ẩn hết (đồng hồ chạy từ lúc
+    check-in đến lúc trả phòng), qua đêm chỉ cần biết là đêm ngày nào.
 
     Dựng ba cặp ô rồi ẩn hiện thì trình duyệt vẫn gửi cả ba, nên ở đây chỉ có một cặp
     CheckInDate/CheckOutDate dùng chung.
@@ -17,15 +17,22 @@
 
         const checkIn = document.getElementById('CheckInDate');
         const checkOut = document.getElementById('CheckOutDate');
+        const checkInCol = document.getElementById('checkInCol');
         const checkOutCol = document.getElementById('checkOutCol');
         const checkInLabel = document.getElementById('checkInLabel');
         const checkOutLabel = document.getElementById('checkOutLabel');
         const hint = document.getElementById('rentalHint');
         const radios = document.querySelectorAll('.js-rental');
+        const hourlyHidden = document.getElementById('CheckInDateHourlyHidden');
 
         if (!checkIn || !checkOut) { return; }
 
         const pad = n => String(n).padStart(2, '0');
+
+        function todayIso() {
+            const d = new Date();
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        }
 
         function datePart(value) {
             return (value || '').slice(0, 10);
@@ -47,20 +54,30 @@
 
         function apply(type) {
 
-            // Tính giá trị mới TRƯỚC khi đổi type. Trình duyệt xóa sạch value ngay khi kiểu ô đổi
-            // (giá trị cũ không hợp lệ với kiểu mới), nên đọc sau khi đổi thì chỉ còn chuỗi rỗng
-            // và ô mất luôn ngày giờ đang có.
             if (type === HOURLY) {
-                // Thuê theo giờ không nhập giờ nào: đồng hồ chạy từ lúc check-in tới lúc trả phòng.
-                // Chỉ còn ô ngày, để lập được đơn cho hôm sau.
-                const dayValue = datePart(checkIn.value);
-                checkIn.type = 'date';
-                checkIn.value = dayValue;
+                // Thuê theo giờ: ẩn toàn bộ ô nhập ngày/giờ. Đồng hồ chạy từ lúc check-in thật
+                // đến lúc trả phòng — nhân viên không cần và không nên nhập giờ trên đây.
+                // Backend chỉ cần ngày để kiểm lịch, nên gửi ngầm ngày hôm nay qua hidden input.
+                checkInCol.classList.add('d-none');
                 checkOutCol.classList.add('d-none');
-                checkInLabel.innerHTML = 'Ngày <span class="text-danger">*</span>';
-                hint.textContent = 'Tính giờ từ lúc check-in đến lúc trả phòng — không nhập giờ ở đây.';
+
+                // Chuyển name sang hidden để form submit đúng giá trị, bỏ name khỏi ô visible
+                // để tránh submit trùng hai CheckInDate.
+                const dayVal = datePart(checkIn.value) || todayIso();
+                checkIn.removeAttribute('name');
+                hourlyHidden.name = 'CheckInDate';
+                hourlyHidden.value = dayVal;
+
+                hint.innerHTML = '<i class="bi bi-info-circle me-1"></i>'
+                    + 'Giờ bắt đầu = lúc check-in • Giờ kết thúc = lúc trả phòng. Tiền tính sau khi check-out.';
                 return;
             }
+
+            // Không phải Hourly — phục hồi name cho ô nhìn thấy và xóa hidden.
+            checkIn.setAttribute('name', 'CheckInDate');
+            hourlyHidden.removeAttribute('name');
+            hourlyHidden.value = '';
+            checkInCol.classList.remove('d-none');
 
             if (type === OVERNIGHT) {
                 const nightValue = datePart(checkIn.value);
@@ -72,6 +89,7 @@
                 return;
             }
 
+            // Daily
             const fromValue = datePart(checkIn.value);
             const toValue = datePart(checkOut.value);
             checkIn.type = 'date';

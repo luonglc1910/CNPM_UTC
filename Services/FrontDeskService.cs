@@ -367,6 +367,28 @@ public class FrontDeskService : IFrontDeskService
                     AddExtraGuestSurcharge(folio.Id, line.Adults + line.Children, rr.RoomType, nights, actualCheckIn);
                 }
 
+                // Gói qua đêm: nếu khách vào sớm hơn giờ khai mạc (ví dụ 22:00), tính phụ thu
+                // theo giờ từ lúc vào đến 22:00 với cùng đơn giá giờ như phụ thu ra trễ.
+                if (period.Type == RentalType.Overnight)
+                {
+                    var earlyOver = _pricing.OvernightEarlyCheckInSurcharge(
+                        actualCheckIn, period.CheckIn, rr.PriceExtraHour, settings);
+                    if (earlyOver is not null)
+                    {
+                        _db.FolioItems.Add(new FolioItem
+                        {
+                            FolioId = folio.Id,
+                            ItemType = FolioItemType.Surcharge,
+                            SurchargeType = SurchargeType.EarlyCheckIn,
+                            Description = earlyOver.Description,
+                            Quantity = 1,
+                            UnitPrice = earlyOver.Amount,
+                            Amount = earlyOver.Amount,
+                            ChargedAt = actualCheckIn
+                        });
+                    }
+                }
+
                 room.Status = RoomStatus.Occupied;
             }
 
@@ -730,6 +752,27 @@ public class FrontDeskService : IFrontDeskService
         var preview = ComputeCheckOutCharges(stay, now, settings);
 
         var summary = await _billing.ComputeFolioSummaryAsync(stayId) ?? new BillingFolioSummary();
+
+        // BR-01/BR-13: phụ thu trễ giờ chưa được ghi vào folio (chỉ ghi khi CheckOutAsync chạy),
+        // nhưng tạm tính phải hiển thị đúng số tiền thật sự phải thu để lễ tân và khách không bị bất ngờ.
+        // Cộng trực tiếp vào bản xem trước — không thay đổi DB ở bước này.
+        if (preview.Surcharge is not null)
+        {
+            var surchargeAmt = preview.Surcharge.Amount;
+            var extraTax = Math.Round(surchargeAmt * summary.TaxRate, 2);
+            summary.SurchargeAmount += surchargeAmt;
+            summary.SubTotal        += surchargeAmt;
+            summary.TaxAmount       += extraTax;
+            summary.Total           += surchargeAmt + extraTax;
+            summary.BalanceDue      += surchargeAmt + extraTax;
+            summary.SurchargeLines.Add(new SurchargeLineView
+            {
+                Description = preview.Surcharge.Description,
+                Amount      = surchargeAmt,
+                IsPending   = true   // chưa ghi DB — sẽ ghi khi bấm "Tiếp tục thanh toán"
+            });
+        }
+
 
         return new CheckOutViewModel
         {

@@ -118,8 +118,26 @@ public class BillingService : IBillingService
             TaxAmount = total.TaxAmount,
             Total = total.Total,
             DepositApplied = total.DepositApplied,
-            BalanceDue = total.BalanceDue
+            BalanceDue = total.BalanceDue,
+            RoomLines = items
+                .Where(i => i.ItemType == FolioItemType.Room)
+                .Select(i => new RoomLineView
+                {
+                    Description = i.Description,
+                    Amount = i.Amount
+                })
+                .ToList(),
+            SurchargeLines = items
+                .Where(i => i.ItemType == FolioItemType.Surcharge)
+                .Select(i => new SurchargeLineView
+                {
+                    Description = i.Description,
+                    Amount = i.Amount,
+                    IsPending = false
+                })
+                .ToList()
         };
+
     }
 
     /// <summary>Cọc đã bị bỏ — luôn trả 0.</summary>

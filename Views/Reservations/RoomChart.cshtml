@@ -1,26 +1,96 @@
-﻿@model RoomChartViewModel
+@model RoomChartViewModel
 @{
-    ViewData["Title"] = "Tình trạng phòng theo ngày";
+    ViewData["Title"] = "Tình trạng phòng";
+
+    // Nhóm phòng theo tầng để vẽ lưới
+    var byFloor = Model.Rows
+        .GroupBy(r => r.Floor)
+        .OrderBy(g => g.Key)
+        .ToList();
+
+    // Trạng thái hôm nay dựa vào segment đầu tiên (ngày đầu của range = hôm nay)
+    static (string cssClass, string icon, string label) CardStyle(RoomChartCellKind kind, RoomStatus status) => kind switch
+    {
+        RoomChartCellKind.Occupied  => ("room-card-occupied",  "bi-person-fill",      "Đang ở"),
+        RoomChartCellKind.Reserved  => ("room-card-reserved",  "bi-calendar-check",   "Đã đặt"),
+        RoomChartCellKind.Blocked   => ("room-card-blocked",   "bi-slash-circle",     "Không KT"),
+        RoomChartCellKind.Hourly    => ("room-card-hourly",    "bi-clock",            "Theo giờ"),
+        _                           => ("room-card-free",      "bi-door-open",        "Trống"),
+    };
 
     string CellClass(RoomChartCellKind kind) => kind switch
     {
         RoomChartCellKind.Occupied => "chart-occupied",
         RoomChartCellKind.Reserved => "chart-reserved",
-        RoomChartCellKind.Blocked => "chart-blocked",
-        RoomChartCellKind.Hourly => "chart-hourly",
+        RoomChartCellKind.Blocked  => "chart-blocked",
+        RoomChartCellKind.Hourly   => "chart-hourly",
         _ => "chart-free"
     };
+
+    // Tính stats tóm tắt hôm nay — dùng trong cả phần lưới card và thanh stat bar
+    var todaySegs   = Model.Rows.Select(r => r.Segments.FirstOrDefault()).ToList();
+    int cntFree     = todaySegs.Count(s => s?.Kind == RoomChartCellKind.Free || s is null);
+    int cntReserved = todaySegs.Count(s => s?.Kind == RoomChartCellKind.Reserved);
+    int cntOccupied = todaySegs.Count(s => s?.Kind == RoomChartCellKind.Occupied);
+    int cntHourly   = todaySegs.Count(s => s?.Kind == RoomChartCellKind.Hourly);
+    int cntBlocked  = todaySegs.Count(s => s?.Kind == RoomChartCellKind.Blocked);
 }
 
+<style>
+    /* ── Lưới card ─────────────────────────────────────────────── */
+    .floor-section { margin-bottom: 1.75rem; }
+    .floor-label {
+        font-size: .7rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+        color: var(--bs-secondary); margin-bottom: .5rem; padding-left: .25rem;
+    }
+    .room-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+        gap: .5rem;
+    }
+    .room-card {
+        border-radius: .625rem;
+        padding: .65rem .75rem;
+        cursor: pointer;
+        transition: transform .12s, box-shadow .12s;
+        border: 1.5px solid transparent;
+        text-decoration: none;
+        display: flex; flex-direction: column; gap: .15rem;
+    }
+    .room-card:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,.13); }
+
+    .room-card-free     { background: #f0fdf4; border-color: #86efac; color: #166534; }
+    .room-card-reserved { background: #eff6ff; border-color: #93c5fd; color: #1d4ed8; }
+    .room-card-occupied { background: #fef3c7; border-color: #fcd34d; color: #92400e; }
+    .room-card-hourly   { background: #fdf4ff; border-color: #d8b4fe; color: #6b21a8; }
+    .room-card-blocked  { background: #f3f4f6; border-color: #9ca3af; color: #374151; }
+
+    .room-card .room-no    { font-size: 1rem; font-weight: 700; line-height: 1; }
+    .room-card .room-type  { font-size: .68rem; opacity: .7; line-height: 1.2; }
+    .room-card .room-badge {
+        margin-top: .35rem;
+        display: inline-flex; align-items: center; gap: .25rem;
+        font-size: .7rem; font-weight: 600;
+    }
+    .room-card .room-guest { font-size: .72rem; margin-top: .15rem; opacity: .85; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+    /* Stats bar */
+    .stat-bar { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; font-size: .82rem; }
+    .stat-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
+
+    /* ── Gantt (giữ nguyên từ bản gốc) ─────────────────────────── */
+</style>
+
+@* ── Bộ lọc ───────────────────────────────────────────── *@
 <div class="card mb-3">
-    <div class="card-body">
+    <div class="card-body py-2">
         <form method="get" class="row g-2 align-items-end">
             <div class="col-6 col-md-3">
-                <label asp-for="From" class="form-label">Từ ngày</label>
+                <label asp-for="From" class="form-label small mb-1">Từ ngày</label>
                 <input asp-for="From" type="date" name="from" class="form-control" />
             </div>
             <div class="col-6 col-md-2">
-                <label asp-for="Days" class="form-label">Số ngày</label>
+                <label asp-for="Days" class="form-label small mb-1">Số ngày hiển thị</label>
                 <select asp-for="Days" name="days" class="form-select">
                     @foreach (var d in new[] { 7, 14, 30, 60 })
                     {
@@ -28,129 +98,202 @@
                     }
                 </select>
             </div>
-            @* col-md-auto chứ không phải col-md-3: hai nút cộng lại rộng hơn 3 cột, mà nút sau
-               có text-nowrap nên nó giữ nguyên bề rộng và ép chữ nút trước xuống dòng, đẩy cao độ hàng lệch. *@
             <div class="col-12 col-md-auto d-flex flex-wrap gap-2">
-                <button type="submit" class="btn btn-primary text-nowrap"><i class="bi bi-calendar3"></i> Xem sơ đồ</button>
-                @* SCR-C02 không còn ở menu — vào từ đây và từ Đơn đặt phòng.
-                   Sơ đồ cho thấy phòng nào hổng; tra cứu cho biết giá và sức chứa từng loại. *@
+                <button type="submit" class="btn btn-primary text-nowrap"><i class="bi bi-arrow-clockwise"></i> Cập nhật</button>
                 <a class="btn btn-outline-secondary text-nowrap" asp-action="Availability">
                     <i class="bi bi-calendar-check"></i> Tra cứu theo loại phòng
                 </a>
             </div>
         </form>
-    </div>
-</div>
 
-@if (Model.Truncated)
-{
-    <div class="alert alert-info">
-        Khoảng yêu cầu vượt quá @RoomChartViewModel.MaxDays ngày nên đã rút gọn — bảng rộng hơn
-        thì mất tác dụng nhìn nhanh.
     </div>
-}
-
-<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-    <div class="status-legend">
-        <span class="status-legend-item"><span class="status-legend-swatch" style="background: #f3faf6; box-shadow: inset 0 0 0 1px var(--st-available)"></span> Trống</span>
-        <span class="status-legend-item"><span class="status-legend-swatch" style="background: var(--st-reserved)"></span> Đã đặt</span>
-        <span class="status-legend-item"><span class="status-legend-swatch" style="background: var(--st-occupied)"></span> Đang ở</span>
-        <span class="status-legend-item"><span class="status-legend-swatch chart-hourly-swatch"></span> Thuê theo giờ</span>
-        <span class="status-legend-item"><span class="status-legend-swatch" style="background: var(--st-maintenance)"></span> Không khai thác</span>
-    </div>
-    <span class="text-muted small">
-        @Model.Rows.Count phòng × @Model.Days đêm · còn trống <strong>@Model.FreeNights</strong>/@Model.TotalNights đêm
-    </span>
 </div>
 
 @if (Model.Rows.Count == 0)
 {
-    <div class="card"><div class="card-body text-center text-muted py-5">
-        <p class="mb-0">Chưa có phòng nào đang khai thác.</p>
-    </div></div>
+    <div class="card"><div class="card-body text-center text-muted py-5">Chưa có phòng nào đang khai thác.</div></div>
 }
 else
 {
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table room-chart mb-0">
-                <thead>
-                    <tr>
-                        <th class="room-chart-head">Phòng</th>
-                        @foreach (var d in Model.Dates)
-                        {
-                            var weekend = d.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
-                            <th class="room-chart-day @(weekend ? "is-weekend" : "")">
-                                <div class="room-chart-dow">@d.ToString("ddd", new System.Globalization.CultureInfo("vi-VN"))</div>
-                                <div>@d.ToString("dd/MM")</div>
-                            </th>
-                        }
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var row in Model.Rows)
-                {
-                    <tr>
-                        <th class="room-chart-head">
-                            <div class="fw-semibold">@row.RoomNumber</div>
-                            <div class="text-muted small">@row.RoomTypeName</div>
-                        </th>
-                        @foreach (var seg in row.Segments)
-                        {
-                            @if (seg.Kind == RoomChartCellKind.Free)
-                            {
-                                @* Ô trống mở thẳng màn tạo đơn với phòng và ngày điền sẵn — SCR-C03. *@
-                                <td class="room-chart-cell chart-free" colspan="@seg.Span">
-                                    <a class="room-chart-link"
-                                       asp-action="Create"
-                                       asp-route-roomId="@row.RoomId"
-                                       asp-route-checkIn="@seg.Date.ToString("yyyy-MM-dd")"
-                                       asp-route-checkOut="@seg.Date.AddDays(seg.Span).ToString("yyyy-MM-dd")"
-                                       title="Đặt phòng @row.RoomNumber từ @seg.Date.ToString("dd/MM") (@seg.Span đêm trống)">
-                                        <span class="visually-hidden">Đặt phòng</span>
-                                    </a>
-                                </td>
-                            }
-                            else
-                            {
-                                <td class="room-chart-cell @CellClass(seg.Kind)" colspan="@seg.Span" title="@seg.Tooltip">
-                                    @if (seg.Kind == RoomChartCellKind.Hourly)
-                                    {
-                                        @*
-                                            Lưới này mỗi ô là một đêm nên không vẽ được từng khung giờ.
-                                            Ô chỉ nói có mấy lượt; khung giờ nằm ở tooltip, còn bấm vào
-                                            thì mở danh sách đơn của đúng ngày đó.
-                                        *@
-                                        <a class="room-chart-band"
-                                           asp-action="Index"
-                                           asp-route-CustomFilter="true"
-                                           asp-route-CheckInFrom="@seg.Date.ToString("yyyy-MM-dd")"
-                                           asp-route-CheckInTo="@seg.Date.ToString("yyyy-MM-dd")">
-                                            @seg.HourlyCount lượt giờ
-                                        </a>
-                                    }
-                                    else if (seg.ReservationId is int rid)
-                                    {
-                                        <a class="room-chart-band" asp-action="Details" asp-route-id="@rid">
-                                            @seg.GuestName
-                                        </a>
-                                    }
-                                    else
-                                    {
-                                        <span class="room-chart-band">@seg.StatusLabel</span>
-                                    }
-                                </td>
-                            }
-                        }
-                    </tr>
-                }
-                </tbody>
-            </table>
+    @* ── Thanh tóm tắt ─────────────────────────────────────── *@
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <div class="stat-bar">
+            <span class="d-flex align-items-center gap-1"><span class="stat-dot" style="background:#86efac"></span> Trống <strong>@cntFree</strong></span>
+            <span class="d-flex align-items-center gap-1"><span class="stat-dot" style="background:#93c5fd"></span> Đã đặt <strong>@cntReserved</strong></span>
+            <span class="d-flex align-items-center gap-1"><span class="stat-dot" style="background:#fcd34d"></span> Đang ở <strong>@cntOccupied</strong></span>
+            @if (cntHourly > 0)
+            {
+                <span class="d-flex align-items-center gap-1"><span class="stat-dot" style="background:#d8b4fe"></span> Theo giờ <strong>@cntHourly</strong></span>
+            }
+            @if (cntBlocked > 0)
+            {
+                <span class="d-flex align-items-center gap-1"><span class="stat-dot" style="background:#9ca3af"></span> Không KT <strong>@cntBlocked</strong></span>
+            }
         </div>
+        <span class="text-muted small">
+            @Model.Rows.Count phòng · còn trống <strong>@Model.FreeNights</strong>/@Model.TotalNights đêm (@Model.Days ngày tới)
+        </span>
     </div>
 
-    <p class="text-muted small mt-2">
-        Một dải liền là một lượt đặt. Nhấp ô trống để tạo đơn với phòng và ngày điền sẵn;
-        nhấp dải để mở đơn. Ô vừa kết thúc một dải chính là phòng sắp chuyển sang chờ dọn.
-    </p>
+    @* ── Lưới card theo tầng ──────────────────────────────── *@
+    @foreach (var floor in byFloor)
+    {
+        <div class="floor-section">
+            <div class="floor-label">Tầng @floor.Key</div>
+            <div class="room-grid">
+                @foreach (var row in floor.OrderBy(r => r.RoomNumber))
+                {
+                    var seg = row.Segments.FirstOrDefault();
+                    var kind = seg?.Kind ?? RoomChartCellKind.Free;
+                    var (css, icon, label) = CardStyle(kind, row.CurrentStatus);
+
+                    @* Card trống → link tạo đơn; card khác → link xem đơn *@
+                    @if (kind == RoomChartCellKind.Free)
+                    {
+                        <a class="room-card @css"
+                           asp-controller="Reservations" asp-action="Create"
+                           asp-route-roomId="@row.RoomId"
+                           asp-route-checkIn="@Model.From.ToString("yyyy-MM-dd")"
+                           title="Tạo đơn phòng @row.RoomNumber">
+                            <div class="room-no">@row.RoomNumber</div>
+                            <div class="room-type">@row.RoomTypeName</div>
+                            <div class="room-badge"><i class="bi @icon"></i> @label</div>
+                        </a>
+                    }
+                    else if (kind == RoomChartCellKind.Occupied && seg?.ReservationId is int occupiedId)
+                    {
+                        <a class="room-card @css"
+                           asp-controller="Reservations" asp-action="Details"
+                           asp-route-id="@occupiedId"
+                           title="@seg?.Tooltip">
+                            <div class="room-no">@row.RoomNumber</div>
+                            <div class="room-type">@row.RoomTypeName</div>
+                            <div class="room-badge"><i class="bi @icon"></i> @label</div>
+                            @if (seg?.GuestName is { Length: > 0 } guestName)
+                            {
+                                <div class="room-guest">@guestName</div>
+                            }
+                        </a>
+                    }
+                    else if (kind == RoomChartCellKind.Reserved && seg?.ReservationId is int reservedId)
+                    {
+                        <a class="room-card @css"
+                           asp-controller="Reservations" asp-action="Details"
+                           asp-route-id="@reservedId"
+                           title="@seg?.Tooltip">
+                            <div class="room-no">@row.RoomNumber</div>
+                            <div class="room-type">@row.RoomTypeName</div>
+                            <div class="room-badge"><i class="bi @icon"></i> @label</div>
+                            @if (seg?.GuestName is { Length: > 0 } g)
+                            {
+                                <div class="room-guest">@g</div>
+                            }
+                        </a>
+                    }
+                    else
+                    {
+                        <div class="room-card @css" title="@seg?.Tooltip">
+                            <div class="room-no">@row.RoomNumber</div>
+                            <div class="room-type">@row.RoomTypeName</div>
+                            <div class="room-badge"><i class="bi @icon"></i> @label</div>
+                            @if (seg?.HourlyCount > 0)
+                            {
+                                <div class="room-guest">@seg.HourlyCount lượt</div>
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+
+    @* ── Bảng Gantt (thu gọn được) ────────────────────────── *@
+    <div class="mt-2">
+        <button class="btn btn-sm btn-outline-secondary mb-2" type="button"
+                data-bs-toggle="collapse" data-bs-target="#ganttPanel">
+            <i class="bi bi-calendar3"></i> Xem sơ đồ Gantt @Model.Days ngày
+        </button>
+        <div class="collapse" id="ganttPanel">
+            @if (Model.Truncated)
+            {
+                <div class="alert alert-info alert-sm mb-2">
+                    Khoảng yêu cầu vượt @RoomChartViewModel.MaxDays ngày nên đã rút gọn.
+                </div>
+            }
+            <div class="card">
+                <div class="table-responsive">
+                    <table class="table room-chart mb-0">
+                        <thead>
+                            <tr>
+                                <th class="room-chart-head">Phòng</th>
+                                @foreach (var d in Model.Dates)
+                                {
+                                    var weekend = d.DayOfWeek is DayOfWeek.Saturday or DayOfWeek.Sunday;
+                                    <th class="room-chart-day @(weekend ? "is-weekend" : "")">
+                                        <div class="room-chart-dow">@d.ToString("ddd", new System.Globalization.CultureInfo("vi-VN"))</div>
+                                        <div>@d.ToString("dd/MM")</div>
+                                    </th>
+                                }
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var row in Model.Rows)
+                            {
+                                <tr>
+                                    <th class="room-chart-head">
+                                        <div class="fw-semibold">@row.RoomNumber</div>
+                                        <div class="text-muted small">@row.RoomTypeName</div>
+                                    </th>
+                                    @foreach (var seg in row.Segments)
+                                    {
+                                        @if (seg.Kind == RoomChartCellKind.Free)
+                                        {
+                                            <td class="room-chart-cell chart-free" colspan="@seg.Span">
+                                                <a class="room-chart-link"
+                                                   asp-action="Create"
+                                                   asp-route-roomId="@row.RoomId"
+                                                   asp-route-checkIn="@seg.Date.ToString("yyyy-MM-dd")"
+                                                   asp-route-checkOut="@seg.Date.AddDays(seg.Span).ToString("yyyy-MM-dd")"
+                                                   title="Đặt phòng @row.RoomNumber từ @seg.Date.ToString("dd/MM") (@seg.Span đêm trống)">
+                                                    <span class="visually-hidden">Đặt phòng</span>
+                                                </a>
+                                            </td>
+                                        }
+                                        else
+                                        {
+                                            <td class="room-chart-cell @CellClass(seg.Kind)" colspan="@seg.Span" title="@seg.Tooltip">
+                                                @if (seg.Kind == RoomChartCellKind.Hourly)
+                                                {
+                                                    <a class="room-chart-band"
+                                                       asp-action="Index"
+                                                       asp-route-CustomFilter="true"
+                                                       asp-route-CheckInFrom="@seg.Date.ToString("yyyy-MM-dd")"
+                                                       asp-route-CheckInTo="@seg.Date.ToString("yyyy-MM-dd")">
+                                                        @seg.HourlyCount lượt giờ
+                                                    </a>
+                                                }
+                                                else if (seg.ReservationId is int rid)
+                                                {
+                                                    <a class="room-chart-band" asp-action="Details" asp-route-id="@rid">
+                                                        @seg.GuestName
+                                                    </a>
+                                                }
+                                                else
+                                                {
+                                                    <span class="room-chart-band">@seg.StatusLabel</span>
+                                                }
+                                            </td>
+                                        }
+                                    }
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <p class="text-muted small mt-2">
+                Nhấp ô trống để tạo đơn; nhấp dải màu để mở chi tiết đơn.
+            </p>
+        </div>
+    </div>
 }

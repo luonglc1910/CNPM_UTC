@@ -22,6 +22,28 @@ public class BillingFolioSummary
     public decimal Total { get; set; }
     public decimal DepositApplied { get; set; }
     public decimal BalanceDue { get; set; }
+
+    /// <summary>Chi tiết từng khoản phụ thu — hiển thị dưới dòng "Phụ thu" trên màn check-out.</summary>
+    public List<SurchargeLineView> SurchargeLines { get; set; } = new();
+
+    /// <summary>Chi tiết từng dòng tiền phòng — hiển thị dưới "Tiền phòng" khi có nhiều dòng.</summary>
+    public List<RoomLineView> RoomLines { get; set; } = new();
+}
+
+/// <summary>Một khoản phụ thu cụ thể (nhận sớm, thêm người, trả trễ, quá gói…).</summary>
+public class SurchargeLineView
+{
+    public string Description { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
+    /// <summary>True nếu khoản này chưa ghi vào DB — chỉ là dự kiến xem trước lúc check-out.</summary>
+    public bool IsPending { get; set; }
+}
+
+/// <summary>Một dòng tiền phòng cụ thể trong folio — hiển thị breakdown dưới "Tiền phòng".</summary>
+public class RoomLineView
+{
+    public string Description { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
 }
 
 public class FolioLineView
