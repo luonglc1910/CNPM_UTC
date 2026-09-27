@@ -1,22 +1,19 @@
 import type { Metadata } from "next";
-import { Inter, Playfair_Display } from "next/font/google";
+import Link from "next/link";
+import { Noto_Sans } from "next/font/google";
+import { Hotel, User, Menu } from "lucide-react";
 import "./globals.css";
 
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const playfair = Playfair_Display({
+const notoSans = Noto_Sans({
   subsets: ["latin", "vietnamese"],
-  variable: "--font-playfair",
+  weight: ["300", "400", "500", "600", "700"],
+  variable: "--font-noto-sans",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Lumina Boutique Hotel | Tinh Hoa Lưu Trú",
-  description: "Trải nghiệm kỳ nghỉ dưỡng sang trọng, ấm áp tại Lumina Boutique Hotel với dịch vụ cá nhân hóa và thiết kế tinh tế.",
+  title: "Lumina Hotel | Đặt phòng khách sạn cao cấp",
+  description: "Trải nghiệm lưu trú hoàn hảo tại Lumina Boutique Hotel.",
 };
 
 export default function RootLayout({
@@ -26,62 +23,111 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="vi" className="scroll-smooth">
-      <body className={`${inter.variable} ${playfair.variable} font-sans bg-stone-50 text-stone-900 antialiased`}>
+      <body className={`${notoSans.variable} font-sans bg-zinc-50 text-zinc-900 antialiased`}>
         {/* Navigation Bar */}
-        <header className="fixed top-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-md border-b border-stone-200/50 shadow-sm transition-all duration-300">
-          <div className="container mx-auto px-6 py-4 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <span className="font-playfair text-2xl font-bold tracking-widest text-amber-900">
-                LUMINA
+        <header className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md shadow-sm border-b border-zinc-200/60 transition-all duration-300">
+          <div className="container mx-auto px-4 md:px-8 h-20 flex items-center justify-between">
+            {/* Logo */}
+            <Link href="/" className="flex items-center gap-2.5 cursor-pointer group hover:opacity-90 transition-opacity">
+              <div className="w-10 h-10 bg-luxury-navy rounded-xl flex items-center justify-center shadow-md">
+                <Hotel size={20} className="text-white" />
+              </div>
+              <span className="text-2xl font-bold text-luxury-navy tracking-tight">
+                lumina<span className="text-brand-primary">.</span>
               </span>
-            </div>
-            <nav className="hidden md:flex items-center gap-8 text-sm font-semibold tracking-widest uppercase">
-              <a href="#" className="text-stone-600 hover:text-amber-700 transition-colors">Trang chủ</a>
-              <a href="#rooms" className="text-stone-600 hover:text-amber-700 transition-colors">Phòng nghỉ</a>
-              <a href="#services" className="text-stone-600 hover:text-amber-700 transition-colors">Dịch vụ</a>
-              <a href="#contact" className="text-stone-600 hover:text-amber-700 transition-colors">Liên hệ</a>
+            </Link>
+
+            {/* Desktop Nav */}
+            <nav className="hidden md:flex items-center gap-8 text-[14.5px] font-medium text-zinc-600">
+              <Link href="/search" className="hover:text-luxury-navy transition-colors">
+                Khám phá
+              </Link>
+              <Link href="/experiences" className="hover:text-luxury-navy transition-colors">
+                Trải nghiệm
+              </Link>
+              <Link href="/offers" className="hover:text-luxury-navy transition-colors">
+                Ưu đãi
+              </Link>
+              <Link href="/contact" className="hover:text-luxury-navy transition-colors">
+                Liên hệ
+              </Link>
+              
+              <div className="flex items-center gap-3 ml-4 pl-8 border-l border-zinc-200">
+                <Link href="/login" className="flex items-center gap-1.5 text-luxury-navy font-bold px-5 py-2.5 rounded-full hover:bg-zinc-100 transition-colors">
+                  <User size={16} />
+                  Tra cứu lịch trình
+                </Link>
+                <Link href="/register" className="bg-luxury-navy text-white font-bold px-6 py-2.5 rounded-full shadow-luxury hover:bg-black transition-colors hover:-translate-y-0.5">
+                  Đặt phòng
+                </Link>
+              </div>
             </nav>
-            <button className="bg-amber-700 hover:bg-amber-800 text-white px-6 py-2.5 text-sm font-semibold tracking-widest uppercase transition-all shadow-md shadow-amber-700/20 hover:shadow-lg hover:shadow-amber-700/40">
-              Đặt phòng
+
+            {/* Mobile Nav Toggle */}
+            <button className="md:hidden p-2 text-zinc-900">
+              <Menu size={24} />
             </button>
           </div>
         </header>
 
-        <main className="min-h-screen pt-[73px]">
+        <main className="min-h-screen pt-20">
           {children}
         </main>
 
         {/* Footer */}
-        <footer className="bg-stone-900 text-stone-400 py-16">
-          <div className="container mx-auto px-6 grid grid-cols-1 md:grid-cols-4 gap-12">
-            <div className="md:col-span-2">
-              <h3 className="font-playfair text-2xl text-white mb-6 tracking-wider">LUMINA BOUTIQUE</h3>
-              <p className="text-sm leading-relaxed max-w-sm">
-                Nơi trú ẩn sang trọng ngập tràn ánh sáng, mang lại trải nghiệm tinh tế và dịch vụ cá nhân hóa cho mỗi kỳ nghỉ của bạn tại trung tâm thành phố.
-              </p>
+        <footer className="bg-white border-t border-zinc-200 py-16 mt-auto">
+          <div className="container mx-auto px-4 md:px-8">
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-12">
+              <div className="md:col-span-1">
+                <Link href="/" className="flex items-center gap-2 mb-6 cursor-pointer">
+                  <div className="w-8 h-8 bg-luxury-navy rounded-lg flex items-center justify-center">
+                    <Hotel size={16} className="text-white" />
+                  </div>
+                  <span className="text-xl font-bold text-luxury-navy tracking-tight">
+                    lumina.
+                  </span>
+                </Link>
+                <p className="text-[14px] text-zinc-500 leading-relaxed mb-6">
+                  Định hình lại trải nghiệm lưu trú của bạn bằng sự tận tâm, sang trọng và tiện nghi bậc nhất.
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="font-bold text-zinc-900 mb-5 uppercase tracking-wider text-[13px]">Về Lumina</h3>
+                <ul className="text-[14px] text-zinc-600 space-y-3">
+                  <li><a href="#" className="hover:text-luxury-navy transition-colors">Câu chuyện thương hiệu</a></li>
+                  <li><a href="#" className="hover:text-luxury-navy transition-colors">Tuyển dụng</a></li>
+                  <li><a href="#" className="hover:text-luxury-navy transition-colors">Giải thưởng</a></li>
+                  <li><a href="#" className="hover:text-luxury-navy transition-colors">Tin tức</a></li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-bold text-zinc-900 mb-5 uppercase tracking-wider text-[13px]">Hỗ trợ</h3>
+                <ul className="text-[14px] text-zinc-600 space-y-3">
+                  <li><a href="#" className="hover:text-luxury-navy transition-colors">Trung tâm trợ giúp</a></li>
+                  <li><a href="#" className="hover:text-luxury-navy transition-colors">Hướng dẫn đặt phòng</a></li>
+                  <li><a href="#" className="hover:text-luxury-navy transition-colors">Liên hệ lễ tân</a></li>
+                </ul>
+              </div>
+              
+              <div>
+                <h3 className="font-bold text-zinc-900 mb-5 uppercase tracking-wider text-[13px]">Chính sách</h3>
+                <ul className="text-[14px] text-zinc-600 space-y-3">
+                  <li><a href="#" className="hover:text-luxury-navy transition-colors">Điều khoản & Điều kiện</a></li>
+                  <li><a href="#" className="hover:text-luxury-navy transition-colors">Chính sách Quyền riêng tư</a></li>
+                  <li><a href="#" className="hover:text-luxury-navy transition-colors">Quy định hoàn hủy</a></li>
+                </ul>
+              </div>
             </div>
-            <div>
-              <h3 className="text-sm font-bold tracking-widest text-white mb-6 uppercase">Liên hệ</h3>
-              <ul className="text-sm space-y-3">
-                <li>123 Đường Tôn Đức Thắng, Q.1, TP.HCM</li>
-                <li>(+84) 123 456 789</li>
-                <li>hello@luminahotel.com</li>
-              </ul>
-            </div>
-            <div>
-              <h3 className="text-sm font-bold tracking-widest text-white mb-6 uppercase">Khám phá</h3>
-              <ul className="text-sm space-y-3">
-                <li><a href="#" className="hover:text-amber-500 transition-colors">Về chúng tôi</a></li>
-                <li><a href="#" className="hover:text-amber-500 transition-colors">Điều khoản & Chính sách</a></li>
-                <li><a href="#" className="hover:text-amber-500 transition-colors">Hỗ trợ khách hàng</a></li>
-              </ul>
-            </div>
-          </div>
-          <div className="container mx-auto px-6 mt-12 pt-8 border-t border-stone-800 text-sm text-center flex flex-col md:flex-row justify-between items-center">
-            <span>&copy; {new Date().getFullYear()} Lumina Boutique Hotel. Bản quyền đã được bảo hộ.</span>
-            <div className="flex gap-4 mt-4 md:mt-0">
-              <a href="#" className="hover:text-white transition-colors">Facebook</a>
-              <a href="#" className="hover:text-white transition-colors">Instagram</a>
+            
+            <div className="mt-16 pt-8 border-t border-zinc-100 flex flex-col md:flex-row items-center justify-between gap-4 text-[13px] text-zinc-500 font-medium">
+              <div>&copy; {new Date().getFullYear()} Lumina Boutique Hotel. The Art of Hospitality.</div>
+              <div className="flex items-center gap-6">
+                <a href="#" className="hover:text-zinc-900 transition-colors">Facebook</a>
+                <a href="#" className="hover:text-zinc-900 transition-colors">Instagram</a>
+                <a href="#" className="hover:text-zinc-900 transition-colors">LinkedIn</a>
+              </div>
             </div>
           </div>
         </footer>

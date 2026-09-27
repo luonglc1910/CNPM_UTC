@@ -11,6 +11,15 @@ using System.Text.Unicode;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// CORS cho Web Client (Next.js) — chỉ mở dev port, production sẽ cấu hình domain thật
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("BookingClient", policy =>
+        policy.WithOrigins("http://localhost:3000", "http://localhost:3001")
+              .AllowAnyHeader()
+              .AllowAnyMethod());
+});
+
 builder.Services.AddControllersWithViews(options =>
 {
     // Gán người dùng hiện tại cho DbContext (CreatedBy/UpdatedBy), chạy trước mọi filter khác.
@@ -130,6 +139,8 @@ app.UseStaticFiles(new StaticFileOptions
 });
 
 app.UseRouting();
+
+app.UseCors("BookingClient");
 
 app.UseAuthentication();
 app.UseAuthorization();

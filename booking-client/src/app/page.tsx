@@ -1,184 +1,122 @@
-import Image from "next/image";
+"use client";
+import React from "react";
+import { useRouter } from "next/navigation";
+import SearchBar from "@/features/hotel-booking/components/SearchBar";
 
 export default function Home() {
+  const router = useRouter();
+
   return (
     <div className="flex flex-col w-full">
       {/* Hero Section */}
-      <section className="relative w-full h-[80vh] min-h-[600px] flex items-center justify-center">
-        {/* Background Image */}
-        <div className="absolute inset-0 w-full h-full">
+      <section className="relative w-full bg-[#f7f9fa]">
+        {/* Background Image Container */}
+        <div className="relative w-full h-80 md:h-105">
           <img
-            src="https://images.unsplash.com/photo-1542314831-c6a4d1424869?auto=format&fit=crop&q=80"
-            alt="Lumina Boutique Hotel"
+            src="/banner.jpg"
+            alt="Lumina Hero"
             className="w-full h-full object-cover"
           />
-          {/* Overlay gradient */}
-          <div className="absolute inset-0 bg-stone-900/40 bg-gradient-to-t from-stone-900/80 via-transparent to-stone-900/30"></div>
-        </div>
+          {/* Dark gradient overlay for text readability */}
+          <div className="absolute inset-0 bg-linear-to-t from-black/85 via-black/30 to-transparent"></div>
 
-        {/* Hero Content */}
-        <div className="relative z-10 text-center px-6 mt-16 max-w-4xl mx-auto">
-          <p className="text-amber-400 font-semibold tracking-[0.3em] uppercase text-sm mb-6">
-            Chào mừng đến với Lumina
-          </p>
-          <h1 className="font-playfair text-5xl md:text-7xl text-white font-bold mb-6 drop-shadow-lg">
-            Nơi Khơi Nguồn Cảm Hứng
-          </h1>
-          <p className="text-stone-100 text-lg md:text-xl font-light mb-12 max-w-2xl mx-auto drop-shadow-md">
-            Trải nghiệm không gian nghỉ dưỡng tinh tế, dịch vụ hoàn hảo và những khoảnh khắc đáng nhớ tại trung tâm thành phố.
-          </p>
-        </div>
-
-        {/* Booking Bar (Floating) */}
-        <div className="absolute -bottom-16 left-0 right-0 z-20 px-6">
-          <div className="max-w-5xl mx-auto bg-white shadow-2xl rounded-sm p-4 md:p-8 flex flex-col md:flex-row gap-4 items-end border border-stone-100">
-            <div className="w-full md:flex-1">
-              <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">
-                Ngày nhận phòng
-              </label>
-              <input
-                type="date"
-                className="w-full p-3 border-b-2 border-stone-200 focus:border-amber-700 outline-none transition-colors text-stone-800 bg-transparent"
-              />
-            </div>
-            <div className="w-full md:flex-1">
-              <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">
-                Ngày trả phòng
-              </label>
-              <input
-                type="date"
-                className="w-full p-3 border-b-2 border-stone-200 focus:border-amber-700 outline-none transition-colors text-stone-800 bg-transparent"
-              />
-            </div>
-            <div className="w-full md:w-48">
-              <label className="block text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">
-                Số khách
-              </label>
-              <select className="w-full p-3 border-b-2 border-stone-200 focus:border-amber-700 outline-none transition-colors text-stone-800 bg-transparent appearance-none cursor-pointer">
-                <option>1 Người lớn</option>
-                <option>2 Người lớn</option>
-                <option>2 Người lớn, 1 Trẻ em</option>
-                <option>Gia đình</option>
-              </select>
-            </div>
-            <button className="w-full md:w-auto bg-amber-700 hover:bg-amber-800 text-white px-8 py-4 font-semibold tracking-widest uppercase transition-colors shadow-lg mt-4 md:mt-0 whitespace-nowrap">
-              Kiểm tra phòng
-            </button>
+          {/* Hero Text */}
+          <div className="absolute bottom-32 left-0 right-0 px-4 md:px-8 max-w-7xl mx-auto">
+            <h1 className="text-3xl md:text-[34px] text-white font-bold mb-2 leading-snug drop-shadow-md">
+              Điểm đến tiếp theo của bạn?<br />Đặt phòng khách sạn giá tốt với Lumina
+            </h1>
+            <p className="text-white/90 text-sm md:text-base font-medium drop-shadow">
+              Khám phá nhiều lựa chọn từ khách sạn, biệt thự, resort và hơn thế nữa
+            </p>
           </div>
+        </div>
+
+        {/* SearchBar Floating */}
+        <div className="relative z-10 -mt-16 px-4 md:px-8 max-w-7xl mx-auto">
+          <SearchBar
+            sticky={false}
+            onSearch={(vals) => {
+              const params = new URLSearchParams({
+                location: vals.location,
+                checkIn: vals.checkIn,
+                checkOut: vals.checkOut,
+                adults: String(vals.adults),
+                children: String(vals.children),
+                rooms: String(vals.rooms),
+              });
+              router.push(`/search?${params.toString()}`);
+            }}
+          />
         </div>
       </section>
 
-      {/* Featured Rooms Section */}
-      <section id="rooms" className="py-32 px-6 bg-stone-50 mt-16 md:mt-0">
-        <div className="max-w-6xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="font-playfair text-4xl text-stone-900 mb-4">Hạng Phòng Nổi Bật</h2>
-            <div className="w-24 h-1 bg-amber-700 mx-auto mb-6"></div>
-            <p className="text-stone-500 max-w-2xl mx-auto">
-              Từ những căn phòng Superior ấm cúng đến Suite sang trọng đẳng cấp, mỗi không gian tại Lumina đều được thiết kế tỉ mỉ để mang lại sự thư giãn tuyệt đối.
-            </p>
+      {/* Benefits Section */}
+      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-12 w-full">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="flex items-center gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-[#f2f9ff] rounded-xl flex items-center justify-center text-[#0194f3]">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M19 4H18V2H16V4H8V2H6V4H5C3.89 4 3.01 4.9 3.01 6L3 20C3 21.1 3.89 22 5 22H19C20.1 22 21 21.1 21 20V6C21 4.9 20.1 4 19 4ZM19 20H5V10H19V20ZM19 8H5V6H19V8Z" fill="currentColor" /></svg>
+            </div>
+            <div>
+              <h4 className="font-bold text-[#03121a] text-[15px]">Hủy miễn phí</h4>
+              <p className="text-[13px] text-[#687176] mt-1">Hủy hoặc nhận hoàn tiền bất cứ khi nào bạn cần.</p>
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {/* Room 1 */}
-            <div className="group bg-white rounded-sm overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100">
-              <div className="relative h-64 overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80"
-                  alt="Superior Room"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-              </div>
-              <div className="p-8 text-center">
-                <h3 className="font-playfair text-2xl text-stone-900 mb-2">Phòng Superior</h3>
-                <p className="text-stone-500 text-sm mb-6 line-clamp-2">
-                  Lựa chọn hoàn hảo cho khách công tác hoặc cặp đôi, với cửa sổ lớn đón ánh sáng tự nhiên.
-                </p>
-                <p className="text-amber-700 font-bold text-lg mb-6">Từ 1,200,000đ <span className="text-stone-400 text-sm font-normal">/ đêm</span></p>
-                <button className="w-full border border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white py-3 text-sm uppercase tracking-widest font-semibold transition-colors">
-                  Xem chi tiết
-                </button>
-              </div>
+          <div className="flex items-center gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-[#f2f9ff] rounded-xl flex items-center justify-center text-[#0194f3]">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M21 4H3C1.89 4 1.01 4.89 1.01 6L1 18C1 19.11 1.89 20 3 20H21C22.11 20 23 19.11 23 18V6C23 4.89 22.11 4 21 4ZM21 18H3V12H21V18ZM21 8H3V6H21V8Z" fill="currentColor" /></svg>
             </div>
-
-            {/* Room 2 */}
-            <div className="group bg-white rounded-sm overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100">
-              <div className="relative h-64 overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80"
-                  alt="Deluxe City View"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-              </div>
-              <div className="p-8 text-center">
-                <h3 className="font-playfair text-2xl text-stone-900 mb-2">Deluxe City View</h3>
-                <p className="text-stone-500 text-sm mb-6 line-clamp-2">
-                  Tầm nhìn toàn cảnh thành phố nhộn nhịp, không gian rộng rãi trang bị bồn tắm hiện đại.
-                </p>
-                <p className="text-amber-700 font-bold text-lg mb-6">Từ 1,800,000đ <span className="text-stone-400 text-sm font-normal">/ đêm</span></p>
-                <button className="w-full border border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white py-3 text-sm uppercase tracking-widest font-semibold transition-colors">
-                  Xem chi tiết
-                </button>
-              </div>
+            <div>
+              <h4 className="font-bold text-[#03121a] text-[15px]">Nhiều phương thức thanh toán</h4>
+              <p className="text-[13px] text-[#687176] mt-1">Lựa chọn thanh toán đáng tin cậy dành cho bạn.</p>
             </div>
+          </div>
 
-            {/* Room 3 */}
-            <div className="group bg-white rounded-sm overflow-hidden shadow-sm hover:shadow-xl transition-all duration-300 border border-stone-100">
-              <div className="relative h-64 overflow-hidden">
-                <img
-                  src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&q=80"
-                  alt="Lumina Suite"
-                  className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
-                />
-              </div>
-              <div className="p-8 text-center">
-                <h3 className="font-playfair text-2xl text-stone-900 mb-2">Lumina Suite</h3>
-                <p className="text-stone-500 text-sm mb-6 line-clamp-2">
-                  Hạng phòng cao cấp nhất với phòng khách riêng biệt, minibar miễn phí và ban công ngắm cảnh.
-                </p>
-                <p className="text-amber-700 font-bold text-lg mb-6">Từ 3,500,000đ <span className="text-stone-400 text-sm font-normal">/ đêm</span></p>
-                <button className="w-full border border-amber-700 text-amber-700 hover:bg-amber-700 hover:text-white py-3 text-sm uppercase tracking-widest font-semibold transition-colors">
-                  Xem chi tiết
-                </button>
-              </div>
+          <div className="flex items-center gap-4 bg-white p-5 rounded-2xl border border-gray-200 shadow-sm hover:shadow-md transition-shadow">
+            <div className="w-12 h-12 bg-[#f2f9ff] rounded-xl flex items-center justify-center text-[#0194f3]">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M11.99 2C6.47 2 2 6.48 2 12S6.47 22 11.99 22C17.52 22 22 17.52 22 12S17.52 2 11.99 2ZM12 20C7.58 20 4 16.42 4 12S7.58 4 12 4 20 7.58 20 12 16.42 20 12 20ZM12.5 7H11V13L16.25 16.15L17 14.92L12.5 12.25V7Z" fill="currentColor" /></svg>
+            </div>
+            <div>
+              <h4 className="font-bold text-[#03121a] text-[15px]">Trung tâm hỗ trợ 24/7</h4>
+              <p className="text-[13px] text-[#687176] mt-1">Bạn có thể liên hệ chúng tôi bất cứ lúc nào.</p>
             </div>
           </div>
         </div>
       </section>
 
-      {/* Services Section */}
-      <section id="services" className="py-24 px-6 bg-white border-t border-stone-100">
-        <div className="max-w-6xl mx-auto flex flex-col md:flex-row items-center gap-16">
-          <div className="flex-1 space-y-8">
-            <h2 className="font-playfair text-4xl text-stone-900 leading-tight">
-              Khám Phá Dịch Vụ <br /> Đẳng Cấp Tại Lumina
-            </h2>
-            <p className="text-stone-600 leading-relaxed">
-              Chúng tôi không chỉ cung cấp một nơi để ngủ, mà là một trải nghiệm sống. Từ nhà hàng Fine Dining với thực đơn Á-Âu đến Spa trị liệu sức khỏe toàn diện, mọi thứ đều sẵn sàng để chiều lòng bạn.
-            </p>
-            <ul className="space-y-4">
-              <li className="flex items-center gap-4 text-stone-800 font-medium">
-                <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">✓</div>
-                Nhà hàng & Bar Rooftop
-              </li>
-              <li className="flex items-center gap-4 text-stone-800 font-medium">
-                <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">✓</div>
-                Spa & Massage Trị liệu
-              </li>
-              <li className="flex items-center gap-4 text-stone-800 font-medium">
-                <div className="w-10 h-10 rounded-full bg-amber-100 text-amber-700 flex items-center justify-center">✓</div>
-                Hồ bơi vô cực ngắm cảnh
-              </li>
-            </ul>
-          </div>
-          <div className="flex-1 relative">
-            <img
-              src="https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&q=80"
-              alt="Spa Service"
-              className="rounded-sm shadow-2xl w-full h-auto object-cover"
-            />
-            <div className="absolute -bottom-8 -left-8 w-48 h-48 bg-amber-700/10 rounded-full blur-3xl -z-10"></div>
-          </div>
+      {/* Recommended Rooms */}
+      <section className="max-w-7xl mx-auto px-4 md:px-8 mt-16 mb-24 w-full">
+        <h2 className="text-2xl font-bold text-[#03121a] mb-6">Đặt phòng khách sạn giá tốt</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+          {[
+            { name: "Lumina Superior Room", price: "1.200.000", rating: "8.5", reviews: "124", image: "https://images.unsplash.com/photo-1618773928121-c32242e63f39?auto=format&fit=crop&q=80&w=600" },
+            { name: "Deluxe City View", price: "1.800.000", rating: "9.2", reviews: "356", image: "https://images.unsplash.com/photo-1590490360182-c33d57733427?auto=format&fit=crop&q=80&w=600" },
+            { name: "Lumina Suite Premium", price: "3.500.000", rating: "9.8", reviews: "89", image: "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?auto=format&fit=crop&q=80&w=600" },
+            { name: "Family Connecting Room", price: "2.400.000", rating: "8.9", reviews: "210", image: "https://images.unsplash.com/photo-1566665797739-1674de7a421a?auto=format&fit=crop&q=80&w=600" }
+          ].map((room, idx) => (
+            <div key={idx} onClick={() => router.push('/search')} className="bg-white rounded-2xl overflow-hidden border border-gray-200 shadow-sm hover:shadow-lg transition-all cursor-pointer group flex flex-col h-full">
+              <div className="relative h-40 overflow-hidden">
+                <img src={room.image} alt={room.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" />
+              </div>
+              <div className="p-4 flex flex-col grow">
+                <h3 className="font-bold text-[#03121a] text-[16px] mb-2 line-clamp-2 leading-snug">{room.name}</h3>
+                <div className="flex items-center gap-1 mb-4">
+                  <div className="flex items-center text-[#0194f3] font-bold text-[14px]">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" xmlns="http://www.w3.org/2000/svg" className="mr-1">
+                      <path d="M12 17.27L18.18 21L16.54 13.97L22 9.24L14.81 8.63L12 2L9.19 8.63L2 9.24L7.46 13.97L5.82 21L12 17.27Z" />
+                    </svg>
+                    {room.rating}
+                  </div>
+                  <span className="text-[#687176] text-[13px]">({room.reviews} đánh giá)</span>
+                </div>
+                <div className="mt-auto pt-2 flex flex-col items-end border-t border-gray-100">
+                  <span className="text-[12px] text-[#687176]">Giá mỗi đêm từ</span>
+                  <span className="text-[#ff5e1f] font-bold text-[18px]">VND {room.price}</span>
+                </div>
+              </div>
+            </div>
+          ))}
         </div>
       </section>
     </div>
