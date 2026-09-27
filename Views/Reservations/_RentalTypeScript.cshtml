@@ -1,0 +1,119 @@
+@model ReservationFormViewModel
+@*
+    Đổi nhãn và ẩn hiện ô thời gian theo hình thức thuê (BR-13) — SCR-C04/C06.
+
+    Cả ba hình thức chỉ nhập ngày, nhưng ý nghĩa khác nhau nên nhãn và câu giải thích phải đổi
+    theo: theo ngày cần cả ngày đến lẫn ngày đi, theo giờ ẩn hết (đồng hồ chạy từ lúc
+    check-in đến lúc trả phòng), qua đêm chỉ cần biết là đêm ngày nào.
+
+    Dựng ba cặp ô rồi ẩn hiện thì trình duyệt vẫn gửi cả ba, nên ở đây chỉ có một cặp
+    CheckInDate/CheckOutDate dùng chung.
+*@
+<script>
+    (function () {
+        const DAILY = 1, HOURLY = 2, OVERNIGHT = 3;
+        const overnightStart = @Model.OvernightStartHour;
+        const overnightEnd = @Model.OvernightEndHour;
+
+        const checkIn = document.getElementById('CheckInDate');
+        const checkOut = document.getElementById('CheckOutDate');
+        const checkInCol = document.getElementById('checkInCol');
+        const checkOutCol = document.getElementById('checkOutCol');
+        const checkInLabel = document.getElementById('checkInLabel');
+        const checkOutLabel = document.getElementById('checkOutLabel');
+        const hint = document.getElementById('rentalHint');
+        const radios = document.querySelectorAll('.js-rental');
+        const hourlyHidden = document.getElementById('CheckInDateHourlyHidden');
+
+        if (!checkIn || !checkOut) { return; }
+
+        const pad = n => String(n).padStart(2, '0');
+
+        function todayIso() {
+            const d = new Date();
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        }
+
+        function datePart(value) {
+            return (value || '').slice(0, 10);
+        }
+
+        function addDays(isoDate, days) {
+            const d = new Date(isoDate + 'T00:00:00');
+            d.setDate(d.getDate() + days);
+            return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+        }
+
+        function formatNight(isoDate) {
+            if (!isoDate) { return ''; }
+            const parts = isoDate.split('-');
+            const next = addDays(isoDate, 1).split('-');
+            return pad(overnightStart) + ':00 ngày ' + parts[2] + '/' + parts[1]
+                + ' → ' + pad(overnightEnd) + ':00 ngày ' + next[2] + '/' + next[1];
+        }
+
+        function apply(type) {
+
+            if (type === HOURLY) {
+                // Thuê theo giờ: ẩn toàn bộ ô nhập ngày/giờ. Đồng hồ chạy từ lúc check-in thật
+                // đến lúc trả phòng — nhân viên không cần và không nên nhập giờ trên đây.
+                // Backend chỉ cần ngày để kiểm lịch, nên gửi ngầm ngày hôm nay qua hidden input.
+                checkInCol.classList.add('d-none');
+                checkOutCol.classList.add('d-none');
+
+                // Chuyển name sang hidden để form submit đúng giá trị, bỏ name khỏi ô visible
+                // để tránh submit trùng hai CheckInDate.
+                const dayVal = datePart(checkIn.value) || todayIso();
+                checkIn.removeAttribute('name');
+                hourlyHidden.name = 'CheckInDate';
+                hourlyHidden.value = dayVal;
+
+                hint.innerHTML = '<i class="bi bi-info-circle me-1"></i>'
+                    + 'Giờ bắt đầu = lúc check-in • Giờ kết thúc = lúc trả phòng. Tiền tính sau khi check-out.';
+                return;
+            }
+
+            // Không phải Hourly — phục hồi name cho ô nhìn thấy và xóa hidden.
+            checkIn.setAttribute('name', 'CheckInDate');
+            hourlyHidden.removeAttribute('name');
+            hourlyHidden.value = '';
+            checkInCol.classList.remove('d-none');
+
+            if (type === OVERNIGHT) {
+                const nightValue = datePart(checkIn.value);
+                checkIn.type = 'date';
+                checkIn.value = nightValue;
+                checkOutCol.classList.add('d-none');
+                checkInLabel.innerHTML = 'Đêm ngày <span class="text-danger">*</span>';
+                hint.textContent = 'Gói qua đêm: ' + (formatNight(nightValue) || 'chọn đêm để xem khung giờ') + '.';
+                return;
+            }
+
+            // Daily
+            const fromValue = datePart(checkIn.value);
+            const toValue = datePart(checkOut.value);
+            checkIn.type = 'date';
+            checkOut.type = 'date';
+            checkIn.value = fromValue;
+            checkOut.value = toValue;
+            checkOutCol.classList.remove('d-none');
+            checkInLabel.innerHTML = 'Ngày đến <span class="text-danger">*</span>';
+            checkOutLabel.innerHTML = 'Ngày đi <span class="text-danger">*</span>';
+            hint.textContent = 'Ra sớm hơn ngày đã đặt thì vẫn tính đủ số đêm.';
+        }
+
+        function current() {
+            const picked = document.querySelector('.js-rental:checked');
+            return picked ? parseInt(picked.value, 10) : DAILY;
+        }
+
+        radios.forEach(r => r.addEventListener('change', () => apply(current())));
+
+        // Đổi đêm thì câu mô tả khung giờ phải đổi theo, nếu không nó mô tả đêm cũ.
+        checkIn.addEventListener('change', () => {
+            if (current() === OVERNIGHT) { apply(OVERNIGHT); }
+        });
+
+        apply(current());
+    })();
+</script>

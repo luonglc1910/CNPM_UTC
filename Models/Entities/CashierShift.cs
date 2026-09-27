@@ -14,6 +14,9 @@ public class CashierShift : BaseEntity
     public DateTime OpenedAt { get; set; }
     public DateTime? ClosedAt { get; set; }
 
+    /// <summary>Ca theo khung giờ: Ca1 08-16, Ca2 16-00, Ca3 00-08 — tự tính khi mở ca.</summary>
+    public ShiftSlot Slot { get; set; }
+
     public ShiftStatus Status { get; set; } = ShiftStatus.Open;
 
     /// <summary>Quỹ tiền mặt đầu ca.</summary>

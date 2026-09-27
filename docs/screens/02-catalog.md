@@ -46,7 +46,10 @@ Số phòng thuộc loại · Trạng thái (Đang dùng / Ngừng) · Thao tác
 | Tên loại phòng | ✔ | ≤ 100 ký tự |
 | Sức chứa chuẩn | ✔ | Số nguyên 1–10 |
 | Sức chứa tối đa | ✔ | ≥ sức chứa chuẩn, ≤ 10 |
-| Giá / đêm | ✔ | > 0 |
+| Giá / đêm | ✔ | > 0 — dùng cho thuê **theo ngày** |
+| Giá qua đêm | ✔ | > 0 — gói phẳng 22:00 → 10:00 (BR-13) |
+| Giá giờ đầu | ✔ | > 0 — giờ đầu tiên khi thuê **theo giờ** (BR-13) |
+| Giá mỗi giờ tiếp theo | ✔ | > 0 — từ giờ thứ hai; cũng là đơn giá phụ thu quá gói qua đêm |
 | Phí thêm người / đêm | | ≥ 0, mặc định 0 |
 | Phí giường phụ / đêm | | ≥ 0 |
 | Tiện nghi | | Danh sách chọn nhiều (điều hòa, tivi, tủ lạnh, ban công...) |
@@ -55,7 +58,15 @@ Số phòng thuộc loại · Trạng thái (Đang dùng / Ngừng) · Thao tác
 ### Quy tắc nghiệp vụ
 - **Sửa giá không ảnh hưởng hồi tố**: các Stay đang mở đã chốt giá lúc check-in (BR-02),
   giá mới chỉ áp cho lượt lưu trú tạo sau đó. Màn hình phải hiện dòng nhắc rõ điều này.
-- Mọi lần sửa giá đều **ghi audit log** giá cũ → giá mới (BR-11).
+- Mọi lần sửa giá đều **ghi audit log** giá cũ → giá mới (BR-11). Ghi cả cụm bốn mức giá,
+  vì sửa giá giờ cũng là sửa giá.
+- Giá mặc định khi cài mới:
+
+| Loại | Giá/đêm | Qua đêm | Giờ đầu | Giờ tiếp |
+|---|---:|---:|---:|---:|
+| STD Standard | 500.000 | 350.000 | 120.000 | 20.000 |
+| DLX Deluxe | 900.000 | 600.000 | 200.000 | 40.000 |
+| VIP VIP Suite | 1.800.000 | 1.200.000 | 300.000 | 50.000 |
 - Giảm sức chứa tối đa xuống dưới số khách đang thực ở của một phòng thuộc loại đó → cảnh báo
   nhưng vẫn cho lưu (không đuổi khách), chỉ ảnh hưởng lần nhận phòng sau.
 
@@ -300,16 +311,23 @@ Mã NV · Họ tên · Vai trò · SĐT · Tên đăng nhập · Trạng thái (
 
 **1. Thông tin khách sạn** — tên, địa chỉ, điện thoại, mã số thuế, logo (in trên hóa đơn).
 
-**2. Giờ chuẩn (BR-01)**
+**2. Giờ chuẩn (BR-01, BR-13)**
 | Tham số | Mặc định |
 |---|---|
 | Giờ nhận phòng chuẩn | 14:00 |
 | Giờ trả phòng chuẩn | 12:00 |
+| Giờ mở gói qua đêm | 22:00 |
+| Giờ kết thúc gói qua đêm (sáng hôm sau) | 10:00 |
+
+Giờ kết thúc gói qua đêm phải **sớm hơn** giờ mở — gói luôn vắt qua nửa đêm. Nhập ngược lại
+thì màn hình chặn và nói rõ lý do.
 
 **3. Thuế & làm tròn (BR-04)** — VAT (%) mặc định 8; đơn vị làm tròn mặc định 1.000 ₫.
 
-**4. Phụ thu (BR-03)** — 7 dòng tham số tương ứng bảng BR-03, mỗi dòng gồm mốc giờ và
-tỷ lệ % giá đêm (riêng "trả sau 18:00" cấu hình là *tính thêm 1 đêm*).
+**4. Phụ thu (BR-03, BR-13)** — 7 dòng tham số tương ứng bảng BR-03, mỗi dòng gồm mốc giờ và
+tỷ lệ % giá đêm (riêng "trả sau 18:00" cấu hình là *tính thêm 1 đêm*). Thêm một dòng
+**"Phút lẻ được bỏ qua khi tính giờ"** (mặc định 20) — dùng chung cho thuê theo giờ và phụ thu
+quá gói qua đêm.
 
 **5. Chính sách cọc & hủy (BR-05)**
 | Tham số | Mặc định |

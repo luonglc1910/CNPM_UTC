@@ -61,7 +61,9 @@ public class SettingsService : ISettingsService
             CheckInOut = new CheckInOutSettings
             {
                 StandardCheckInTime = Text(values, SystemSettingKeys.StandardCheckInTime),
-                StandardCheckOutTime = Text(values, SystemSettingKeys.StandardCheckOutTime)
+                StandardCheckOutTime = Text(values, SystemSettingKeys.StandardCheckOutTime),
+                OvernightStartHour = Int(values, SystemSettingKeys.OvernightStartHour),
+                OvernightEndHour = Int(values, SystemSettingKeys.OvernightEndHour)
             },
             Tax = new TaxSettings
             {
@@ -76,7 +78,8 @@ public class SettingsService : ISettingsService
                 LateCheckOutTier1EndHour = Int(values, SystemSettingKeys.LateCheckOutTier1EndHour),
                 LateCheckOutTier1Percent = Percent(values, SystemSettingKeys.LateCheckOut12To15Rate),
                 LateCheckOutFullNightHour = Int(values, SystemSettingKeys.LateCheckOutFullNightHour),
-                LateCheckOutTier2Percent = Percent(values, SystemSettingKeys.LateCheckOut15To18Rate)
+                LateCheckOutTier2Percent = Percent(values, SystemSettingKeys.LateCheckOut15To18Rate),
+                HourlyGraceMinutes = Int(values, SystemSettingKeys.HourlyGraceMinutes)
             },
             Cancellation = new CancellationSettings
             {
@@ -131,11 +134,24 @@ public class SettingsService : ISettingsService
     }
 
     public async Task<ServiceResult> SaveCheckInOutAsync(CheckInOutSettings form)
-        => await ApplyAsync(SystemSettingDefaults.Groups.CheckInOut, new Dictionary<string, string>
+    {
+        // Gói qua đêm bắt buộc vắt qua nửa đêm — BR-13. Giờ đóng bằng hoặc muộn hơn giờ mở thì
+        // gói dài 26 tiếng hoặc âm, và mọi phép tính phụ thu quá giờ sau đó đều vô nghĩa.
+        if (form.OvernightEndHour >= form.OvernightStartHour)
+        {
+            return ServiceResult.Fail(
+                "Giờ kết thúc gói qua đêm phải sớm hơn giờ mở gói — gói chạy sang ngày hôm sau.",
+                nameof(form.OvernightEndHour));
+        }
+
+        return await ApplyAsync(SystemSettingDefaults.Groups.CheckInOut, new Dictionary<string, string>
         {
             [SystemSettingKeys.StandardCheckInTime] = form.StandardCheckInTime.Trim(),
-            [SystemSettingKeys.StandardCheckOutTime] = form.StandardCheckOutTime.Trim()
+            [SystemSettingKeys.StandardCheckOutTime] = form.StandardCheckOutTime.Trim(),
+            [SystemSettingKeys.OvernightStartHour] = form.OvernightStartHour.ToString(CultureInfo.InvariantCulture),
+            [SystemSettingKeys.OvernightEndHour] = form.OvernightEndHour.ToString(CultureInfo.InvariantCulture)
         });
+    }
 
     public async Task<ServiceResult> SaveTaxAsync(TaxSettings form)
         => await ApplyAsync(SystemSettingDefaults.Groups.Tax, new Dictionary<string, string>
@@ -163,7 +179,8 @@ public class SettingsService : ISettingsService
             [SystemSettingKeys.LateCheckOutTier1EndHour] = form.LateCheckOutTier1EndHour.ToString(CultureInfo.InvariantCulture),
             [SystemSettingKeys.LateCheckOut12To15Rate] = FromPercent(form.LateCheckOutTier1Percent),
             [SystemSettingKeys.LateCheckOutFullNightHour] = form.LateCheckOutFullNightHour.ToString(CultureInfo.InvariantCulture),
-            [SystemSettingKeys.LateCheckOut15To18Rate] = FromPercent(form.LateCheckOutTier2Percent)
+            [SystemSettingKeys.LateCheckOut15To18Rate] = FromPercent(form.LateCheckOutTier2Percent),
+            [SystemSettingKeys.HourlyGraceMinutes] = form.HourlyGraceMinutes.ToString(CultureInfo.InvariantCulture)
         });
     }
 

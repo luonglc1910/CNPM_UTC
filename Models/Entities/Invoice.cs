@@ -38,6 +38,15 @@ public class Invoice : BaseEntity
     /// <summary>Tổng sau VAT, đã làm tròn theo BR-04.</summary>
     public decimal TotalAmount { get; set; }
 
+    /// <summary>Số tiền khách đã trả cho hóa đơn này (chưa gồm cọc đối trừ).</summary>
+    public decimal AmountPaid { get; set; }
+
+    /// <summary>
+    /// Phần còn thiếu ghi công nợ khi khách không trả đủ lúc check-out — REQUIREMENTS mục 6.3, SCR-D08.
+    /// Bằng 0 với hóa đơn thanh toán đủ. Chỉ khác 0 khi Status = Debt.
+    /// </summary>
+    public decimal DebtAmount { get; set; }
+
     public InvoiceStatus Status { get; set; } = InvoiceStatus.Settled;
 
     // Hủy hóa đơn — FR-F06, chỉ Admin

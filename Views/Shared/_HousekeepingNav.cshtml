@@ -1,0 +1,22 @@
+@*
+    Hai màn buồng phòng dùng chung một mục menu — SCR-E01 và SCR-E04.
+*@
+@{
+    var __c = ViewContext.RouteData.Values["controller"] as string;
+    var __a = ViewContext.RouteData.Values["action"] as string;
+}
+
+<ul class="nav nav-pills report-nav mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(string.Equals(__c, "Housekeeping", StringComparison.OrdinalIgnoreCase) && string.Equals(__a, "Index", StringComparison.OrdinalIgnoreCase) ? "active" : "")"
+           asp-controller="Housekeeping" asp-action="Index">
+            <i class="bi bi-stars"></i> Trạng thái dọn phòng
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(string.Equals(__c, "Housekeeping", StringComparison.OrdinalIgnoreCase) && string.Equals(__a, "Requests", StringComparison.OrdinalIgnoreCase) ? "active" : "")"
+           asp-controller="Housekeeping" asp-action="Requests">
+            <i class="bi bi-bell"></i> Yêu cầu phục vụ
+        </a>
+    </li>
+</ul>

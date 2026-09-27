@@ -1,0 +1,76 @@
+﻿@model CancelReservationViewModel
+@{
+    ViewData["Title"] = $"Hủy đơn — {Model.ReservationCode}";
+}
+
+<div class="row">
+    <div class="col-lg-7">
+        <div class="card">
+            <div class="card-header">Hủy đơn <code>@Model.ReservationCode</code> — @Model.GuestName</div>
+            <div class="card-body">
+                <div class="alert alert-secondary">
+                    <div>Ngày đến: <strong>@Model.CheckInDate.ToString("dd/MM/yyyy")</strong> — còn <strong>@Math.Round(Model.HoursBeforeArrival)</strong> giờ trước ngày đến.</div>
+                    <div>Chính sách áp dụng: <strong>@Model.PolicyDescription</strong></div>
+                </div>
+
+                <div class="table-responsive">
+                <table class="table table-sm">
+                    <tbody>
+                        <tr><td>Đã cọc</td><td class="text-end">@Model.DepositPaid.ToString("N0") ₫</td></tr>
+                        <tr><td>Phí hủy</td><td class="text-end text-danger">@Model.CancellationFee.ToString("N0") ₫</td></tr>
+                        <tr class="fw-semibold"><td>Hoàn lại khách</td><td class="text-end">@Model.RefundAmount.ToString("N0") ₫</td></tr>
+                    </tbody>
+                </table>
+                </div>
+
+                @if (Model.DepositPaid > 0 && !Model.HasOpenShift)
+                {
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Đơn đã có cọc — cần mở ca để xử lý phí hủy/hoàn tiền.
+                        <a class="btn btn-sm btn-primary ms-2" asp-controller="Shifts" asp-action="Index">Mở ca làm việc</a>
+                    </div>
+                }
+
+                <form method="post" asp-action="Cancel"
+                      onsubmit="return confirm('Xác nhận hủy đơn @Model.ReservationCode? Thu @Model.CancellationFee.ToString("N0") ₫, hoàn @Model.RefundAmount.ToString("N0") ₫.');">
+                    <input type="hidden" asp-for="ReservationId" />
+                    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+                    <div class="mb-3">
+                        <label asp-for="Reason" class="form-label">Lý do hủy <span class="text-danger">*</span></label>
+                        <input asp-for="Reason" class="form-control" list="cancelReasons" placeholder="Khách đổi lịch / khách hủy / khách sạn không đáp ứng..." />
+                        <datalist id="cancelReasons">
+                            <option value="Khách đổi lịch"></option>
+                            <option value="Khách hủy"></option>
+                            <option value="Khách sạn không đáp ứng được"></option>
+                            <option value="Lý do khác"></option>
+                        </datalist>
+                        <span asp-validation-for="Reason" class="text-danger small"></span>
+                    </div>
+
+                    <div class="mb-3">
+                        <label asp-for="Notes" class="form-label">Ghi chú</label>
+                        <input asp-for="Notes" class="form-control" />
+                    </div>
+
+                    @if (Model.IsAdmin)
+                    {
+                        <div class="form-check mb-3">
+                            <input asp-for="WaiveFee" class="form-check-input" />
+                            <label asp-for="WaiveFee" class="form-check-label">Miễn phí hủy (thu 0%, chỉ Admin) — hoàn toàn bộ cọc</label>
+                        </div>
+                    }
+
+                    <div class="d-flex gap-2">
+                        <button type="submit" class="btn btn-danger"><i class="bi bi-x-circle"></i> Xác nhận hủy</button>
+                        <a class="btn btn-outline-secondary" asp-action="Details" asp-route-id="@Model.ReservationId">Quay lại</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

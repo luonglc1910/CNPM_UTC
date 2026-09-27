@@ -70,3 +70,12 @@ $RECYCLE.BIN/
 
 # ===== File người dùng tải lên lúc chạy (logo khách sạn - SCR-A12) =====
 wwwroot/uploads/
+
+# File tam do cong cu dong lenh sinh ra khi thu nghiem (curl cookie jar, trang da tai ve).
+# Dac biet nguy hiem: cookie jar chua cookie phien dang nhap.
+adm.txt
+cj.txt
+ok.txt
+*.raw
+cookies*.txt
+/*.html

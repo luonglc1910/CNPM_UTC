@@ -14,7 +14,7 @@
 | **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-D01 |
 
-### Bố cục — 4 tab
+### Bố cục — 3 tab
 
 **Tab 1 — Khách đến hôm nay (mặc định)**
 Mã đơn · Khách · SĐT · Loại phòng · Phòng đã giữ · Số khách · Đã cọc · Trạng thái ·
@@ -30,9 +30,13 @@ Dòng có giờ trả đã quá 12:00 mà chưa check-out được **tô vàng**
 Phòng · Khách · Ngày vào · Ngày đi dự kiến · Số khách · Tạm tính folio ·
 nút Ghi dịch vụ · Đổi phòng · Gia hạn.
 
-**Tab 4 — Phòng trống**
-Lưới phòng theo tầng, màu theo trạng thái; nhấp phòng `Available` → mở SCR-D03 (Walk-in)
-với phòng điền sẵn.
+~~**Tab 4 — Phòng trống**~~ — **đã bỏ** (20/09/2026).
+
+Sau khi bỏ SCR-D03, tab này không còn thao tác nào — chỉ là lưới số phòng kèm nhãn trạng thái,
+trùng hoàn toàn với SCR-E01 (bảng buồng phòng) vốn có đủ nút bắt đầu dọn / hoàn tất.
+Nhìn phòng trống theo thời gian thì dùng SCR-C03 (Tình trạng phòng).
+
+Thanh chỉ số đầu trang vẫn đếm đủ Trống / Đang ở / Chờ dọn / Bảo trì như cũ.
 
 ### Thanh trạng thái nhanh (đầu trang)
 `Trống: 12 · Đang ở: 25 · Chờ dọn: 5 · Bảo trì: 2 · Đến: 8 · Đi: 6`
@@ -78,10 +82,16 @@ với phòng điền sẵn.
 | Dòng | Nội dung |
 |---|---|
 | Giờ nhận phòng thực tế | Mặc định thời điểm hiện tại, sửa được |
-| Phụ thu nhận phòng sớm | Tự tính nếu trước 14:00 theo BR-03, hiện rõ mức % |
-| Tiền phòng dự kiến | Giá/đêm đã chốt × số đêm (BR-02) |
-| Phụ thu thêm người | Nếu có |
-| Đã cọc | Trừ ra khi thanh toán, không thu lại ở đây |
+| Phụ thu nhận phòng sớm | Tự tính nếu trước 14:00 theo BR-03, hiện rõ mức % — **chỉ thuê theo ngày** |
+| Tiền phòng dự kiến | Theo hình thức thuê (BR-13): giá/đêm × số đêm · gói qua đêm · hoặc tối thiểu một giờ |
+| Phụ thu thêm người | Nếu có — **chỉ thuê theo ngày** |
+
+Với **thuê theo giờ** (BR-13), ô "Giờ nhận phòng thực tế" đổi nhãn thành **"Giờ bắt đầu tính tiền"**
+kèm cảnh báo vàng: đồng hồ chạy từ mốc này tới lúc trả phòng. Đơn thuê giờ không có giờ hẹn
+trước, nên đây là mốc duy nhất quyết định số tiền — sửa nhầm một tiếng là hóa đơn lệch một giờ.
+Thuê theo giờ cũng không có phụ thu nhận sớm / trả trễ.
+
+Với **gói qua đêm**, ô ghi chú nhắc lại khung giờ trọn gói và việc ở quá thì thu thêm theo giờ.
 
 ### Luồng xử lý khi nhấn "Xác nhận check-in" (một transaction)
 1. Kiểm tra lại: đơn còn `Confirmed`, phòng còn `Available`, đã tích đối chiếu giấy tờ (BR-07).
@@ -102,38 +112,22 @@ với phòng điền sẵn.
 
 ---
 
-## SCR-D03 — Check-in khách vãng lai (Walk-in)
+## SCR-D03 — Check-in khách vãng lai (Walk-in) — **ĐÃ BỎ**
 
-| | |
-|---|---|
-| **URL** | `GET/POST /FrontDesk/WalkIn` |
-| **Quyền** | Admin, Lễ tân |
-| **Yêu cầu** | FR-D03, BR-07, BR-10 |
-
-### Mục đích
-Gộp *tạo khách + chọn phòng + nhận cọc + check-in* vào **một màn hình, một lần lưu** —
-vì khách đang đứng chờ ở quầy.
-
-### Các khối
-1. **Khách**: ô tìm nhanh theo CCCD/SĐT (khách cũ quay lại) hoặc nhập mới
-   (họ tên `*`, loại & số giấy tờ `*`, SĐT `*`, quốc tịch `*`).
-2. **Phòng & thời gian**: chọn phòng từ danh sách `Available` · ngày đi dự kiến `*`
-   (mặc định hôm sau) · số khách `*`. Hiển thị giá/đêm và số đêm tự tính.
-3. **Khách ở cùng**: như bước 3 của SCR-D02.
-4. **Đặt cọc** (tùy chọn): số tiền · phương thức · mã giao dịch nếu chuyển khoản/thẻ.
-
-### Luồng xử lý (một transaction)
-Tạo `Guest` (nếu mới) → tạo `Stay` + `StayGuest` → tạo `Folio` → ghi nhận `Deposit`/`Payment`
-gắn ca hiện tại (nếu có thu cọc) → phòng chuyển `Occupied` → audit log.
-
-**Không tạo `Reservation`** cho khách vãng lai — Stay đứng độc lập.
-
-### Quy tắc
-- Thu cọc yêu cầu **ca đang mở** (BR-10). Nếu chưa mở ca, vẫn cho check-in nhưng phần thu cọc
-  bị vô hiệu hóa kèm nhắc mở ca.
-- Nếu tất cả phòng đều bận → màn hình hiện thông báo và liên kết sang SCR-C02 để tra ngày khác.
+> Bỏ ngày 20/09/2026 theo yêu cầu: khách sạn không nhận khách vãng lai.
+> Toàn bộ code của màn hình này (view, hai action, ba method service, view model) đã gỡ khỏi
+> nguồn; lấy lại được từ lịch sử git nếu cần.
+>
+> **Hệ quả:** mọi lượt lưu trú tạo mới đều phải đi qua check-in của một đơn đặt phòng (SCR-D02).
+> Không còn đường nào tạo `Stay` mà không có `Reservation`. Cột `Stay.ReservationId` và
+> `Deposit.StayId` vẫn cho phép trống để đọc dữ liệu đã sinh ra trước khi bỏ màn hình này.
+>
+> Khách tới quầy rồi mới đặt vẫn phục vụ được: tạo đơn ở SCR-C04 với nguồn
+> `ReservationSource.WalkIn` ("Trực tiếp tại quầy"), rồi check-in như bình thường.
+> Enum đó **không** bị bỏ — nó là nguồn của đơn đặt, không phải màn hình này.
 
 ---
+
 
 ## SCR-D04 — Chi tiết lượt lưu trú
 
@@ -235,8 +229,11 @@ Số đêm thêm · giá/đêm áp dụng cho các đêm thêm · thành tiền 
    chặn và gợi ý danh sách phòng khác còn trống (khách sẽ phải đổi phòng ở SCR-D06).
 2. Giá các đêm thêm: mặc định dùng giá/đêm đã chốt của Stay; Admin sửa được, có ghi log.
 3. Thêm dòng tiền phòng tương ứng vào folio.
-4. Rút ngắn kỳ ở (trả sớm) **không làm ở màn hình này** — cứ check-out sớm ở SCR-D08,
-   hệ thống tự tính theo số đêm thực ở.
+4. Rút ngắn kỳ ở (trả sớm) **không làm ở màn hình này** và cũng **không giảm tiền**: theo BR-13,
+   thuê theo ngày mà ra sớm vẫn tính đủ số đêm đã đặt.
+5. Gia hạn **chỉ áp dụng cho thuê theo ngày**. Thuê theo giờ ở thêm bao lâu thì lúc trả phòng
+   hệ thống tính lại đúng số giờ; gói qua đêm ở quá giờ thì thu phụ thu theo giờ — cả hai đều
+   không hiểu được thao tác "thêm một đêm" nên màn hình chặn với thông báo rõ lý do.
 
 ---
 
@@ -259,22 +256,49 @@ Số đêm thêm · giá/đêm áp dụng cho các đêm thêm · thành tiền 
 
 Chưa đạt đủ điều kiện thì nút **Tiếp tục thanh toán** bị vô hiệu hóa.
 
-**Khối 2 — Chốt thời gian và phụ thu (BR-01, BR-03)**
+**Khối 2 — Chốt thời gian và phụ thu (BR-01, BR-03, BR-13)**
+
+Màn hình hiện huy hiệu hình thức thuê và đổi hẳn nội dung khối này theo hình thức đó.
+
+*Theo ngày*
 ```
 Giờ trả phòng chuẩn: 12:00
 Giờ trả thực tế:     [16:30]   ← mặc định giờ hiện tại, sửa được (có ghi log nếu sửa)
-→ Trả trễ 4 giờ 30 phút, thuộc khung 15:00–18:00
-→ Phụ thu trả phòng trễ: 50% × 1.200.000 = 600.000 ₫
+→ Trả trễ 4 giờ 30 phút
+→ Phụ thu trả phòng trễ theo cấu hình
 ```
-- Trả sau 18:00 → hệ thống **tính thêm nguyên 1 đêm** thay vì phụ thu %.
-- Trả **sớm hơn** ngày dự kiến → tính lại theo **số đêm thực ở**, dòng tiền phòng được điều chỉnh
-  giảm và hiện rõ chênh lệch.
-- Hộp kiểm **Miễn phụ thu trễ giờ** — chỉ Admin, bắt buộc lý do, ghi audit log.
+- Trả **sớm hơn** ngày dự kiến → **vẫn tính đủ số đêm đã đặt** (BR-13), không giảm tiền phòng.
+  Màn hình nói rõ "Trả sớm vẫn tính đủ N đêm".
+- Phụ thu trả trễ chỉ áp khi trả **đúng ngày hoặc sau** ngày dự kiến; trả sớm thì giờ muộn cũng
+  không phải là trễ.
+
+*Theo giờ*
+```
+Nhận lúc 09:00 21/09 · giờ trả quyết định số tiền
+Giờ trả thực tế: [12:10]
+→ Ở 3 giờ 10 phút — lẻ 10 phút không quá 20 phút nên tính 3 giờ
+→ Tiền phòng 120.000 + 2 × 20.000 = 160.000 ₫
+```
+- Mốc bắt đầu là **giờ check-in**, không phải một giờ hẹn trước nào — đơn thuê giờ không nhập giờ.
+- Đây là hình thức duy nhất mà **tiền phòng đổi theo giờ bấm nút**, nên dòng tiền phòng trên
+  folio được **ghi đè** chứ không cộng thêm dòng chênh lệch.
+- Không có phụ thu nhận sớm / trả trễ — hai mốc 14:00 và 12:00 vô nghĩa với thuê giờ.
+
+*Qua đêm*
+```
+Gói qua đêm kết thúc 10:00 23/09
+Giờ trả thực tế: [12:40]
+→ Quá gói 2 giờ 40 phút → tính 3 giờ × 20.000 = 60.000 ₫
+```
+- Tiền gói là một dòng phẳng, không tính lại.
+- Hộp kiểm đổi nhãn thành **Miễn phụ thu quá gói**.
+
+- Hộp kiểm **Miễn phụ thu** — chỉ Admin, ghi audit log.
 
 **Khối 3 — Tổng hợp folio**
 | Dòng | |
 |---|---|
-| Tiền phòng (số đêm thực) | |
+| Tiền phòng (theo hình thức thuê) | |
 | Dịch vụ đã dùng | Liệt kê rút gọn, liên kết sang SCR-F02 |
 | Phụ thu | Nhận sớm / trả trễ / thêm người |
 | Giảm giá | Nếu có |

@@ -23,6 +23,12 @@ sẽ **không lặp lại** những nội dung này.
 └───────────────┴──────────────────────────────────────────────────────┘
 ```
 
+- **Menu trái gọn còn 13 mục** (20/09/2026, trước đó 23). Những màn trả lời cùng một
+  câu hỏi dùng chung một mục menu và chuyển giữa nhau bằng thanh tab ngay trong vùng nội dung:
+  Phòng ↔ Loại phòng · Dịch vụ ↔ Tồn kho · Hồ sơ khách ↔ Khai báo tạm trú · Đơn đặt phòng ↔
+  Quá hạn/No-show · Dọn phòng ↔ Yêu cầu phục vụ · bốn báo cáo dưới một mục "Báo cáo".
+  Không màn nào bị bỏ chức năng; mọi URL cũ vẫn sống (chuyển hướng về tab tương ứng).
+  SCR-C02 (tra cứu phòng trống) rời menu, vào từ SCR-C01 và SCR-C03.
 - **Menu trái tự ẩn mục không có quyền.** Ẩn menu chỉ là lớp tiện dụng, không phải bảo mật —
   quyền vẫn phải chặn ở controller bằng `[Authorize(Roles = "...")]`.
 - **Thanh trên** hiển thị ca làm việc đang mở của người đăng nhập (chỉ với Admin/Lễ tân).
@@ -89,7 +95,7 @@ giá trị cũ → giá trị mới, lý do (nếu có), thời điểm, địa 
 
 ## 8. Quy ước chặn thao tác theo ca làm việc
 
-Mọi màn hình có thu / hoàn tiền (SCR-C07, SCR-F05, SCR-F07, và phần thu cọc của SCR-D03)
+Mọi màn hình có thu / hoàn tiền (SCR-C07, SCR-F05, SCR-F07)
 đều kiểm tra trước: **người dùng phải có một ca đang mở**. Nếu chưa, màn hình hiển thị cảnh báo
 và nút "Mở ca làm việc" thay cho form thu tiền (BR-10).
 
@@ -101,3 +107,41 @@ và nút "Mở ca làm việc" thay cho form thu tiền (BR-10).
 | View | `Views/{Module}/{Action}.cshtml` | `Views/FrontDesk/CheckIn.cshtml` |
 | ViewModel | `{Màn hình}ViewModel` | `CheckInViewModel` |
 | Partial dùng chung | `_TênPartial.cshtml` | `_RoomStatusBadge.cshtml` |
+
+## 10. Ba hình thức thuê phòng (BR-13)
+
+Mỗi đơn đặt phòng chốt **một** hình thức thuê ngay lúc lập và không đổi giữa chừng. Hình thức
+quyết định cả cách nhập thời gian lẫn cách tính tiền phòng.
+
+| | Theo ngày | Theo giờ | Qua đêm |
+|---|---|---|---|
+| Người dùng nhập | ngày đến + ngày đi | **chỉ ngày, không nhập giờ nào** | chỉ đêm ngày nào |
+| Mốc tính tiền | 14:00 → 12:00 | **giờ check-in → giờ trả phòng** | 22:00 → 10:00 hôm sau |
+| Đơn giá | giá/đêm × số đêm | giờ đầu + (n−1) × giờ tiếp | một gói phẳng |
+| Chốt tiền lúc | lập đơn | **trả phòng** | lập đơn |
+| Ra sớm | vẫn tính đủ số đêm đã đặt | trả đúng số giờ đã ở | không áp dụng |
+| Ở quá | phụ thu trả trễ (BR-03) | không có khái niệm quá giờ | phụ thu theo giờ |
+
+Thuê theo giờ **không có mốc giờ nào do người dùng đặt ra**: đồng hồ chạy từ lúc check-in đến
+lúc trả phòng. Đơn chỉ ghi ngày, cộng một mốc kỹ thuật dài một giờ để phần chống trùng lịch
+có hai đầu mà so sánh. Màn check-in gọi ô giờ nhận phòng là **"Giờ bắt đầu tính tiền"** và cảnh
+báo rõ, vì sửa nhầm một tiếng ở đó là hóa đơn lệch một giờ.
+
+### Quy tắc làm tròn giờ
+Phần lẻ **từ 20 phút trở xuống thì bỏ**, **quá 20 phút mới tính thêm một giờ**. Mức 20 phút nằm
+trong cấu hình (`Surcharge.HourlyGraceMinutes`). Ở chưa đầy một giờ vẫn trả tiền giờ đầu.
+
+Khi phần lẻ bị làm tròn lên, màn hình trả phòng **phải hiện câu giải thích** để lễ tân đọc lại
+cho khách, ví dụ: *"Ở 2 giờ 35 phút — lẻ 35 phút quá 20 phút nên tính tròn 3 giờ."* Làm tròn
+xuống thì không hiện gì.
+
+### Hệ quả về thời gian
+Từ BR-13, **mọi mốc thời gian đều mang giờ thật**, không còn 00:00. Nếu để 00:00 thì một lượt
+thuê giờ buổi sáng sẽ bị coi là đụng lịch với đơn theo ngày trả phòng trưa hôm đó.
+
+Một lượt thuê giờ **đang mở** chưa biết bao giờ trả, nên nó chặn phòng **tới khi trả phòng thật**
+chứ không tới mốc tạm ghi trong dữ liệu.
+
+### Hệ quả trên lưới tình trạng phòng (SCR-C03)
+Lưới mỗi ô là một đêm nên không vẽ được từng khung giờ. Ngày có thuê theo giờ hiện ô **kẻ sọc**
+với nhãn "N lượt giờ"; khung giờ từng lượt nằm ở tooltip.

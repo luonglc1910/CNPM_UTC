@@ -62,7 +62,7 @@ public static class DbInitializer
                 UserName = "admin",
                 Role = EmployeeRole.Admin,
                 PasswordHash = PasswordHasher.Hash("123456"),
-                MustChangePassword = true
+                MustChangePassword = false
             },
             new Employee
             {
@@ -72,7 +72,7 @@ public static class DbInitializer
                 UserName = "letan",
                 Role = EmployeeRole.Receptionist,
                 PasswordHash = PasswordHasher.Hash("123456"),
-                MustChangePassword = true
+                MustChangePassword = false
             }
         };
 
@@ -85,8 +85,26 @@ public static class DbInitializer
     {
         if (await db.RoomTypes.AnyAsync())
         {
+            // Backfill giá giờ/qua đêm nếu = 0 — xảy ra khi migration thêm cột sau khi DB đã có data.
+            // ExecuteUpdateAsync chỉ đụng đúng cột cần fix, không xáo trộn data khác.
+            await db.RoomTypes.Where(t => t.Code == "STD" && t.PriceFirstHour == 0)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.PriceFirstHour,  120_000m)
+                    .SetProperty(t => t.PriceExtraHour,   20_000m)
+                    .SetProperty(t => t.PriceOvernight,  350_000m));
+            await db.RoomTypes.Where(t => t.Code == "DLX" && t.PriceFirstHour == 0)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.PriceFirstHour,  200_000m)
+                    .SetProperty(t => t.PriceExtraHour,   40_000m)
+                    .SetProperty(t => t.PriceOvernight,  600_000m));
+            await db.RoomTypes.Where(t => t.Code == "VIP" && t.PriceFirstHour == 0)
+                .ExecuteUpdateAsync(s => s
+                    .SetProperty(t => t.PriceFirstHour,  300_000m)
+                    .SetProperty(t => t.PriceExtraHour,   50_000m)
+                    .SetProperty(t => t.PriceOvernight, 1_200_000m));
             return;
         }
+
 
         var standard = new RoomType
         {
@@ -97,6 +115,9 @@ public static class DbInitializer
             BasePricePerNight = 500_000m,
             ExtraGuestFeePerNight = 150_000m,
             ExtraBedFeePerNight = 200_000m,
+            PriceFirstHour = 120_000m,
+            PriceExtraHour = 20_000m,
+            PriceOvernight = 350_000m,
             Amenities = "Điều hòa, TV, Nóng lạnh, Wifi",
             Description = "Phòng tiêu chuẩn 2 khách"
         };
@@ -110,6 +131,9 @@ public static class DbInitializer
             BasePricePerNight = 900_000m,
             ExtraGuestFeePerNight = 200_000m,
             ExtraBedFeePerNight = 250_000m,
+            PriceFirstHour = 200_000m,
+            PriceExtraHour = 40_000m,
+            PriceOvernight = 600_000m,
             Amenities = "Điều hòa, TV, Nóng lạnh, Wifi, Minibar, Bồn tắm",
             Description = "Phòng rộng, có minibar"
         };
@@ -123,6 +147,9 @@ public static class DbInitializer
             BasePricePerNight = 1_800_000m,
             ExtraGuestFeePerNight = 300_000m,
             ExtraBedFeePerNight = 350_000m,
+            PriceFirstHour = 300_000m,
+            PriceExtraHour = 50_000m,
+            PriceOvernight = 1_200_000m,
             Amenities = "Điều hòa, Smart TV, Wifi, Minibar, Bồn tắm, Phòng khách riêng, Ban công",
             Description = "Hạng phòng cao cấp nhất"
         };

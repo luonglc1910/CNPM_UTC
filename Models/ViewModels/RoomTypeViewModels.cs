@@ -12,6 +12,9 @@ public class RoomTypeListItemViewModel
     public int MaxCapacity { get; set; }
     public decimal BasePricePerNight { get; set; }
     public decimal ExtraGuestFeePerNight { get; set; }
+    public decimal PriceFirstHour { get; set; }
+    public decimal PriceExtraHour { get; set; }
+    public decimal PriceOvernight { get; set; }
 
     /// <summary>Số phòng đang hoạt động thuộc loại này.</summary>
     public int ActiveRoomCount { get; set; }
@@ -72,6 +75,18 @@ public class RoomTypeFormViewModel
     [Display(Name = "Phí giường phụ / đêm (₫)")]
     [Range(0, 1_000_000_000, ErrorMessage = "Phí giường phụ không được âm.")]
     public decimal ExtraBedFeePerNight { get; set; }
+
+    [Display(Name = "Giá giờ đầu (₫)")]
+    [Range(1, 1_000_000_000, ErrorMessage = "Giá giờ đầu phải lớn hơn 0.")]
+    public decimal PriceFirstHour { get; set; }
+
+    [Display(Name = "Giá mỗi giờ tiếp theo (₫)")]
+    [Range(1, 1_000_000_000, ErrorMessage = "Giá giờ tiếp theo phải lớn hơn 0.")]
+    public decimal PriceExtraHour { get; set; }
+
+    [Display(Name = "Giá qua đêm (₫)")]
+    [Range(1, 1_000_000_000, ErrorMessage = "Giá qua đêm phải lớn hơn 0.")]
+    public decimal PriceOvernight { get; set; }
 
     [Display(Name = "Tiện nghi")]
     public List<string> SelectedAmenities { get; set; } = new();

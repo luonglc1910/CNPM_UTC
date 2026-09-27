@@ -96,6 +96,125 @@ public static class EnumDisplay
         _ => "text-bg-light"
     };
 
+    public static string ToDisplayName(this ReservationStatus status) => status switch
+    {
+        ReservationStatus.Draft => "Nháp",
+        ReservationStatus.Confirmed => "Đã xác nhận",
+        ReservationStatus.CheckedIn => "Đã nhận phòng",
+        ReservationStatus.CheckedOut => "Đã trả phòng",
+        ReservationStatus.Cancelled => "Đã hủy",
+        ReservationStatus.NoShow => "Không đến",
+        _ => status.ToString()
+    };
+
+    public static string ToBadgeClass(this ReservationStatus status) => status switch
+    {
+        ReservationStatus.Draft => "text-bg-secondary",
+        ReservationStatus.Confirmed => "text-bg-primary",
+        ReservationStatus.CheckedIn => "text-bg-warning",
+        ReservationStatus.CheckedOut => "text-bg-success",
+        ReservationStatus.Cancelled => "text-bg-secondary",
+        ReservationStatus.NoShow => "text-bg-danger",
+        _ => "text-bg-light"
+    };
+
+    public static string ToDisplayName(this ReservationSource source) => source switch
+    {
+        ReservationSource.Phone => "Điện thoại",
+        ReservationSource.WalkIn => "Trực tiếp tại quầy",
+        ReservationSource.Referral => "Giới thiệu",
+        ReservationSource.Other => "Khác",
+        _ => source.ToString()
+    };
+
+    public static string ToDisplayName(this FolioItemType type) => type switch
+    {
+        FolioItemType.Room => "Phòng",
+        FolioItemType.Service => "Dịch vụ",
+        FolioItemType.Surcharge => "Phụ thu",
+        FolioItemType.Discount => "Giảm giá",
+        _ => type.ToString()
+    };
+
+    public static string ToDisplayName(this RequestType type) => type switch
+    {
+        RequestType.Maintenance => "Báo hỏng / Bảo trì",
+        RequestType.GuestService => "Yêu cầu phục vụ",
+        _ => type.ToString()
+    };
+
+    public static string ToDisplayName(this RequestPriority priority) => priority switch
+    {
+        RequestPriority.Low => "Thấp",
+        RequestPriority.Medium => "Trung bình",
+        RequestPriority.Urgent => "Khẩn cấp",
+        _ => priority.ToString()
+    };
+
+    public static string ToBadgeClass(this RequestPriority priority) => priority switch
+    {
+        RequestPriority.Low => "text-bg-secondary",
+        RequestPriority.Medium => "text-bg-info",
+        RequestPriority.Urgent => "text-bg-danger",
+        _ => "text-bg-light"
+    };
+
+    public static string ToDisplayName(this RequestStatus status) => status switch
+    {
+        RequestStatus.New => "Mới",
+        RequestStatus.InProgress => "Đang xử lý",
+        RequestStatus.Completed => "Hoàn thành",
+        RequestStatus.Cancelled => "Đã hủy",
+        _ => status.ToString()
+    };
+
+    public static string ToBadgeClass(this RequestStatus status) => status switch
+    {
+        RequestStatus.New => "text-bg-primary",
+        RequestStatus.InProgress => "text-bg-warning",
+        RequestStatus.Completed => "text-bg-success",
+        RequestStatus.Cancelled => "text-bg-secondary",
+        _ => "text-bg-light"
+    };
+
+    public static string ToDisplayName(this ShiftStatus status) => status switch
+    {
+        ShiftStatus.Open => "Đang mở",
+        ShiftStatus.Closed => "Đã đóng",
+        _ => status.ToString()
+    };
+
+    public static string ToBadgeClass(this ShiftStatus status) => status switch
+    {
+        ShiftStatus.Open => "text-bg-success",
+        ShiftStatus.Closed => "text-bg-secondary",
+        _ => "text-bg-light"
+    };
+
+    public static string ToDisplayName(this PaymentMethod method) => method switch
+    {
+        PaymentMethod.Cash => "Tiền mặt",
+        PaymentMethod.BankTransfer => "Chuyển khoản",
+        PaymentMethod.Card => "Thẻ",
+        _ => method.ToString()
+    };
+
+    public static string ToDisplayName(this InvoiceStatus status) => status switch
+    {
+        InvoiceStatus.Settled => "Đã thanh toán",
+        InvoiceStatus.Void => "Đã hủy",
+        InvoiceStatus.Debt => "Còn nợ",
+        _ => status.ToString()
+    };
+
+    public static string ToBadgeClass(this InvoiceStatus status) => status switch
+    {
+        InvoiceStatus.Settled => "text-bg-success",
+        InvoiceStatus.Void => "text-bg-danger",
+        InvoiceStatus.Debt => "text-bg-warning",
+        _ => "text-bg-light"
+    };
+
     /// <summary>Màu nhãn nhóm dịch vụ trên SCR-A06 — chỉ để đọc bảng cho nhanh.</summary>
     public static string ToBadgeClass(this ServiceCategory category) => category switch
     {
