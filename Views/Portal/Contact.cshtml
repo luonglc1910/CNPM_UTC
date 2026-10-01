@@ -1,0 +1,137 @@
+@{
+    Layout = "_PortalLayout";
+    ViewData["Title"] = "Liên hệ";
+}
+<div class="flex flex-col w-full">
+<!-- BREADCRUMB -->
+<section class="w-full bg-[#f2f4f3] pt-6 pb-2">
+<div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
+<nav aria-label="Breadcrumb" class="flex items-center gap-2">
+<a class="font-label-md text-label-md text-[#5e6b68] hover:text-primary transition-colors flex items-center gap-1" data-path="trang-chu" href="/Portal/Index">
+<span class="material-symbols-outlined text-[16px]">home</span>
+          Trang chủ
+        </a>
+<span class="text-[#c1c8c5] font-label-md text-label-md">/</span>
+<span class="font-label-md text-label-md text-primary font-semibold tracking-wide">Liên hệ</span>
+</nav>
+</div>
+</section>
+
+<!-- PAGE HERO -->
+<section class="w-full bg-[#f2f4f3] py-4">
+<div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
+<div class="bg-primary-container rounded-[10px] p-8 lg:p-12 text-surface-container-lowest shadow-[0_4px_20px_rgba(20,49,44,0.08)] relative overflow-hidden">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
+<!-- Text Column -->
+<div class="lg:col-span-7 flex flex-col items-start gap-4">
+<span class="font-label-sm text-label-sm tracking-[0.25em] uppercase text-secondary-fixed font-semibold">GET IN TOUCH</span>
+<h1 class="font-display-lg text-display-lg text-surface-container-lowest font-semibold tracking-tight">Liên hệ với chúng tôi</h1>
+<p class="font-body-lg text-body-lg text-[#d0ddd9] max-w-xl leading-relaxed">
+              Chúng tôi luôn sẵn sàng lắng nghe và hỗ trợ quý khách. Vui lòng để lại lời nhắn hoặc liên hệ trực tiếp với bộ phận chăm sóc khách hàng của Aura để được phục vụ tốt nhất.
+            </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+
+<!-- CONTACT SECTION -->
+<section class="w-full bg-[#f2f4f3] pt-8 pb-16">
+<div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+<!-- Contact Info -->
+<div class="lg:col-span-5 flex flex-col gap-6">
+    <div class="bg-surface-container-lowest rounded-[10px] p-8 shadow-[0_1px_3px_rgba(20,49,44,0.04)]">
+        <h2 class="font-headline-md text-headline-md text-primary font-semibold mb-6">Thông tin liên hệ</h2>
+        
+        <div class="flex flex-col gap-6">
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center flex-shrink-0 text-secondary">
+                    <span class="material-symbols-outlined">location_on</span>
+                </div>
+                <div>
+                    <h3 class="font-label-lg text-label-lg font-semibold text-primary">Aura Hà Nội</h3>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">22 Phố Nhà Thờ, Quận Hoàn Kiếm, Hà Nội</p>
+                </div>
+            </div>
+            
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center flex-shrink-0 text-secondary">
+                    <span class="material-symbols-outlined">call</span>
+                </div>
+                <div>
+                    <h3 class="font-label-lg text-label-lg font-semibold text-primary">Điện thoại</h3>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">(+84) 24 3988 7766</p>
+                </div>
+            </div>
+            
+            <div class="flex items-start gap-4">
+                <div class="w-12 h-12 rounded-full bg-surface-container-low flex items-center justify-center flex-shrink-0 text-secondary">
+                    <span class="material-symbols-outlined">mail</span>
+                </div>
+                <div>
+                    <h3 class="font-label-lg text-label-lg font-semibold text-primary">Email</h3>
+                    <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">concierge@auraboutique.com</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Contact Form -->
+<div class="lg:col-span-7">
+    <div class="bg-surface-container-lowest rounded-[10px] p-8 lg:p-10 shadow-[0_1px_3px_rgba(20,49,44,0.04)]">
+        <h2 class="font-headline-md text-headline-md text-primary font-semibold mb-2">Gửi tin nhắn cho Aura</h2>
+        <p class="font-body-md text-body-md text-on-surface-variant mb-8">Vui lòng điền thông tin bên dưới, chuyên viên của chúng tôi sẽ phản hồi trong thời gian sớm nhất.</p>
+        
+        <form class="flex flex-col gap-5">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-label-sm text-label-sm font-semibold text-primary">Họ và tên *</label>
+                    <input type="text" class="px-4 py-3 rounded-lg border border-outline-variant bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Nhập họ tên của bạn">
+                </div>
+                <div class="flex flex-col gap-1.5">
+                    <label class="font-label-sm text-label-sm font-semibold text-primary">Số điện thoại *</label>
+                    <input type="tel" class="px-4 py-3 rounded-lg border border-outline-variant bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Nhập số điện thoại">
+                </div>
+            </div>
+            
+            <div class="flex flex-col gap-1.5">
+                <label class="font-label-sm text-label-sm font-semibold text-primary">Email</label>
+                <input type="email" class="px-4 py-3 rounded-lg border border-outline-variant bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Nhập địa chỉ email">
+            </div>
+            
+            <div class="flex flex-col gap-1.5">
+                <label class="font-label-sm text-label-sm font-semibold text-primary">Tiêu đề *</label>
+                <input type="text" class="px-4 py-3 rounded-lg border border-outline-variant bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all" placeholder="Vấn đề bạn cần hỗ trợ">
+            </div>
+            
+            <div class="flex flex-col gap-1.5">
+                <label class="font-label-sm text-label-sm font-semibold text-primary">Nội dung *</label>
+                <textarea rows="4" class="px-4 py-3 rounded-lg border border-outline-variant bg-surface focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent transition-all resize-none" placeholder="Chi tiết lời nhắn của bạn..."></textarea>
+            </div>
+            
+            <button type="button" class="mt-2 w-full md:w-auto self-start px-8 py-3 bg-primary-container hover:bg-[#1c4039] text-surface-container-lowest font-label-lg text-label-lg font-medium rounded-lg shadow-sm transition-colors flex items-center gap-2">
+                <span>Gửi tin nhắn</span>
+                <span class="material-symbols-outlined text-[18px]">send</span>
+            </button>
+        </form>
+    </div>
+</div>
+</div>
+</div>
+</section>
+</div>
+
+<script>
+  (function () {
+    const navLinks = document.querySelectorAll('header nav a[data-path="lien-he"]');
+    navLinks.forEach((link) => {
+      link.classList.remove('text-on-surface-variant');
+      link.classList.add('text-primary', 'font-semibold', 'relative');
+      const underline = document.createElement('div');
+      underline.className = 'absolute bottom-[-4px] left-0 right-0 h-[2px] bg-secondary';
+      link.appendChild(underline);
+    });
+  })();
+</script>

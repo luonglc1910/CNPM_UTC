@@ -92,4 +92,9 @@ public class PortalController : Controller
     {
         return View();
     }
+
+    public IActionResult Contact()
+    {
+        return View();
+    }
 }
