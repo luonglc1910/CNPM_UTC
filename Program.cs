@@ -1,31 +1,114 @@
 using HotelManagement.Web.Data;
+using HotelManagement.Web.Security;
+using HotelManagement.Web.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.FileProviders;
 using Microsoft.Extensions.WebEncoders;
 using System.Text.Encodings.Web;
 using System.Text.Unicode;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddControllersWithViews();
+builder.Services.AddControllersWithViews(options =>
+{
+    // Gán người dùng hiện tại cho DbContext (CreatedBy/UpdatedBy), chạy trước mọi filter khác.
+    options.Filters.Add<CurrentUserFilter>(int.MinValue);
+    // Ép đổi mật khẩu ở lần đăng nhập đầu — FR-A08.
+    options.Filters.Add<MustChangePasswordFilter>();
+});
+
+builder.Services.AddHttpContextAccessor();
+builder.Services.AddScoped<IAuditService, AuditService>();
+// Menu trái hỏi dịch vụ này để biết mục nào được hiện — xem Security/ScreenAccess.cs.
+builder.Services.AddScoped<IScreenAccess, ScreenAccess>();
+
+// Nghiệp vụ danh mục.
+builder.Services.AddScoped<IRoomTypeService, RoomTypeService>();
+builder.Services.AddScoped<IRoomService, RoomService>();
+builder.Services.AddScoped<IServiceCatalogService, ServiceCatalogService>();
+builder.Services.AddScoped<IInventoryService, InventoryService>();
+builder.Services.AddScoped<IEmployeeService, EmployeeService>();
+builder.Services.AddScoped<ISettingsService, SettingsService>();
+
+// Nghiệp vụ khách hàng.
+builder.Services.AddScoped<IGuestService, GuestService>();
+
+// Hạ tầng dùng chung cho phần vận hành (SP0) — đặt phòng, lễ tân, thu ngân, báo cáo đều dựa vào.
+builder.Services.AddScoped<ISettingsReader, SettingsReader>();
+builder.Services.AddScoped<IPricingService, PricingService>();
+builder.Services.AddScoped<IAvailabilityService, AvailabilityService>();
+builder.Services.AddScoped<INumberSequenceService, NumberSequenceService>();
+builder.Services.AddScoped<ITransactionRunner, TransactionRunner>();
+builder.Services.AddScoped<IShiftService, ShiftService>();
+
+// Nghiệp vụ đặt phòng (SP1 — nhóm C).
+builder.Services.AddScoped<IReservationService, ReservationService>();
+
+// Vận hành: lễ tân (D), thu ngân (F), buồng phòng (E), báo cáo (G).
+builder.Services.AddScoped<IBillingService, BillingService>();
+builder.Services.AddScoped<IFrontDeskService, FrontDeskService>();
+builder.Services.AddScoped<IHousekeepingService, HousekeepingService>();
+builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+// Đối chiếu cookie đăng nhập với bản ghi nhân viên ở mỗi request — xem Security/EmployeeCookieEvents.cs.
+builder.Services.AddScoped<EmployeeCookieEvents>();
 
 // Giữ nguyên ký tự tiếng Việt trong HTML thay vì mã hóa thành &#x...;
 builder.Services.Configure<WebEncoderOptions>(options =>
     options.TextEncoderSettings = new TextEncoderSettings(UnicodeRanges.All));
 
 builder.Services.AddDbContext<HotelDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("HotelDb")));
+    options.UseSqlServer(
+        builder.Configuration.GetConnectionString("HotelDb"),
+        // Tự thử lại khi gặp lỗi tạm thời của SQL Server — NFR-03. Transaction nghiệp vụ phải
+        // đi qua ITransactionRunner (bọc execution strategy) mới mở được transaction thủ công.
+        sql => sql.EnableRetryOnFailure()));
 
-// Đăng nhập Admin bằng cookie. Hiện chưa bắt buộc đăng nhập; khi làm xong
-// AccountController.Login thì thêm AuthorizeFilter toàn cục để khóa các trang quản lý.
+// Xác thực bằng cookie — SCR-S01, NFR-02.
 builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
     .AddCookie(options =>
     {
         options.LoginPath = "/Account/Login";
         options.LogoutPath = "/Account/Logout";
+        // SCR-S03: sai quyền thì trả trang 403, không im lặng đá về trang chủ.
+        options.AccessDeniedPath = "/Home/Forbidden";
+        options.ReturnUrlParameter = "returnUrl";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+        options.SlidingExpiration = true;
+        options.Cookie.Name = "HotelAuth";
+        options.Cookie.HttpOnly = true;
+        options.Cookie.SameSite = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.IsEssential = true;
+
+        // Toàn bộ sự kiện nằm trong EmployeeCookieEvents: vừa xử lý chuyển hướng khi hết phiên,
+        // vừa đối chiếu vai trò/trạng thái trong cookie với DB ở mỗi request (SCR-A10, SCR-A11).
+        // Phải dùng EventsType vì lớp đó cần DbContext, tức là phải lấy từ DI theo từng request.
+        options.EventsType = typeof(EmployeeCookieEvents);
     });
 
+// Mặc định mọi endpoint đều phải đăng nhập; trang công khai phải tự đánh [AllowAnonymous].
+// Chọn FallbackPolicy thay vì [Authorize] trên AdminControllerBase vì Home và Account
+// không kế thừa lớp đó — đặt ở đây thì quên cũng không hở.
+builder.Services.AddAuthorization(options =>
+{
+    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+        .RequireAuthenticatedUser()
+        .Build();
+});
+
 var app = builder.Build();
+
+// Áp migration còn thiếu và nạp dữ liệu khởi tạo (NFR-08).
+using (var scope = app.Services.CreateScope())
+{
+    var db = scope.ServiceProvider.GetRequiredService<HotelDbContext>();
+    await db.Database.MigrateAsync();
+    await DbInitializer.SeedAsync(db);
+}
 
 if (!app.Environment.IsDevelopment())
 {
@@ -34,16 +117,30 @@ if (!app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
+
+// File người dùng tải lên lúc chạy (logo khách sạn — SCR-A12) không nằm trong manifest của
+// MapStaticAssets vốn chỉ biết những file có sẵn lúc build, nên phải phục vụ bằng middleware
+// tĩnh riêng. Chỉ mở đúng thư mục uploads, không mở cả wwwroot lần nữa.
+var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
+Directory.CreateDirectory(uploadsPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(uploadsPath),
+    RequestPath = "/uploads"
+});
+
 app.UseRouting();
 
 app.UseAuthentication();
 app.UseAuthorization();
 
-app.MapStaticAssets();
+// AllowAnonymous bắt buộc: MapStaticAssets đăng ký endpoint thật, nếu không loại trừ thì
+// FallbackPolicy sẽ chặn cả CSS/JS và trang đăng nhập hiện ra không có định dạng.
+app.MapStaticAssets().AllowAnonymous();
 
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Home}/{action=Index}/{id?}")
+    pattern: "{controller=Portal}/{action=Index}/{id?}")
     .WithStaticAssets();
 
 app.Run();

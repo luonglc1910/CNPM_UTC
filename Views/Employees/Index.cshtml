@@ -1,9 +1,156 @@
+@model EmployeeIndexViewModel
 @{
     ViewData["Title"] = "Nhân viên";
 }
 
-<div class="d-flex justify-content-end mb-3">
-    <a class="btn btn-primary" asp-action="Create">Thêm nhân viên</a>
+<div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
+    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
+        <div>
+            <label asp-for="Keyword" class="form-label mb-1 small text-muted"></label>
+            <input asp-for="Keyword" class="form-control form-control-sm" style="min-width: 220px"
+                   placeholder="VD: NV002 hoặc letan" />
+        </div>
+
+        <div>
+            <label asp-for="Role" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="Role" class="form-select form-select-sm">
+                <option value="">— Tất cả —</option>
+                @foreach (var role in Enum.GetValues<EmployeeRole>())
+                {
+                    <option value="@((int)role)" selected="@(Model.Role == role)">@role.ToDisplayName()</option>
+                }
+            </select>
+        </div>
+
+        <div>
+            <label asp-for="Status" class="form-label mb-1 small text-muted"></label>
+            <select asp-for="Status" class="form-select form-select-sm">
+                <option value="">— Tất cả —</option>
+                @foreach (var status in Enum.GetValues<EmployeeStatus>())
+                {
+                    <option value="@((int)status)" selected="@(Model.Status == status)">@status.ToDisplayName()</option>
+                }
+            </select>
+        </div>
+
+        <div class="form-check mb-2">
+            <input asp-for="IncludeResigned" class="form-check-input" />
+            <label asp-for="IncludeResigned" class="form-check-label small"></label>
+        </div>
+
+        <button type="submit" class="btn btn-outline-secondary btn-sm mb-2">
+            <i class="bi bi-search"></i> Tìm
+        </button>
+        @if (Model.HasFilter)
+        {
+            <a class="btn btn-link btn-sm mb-2" asp-action="Index">Bỏ lọc</a>
+        }
+    </form>
+
+    <a class="btn btn-primary" asp-action="Create">
+        <i class="bi bi-person-plus"></i> Thêm nhân viên
+    </a>
 </div>
 
-<partial name="_Placeholder" model="@("Danh sách nhân viên và chức vụ.")" />
+@if (Model.Results.TotalItems == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        <p class="mb-0">Không tìm thấy nhân viên nào khớp với bộ lọc hiện tại.</p>
+    </div></div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Mã NV</th>
+                        <th>Họ tên</th>
+                        <th>Vai trò</th>
+                        <th>SĐT</th>
+                        <th>Tên đăng nhập</th>
+                        <th class="text-center">Trạng thái</th>
+                        <th>Đăng nhập gần nhất</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Results.Items)
+                {
+                    <tr class="@(item.Status == EmployeeStatus.Resigned ? "opacity-50" : "")">
+                        <td><code>@item.Code</code></td>
+                        <td>
+                            @item.FullName
+                            @if (item.IsSelf)
+                            {
+                                <span class="badge text-bg-info ms-1">Bạn</span>
+                            }
+                        </td>
+                        <td>@item.Role.ToDisplayName()</td>
+                        <td>@item.PhoneNumber</td>
+                        <td>@item.UserName</td>
+                        <td class="text-center">
+                            <span class="badge @item.Status.ToBadgeClass()">@item.Status.ToDisplayName()</span>
+                            @if (item.HasOpenShift)
+                            {
+                                <i class="bi bi-cash-coin text-warning ms-1" title="Còn ca thu ngân đang mở"></i>
+                            }
+                        </td>
+                        <td>
+                            @if (item.LastLoginAt is not null)
+                            {
+                                @item.LastLoginAt.Value.ToString("dd/MM/yyyy HH:mm")
+                            }
+                            else
+                            {
+                                <span class="text-muted">Chưa đăng nhập</span>
+                            }
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@item.Id"
+                               title="Sửa"><i class="bi bi-pencil"></i></a>
+
+                            @* Không có nút Xóa: nhân viên đã phát sinh giao dịch không xóa cứng được,
+                               chỉ chuyển sang "Đã nghỉ" ở form Sửa (SCR-A10). *@
+                            @if (item.CanLock)
+                            {
+                                <form method="post" asp-action="ToggleLock" asp-route-id="@item.Id"
+                                      class="d-inline"
+                                      onsubmit="return confirm('@(item.IsLocked ? "Mở khóa" : "Khóa") tài khoản @item.UserName?');">
+                                    <button type="submit"
+                                            class="btn btn-sm @(item.IsLocked ? "btn-outline-success" : "btn-outline-danger")"
+                                            title="@(item.IsLocked ? "Mở khóa" : "Khóa tài khoản")">
+                                        <i class="bi @(item.IsLocked ? "bi-unlock" : "bi-lock")"></i>
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <button class="btn btn-sm btn-outline-danger" disabled
+                                        title="@(item.IsSelf ? "Không thể tự khóa tài khoản của chính mình" : "Nhân viên đã nghỉ việc")">
+                                    <i class="bi bi-lock"></i>
+                                </button>
+                            }
+
+                            @if (item.Status != EmployeeStatus.Resigned)
+                            {
+                                <form method="post" asp-action="ResetPassword" asp-route-id="@item.Id"
+                                      class="d-inline"
+                                      onsubmit="return confirm('Đặt lại mật khẩu cho @item.UserName? Mật khẩu tạm chỉ hiện một lần.');">
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary"
+                                            title="Đặt lại mật khẩu">
+                                        <i class="bi bi-key"></i>
+                                    </button>
+                                </form>
+                            }
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" />
+}

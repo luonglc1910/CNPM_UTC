@@ -1,0 +1,22 @@
+@*
+    Phòng và loại phòng dùng chung một mục menu — SCR-A03 và SCR-A01.
+*@
+@{
+    var __c = ViewContext.RouteData.Values["controller"] as string;
+    var __a = ViewContext.RouteData.Values["action"] as string;
+}
+
+<ul class="nav nav-pills report-nav mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(string.Equals(__c, "Rooms", StringComparison.OrdinalIgnoreCase) && string.Equals(__a, "Index", StringComparison.OrdinalIgnoreCase) ? "active" : "")"
+           asp-controller="Rooms" asp-action="Index">
+            <i class="bi bi-door-closed"></i> Phòng
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(string.Equals(__c, "RoomTypes", StringComparison.OrdinalIgnoreCase) && string.Equals(__a, "Index", StringComparison.OrdinalIgnoreCase) ? "active" : "")"
+           asp-controller="RoomTypes" asp-action="Index">
+            <i class="bi bi-tags"></i> Loại phòng
+        </a>
+    </li>
+</ul>

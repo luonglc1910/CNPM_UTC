@@ -1,0 +1,178 @@
+@model GuestFormViewModel
+@* Form dùng chung cho Thêm và Sửa hồ sơ khách — SCR-B02. *@
+
+<div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+<input type="hidden" asp-for="Id" />
+
+<div class="row g-3">
+    <div class="col-md-6">
+        <label asp-for="FullName" class="form-label">Họ tên <span class="text-danger">*</span></label>
+        <input asp-for="FullName" class="form-control" placeholder="VD: Nguyễn Văn An" autofocus />
+        <span asp-validation-for="FullName" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="IdType" class="form-label">Loại giấy tờ <span class="text-danger">*</span></label>
+        <select asp-for="IdType" class="form-select" id="guest-id-type">
+            @foreach (var type in Enum.GetValues<GuestIdType>())
+            {
+                <option value="@((int)type)" selected="@(Model.IdType == type)">@type.ToDisplayName()</option>
+            }
+        </select>
+        <span asp-validation-for="IdType" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="IdNumber" class="form-label">Số giấy tờ <span class="text-danger">*</span></label>
+        <input asp-for="IdNumber" class="form-control text-uppercase" id="guest-id-number" />
+        <div class="form-text" id="id-format-hint"></div>
+        <span asp-validation-for="IdNumber" class="text-danger small"></span>
+    </div>
+
+    @* Khối gợi ý trùng hồ sơ, JavaScript đổ nội dung vào sau khi tra cứu. *@
+    <div class="col-12 d-none" id="duplicate-box">
+        <div class="alert mb-0" id="duplicate-alert"></div>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="DateOfBirth" class="form-label"></label>
+        <input asp-for="DateOfBirth" class="form-control" type="date" />
+        <span asp-validation-for="DateOfBirth" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="Gender" class="form-label"></label>
+        <select asp-for="Gender" class="form-select">
+            <option value="">— Không khai báo —</option>
+            @foreach (var gender in Enum.GetValues<Gender>())
+            {
+                <option value="@((int)gender)" selected="@(Model.Gender == gender)">@gender.ToDisplayName()</option>
+            }
+        </select>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="Nationality" class="form-label">Quốc tịch <span class="text-danger">*</span></label>
+        <input asp-for="Nationality" class="form-control" list="nationality-suggestions" />
+        <datalist id="nationality-suggestions">
+            @foreach (var nationality in GuestFormViewModel.NationalitySuggestions)
+            {
+                <option value="@nationality"></option>
+            }
+        </datalist>
+        <span asp-validation-for="Nationality" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-3">
+        <label asp-for="PhoneNumber" class="form-label">Số điện thoại <span class="text-danger">*</span></label>
+        <input asp-for="PhoneNumber" class="form-control" id="guest-phone" placeholder="VD: 0912345678" />
+        <span asp-validation-for="PhoneNumber" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-4">
+        <label asp-for="Email" class="form-label"></label>
+        <input asp-for="Email" class="form-control" placeholder="Không bắt buộc" />
+        <span asp-validation-for="Email" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-8">
+        <label asp-for="Address" class="form-label">
+            Địa chỉ thường trú <span class="text-danger" id="address-required">*</span>
+        </label>
+        <input asp-for="Address" class="form-control" />
+        <div class="form-text">Bắt buộc với khách Việt Nam — cần cho khai báo tạm trú.</div>
+        <span asp-validation-for="Address" class="text-danger small"></span>
+    </div>
+
+    <div class="col-12">
+        <label asp-for="Notes" class="form-label"></label>
+        <textarea asp-for="Notes" class="form-control" rows="2"
+                  placeholder="VD: thích phòng tầng cao, không hút thuốc"></textarea>
+        <span asp-validation-for="Notes" class="text-danger small"></span>
+    </div>
+
+    @if (Model.IsEdit && Model.IsStaying)
+    {
+        <div class="col-12">
+            <div class="alert alert-warning mb-0 small">
+                <i class="bi bi-exclamation-triangle"></i>
+                Khách này <strong>đang lưu trú</strong>. Sửa số giấy tờ sẽ được ghi vào nhật ký thao tác.
+            </div>
+        </div>
+    }
+</div>
+
+<div class="mt-4 d-flex gap-2">
+    <button type="submit" class="btn btn-primary">
+        <i class="bi bi-check-lg"></i> @(Model.IsEdit ? "Cập nhật" : "Thêm khách")
+    </button>
+    <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+</div>
+
+<script>
+    (function () {
+        var typeSelect = document.getElementById('guest-id-type');
+        var idInput = document.getElementById('guest-id-number');
+        var phoneInput = document.getElementById('guest-phone');
+        var hint = document.getElementById('id-format-hint');
+        var box = document.getElementById('duplicate-box');
+        var alertBox = document.getElementById('duplicate-alert');
+        var excludeId = @Model.Id;
+
+        var hints = { '1': '12 chữ số.', '2': '9 hoặc 12 chữ số.', '3': '6–20 ký tự chữ và số.' };
+
+        function updateHint() {
+            hint.textContent = hints[typeSelect.value] || '';
+        }
+
+        function escapeHtml(text) {
+            var div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // Tra trùng ngay khi rời ô, trước khi người dùng gõ nốt cả form rồi mới bị chặn lúc lưu.
+        function check() {
+            var params = new URLSearchParams({
+                idNumber: idInput.value.trim(),
+                phoneNumber: phoneInput.value.trim(),
+                excludeId: excludeId
+            });
+
+            fetch('@Url.Action("CheckDuplicate")?' + params.toString())
+                .then(function (r) { return r.json(); })
+                .then(function (data) {
+                    var html = '';
+                    var severity = 'alert-warning';
+
+                    if (data.idMatch) {
+                        severity = 'alert-danger';
+                        html += '<div><i class="bi bi-x-octagon"></i> Số giấy tờ này đã thuộc hồ sơ <strong>'
+                            + escapeHtml(data.idMatch.fullName) + '</strong> (' + escapeHtml(data.idMatch.maskedIdNumber)
+                            + '). Không thể tạo trùng.'
+                            + ' <a class="alert-link" href="/Guests/Details/' + data.idMatch.id + '">Dùng hồ sơ có sẵn</a></div>';
+                    }
+
+                    if (data.phoneMatches && data.phoneMatches.length > 0) {
+                        var names = data.phoneMatches.map(function (m) {
+                            return '<a class="alert-link" href="/Guests/Details/' + m.id + '">'
+                                + escapeHtml(m.fullName) + '</a>';
+                        }).join(', ');
+                        html += '<div><i class="bi bi-exclamation-triangle"></i> Số điện thoại trùng với: '
+                            + names + '. Vẫn tạo mới được nếu đúng là người khác.</div>';
+                    }
+
+                    alertBox.className = 'alert mb-0 ' + severity;
+                    alertBox.innerHTML = html;
+                    box.classList.toggle('d-none', html === '');
+                })
+                .catch(function () { /* tra trùng hỏng thì thôi, server vẫn chặn lúc lưu */ });
+        }
+
+        typeSelect.addEventListener('change', updateHint);
+        idInput.addEventListener('blur', check);
+        phoneInput.addEventListener('blur', check);
+        updateHint();
+    })();
+</script>

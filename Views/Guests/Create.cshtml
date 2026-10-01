@@ -1,0 +1,16 @@
+@model GuestFormViewModel
+@{
+    ViewData["Title"] = "Thêm khách";
+}
+
+<div class="card">
+    <div class="card-body">
+        <form method="post" asp-action="Create">
+            <partial name="_Form" model="Model" />
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

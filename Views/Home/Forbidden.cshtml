@@ -1,0 +1,29 @@
+@{
+    ViewData["Title"] = "Không có quyền truy cập";
+    var deniedUrl = ViewData["DeniedUrl"] as string;
+}
+
+<div class="card">
+    <div class="card-body text-center py-5">
+        <div class="display-5 text-danger mb-3"><i class="bi bi-shield-exclamation"></i></div>
+        <h2 class="h4">Bạn không có quyền truy cập chức năng này</h2>
+
+        <p class="text-muted mb-1">
+            Tài khoản <strong>@User.GetDisplayName()</strong> đang ở vai trò
+            <strong>@User.GetRoleDisplayName()</strong>.
+        </p>
+
+        @if (!string.IsNullOrEmpty(deniedUrl))
+        {
+            <p class="text-muted small">Đường dẫn bị từ chối: <code>@deniedUrl</code></p>
+        }
+
+        <p class="text-muted small">
+            Nếu bạn cho rằng đây là nhầm lẫn, liên hệ quản lý để được cấp quyền.
+        </p>
+
+        <a class="btn btn-primary mt-2" asp-controller="Home" asp-action="Index">
+            <i class="bi bi-house"></i> Về trang chủ
+        </a>
+    </div>
+</div>

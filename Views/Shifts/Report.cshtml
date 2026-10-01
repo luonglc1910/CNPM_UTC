@@ -1,0 +1,134 @@
+@model ShiftReportViewModel
+@{
+    ViewData["Title"] = $"Báo cáo ca #{Model.Shift.Id}";
+    var t = Model.Totals;
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h5 class="mb-0">Ca #@Model.Shift.Id — @Model.EmployeeName</h5>
+        <span class="text-muted small">
+            Mở @Model.Shift.OpenedAt.ToString("dd/MM/yyyy HH:mm")
+            @if (Model.Shift.ClosedAt is not null)
+            {
+                <text> · Đóng @Model.Shift.ClosedAt.Value.ToString("dd/MM/yyyy HH:mm")</text>
+            }
+            <span class="badge @Model.Shift.Status.ToBadgeClass() ms-1">@Model.Shift.Status.ToDisplayName()</span>
+        </span>
+    </div>
+    <div class="d-flex gap-2">
+        <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+            <i class="bi bi-printer"></i> In báo cáo
+        </button>
+        <a class="btn btn-outline-secondary" asp-action="Index">Quay lại</a>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">Tổng thu theo phương thức</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr><td>Tiền mặt</td><td class="text-end">@t.CashIn.ToString("N0") ₫</td></tr>
+                        <tr><td>Chuyển khoản</td><td class="text-end">@t.BankTransferIn.ToString("N0") ₫</td></tr>
+                        <tr><td>Thẻ</td><td class="text-end">@t.CardIn.ToString("N0") ₫</td></tr>
+                        <tr><td>Tổng hoàn tiền</td><td class="text-end text-danger">@t.RefundTotal.ToString("N0") ₫</td></tr>
+                        <tr class="text-muted small">
+                            <td>Số giao dịch / Số hóa đơn</td>
+                            <td class="text-end">@t.PaymentCount / @t.InvoiceCount</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">Doanh thu theo nguồn</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr><td>Tiền phòng</td><td class="text-end">@t.RoomRevenue.ToString("N0") ₫</td></tr>
+                        <tr><td>Dịch vụ</td><td class="text-end">@t.ServiceRevenue.ToString("N0") ₫</td></tr>
+                        <tr><td>Phụ thu</td><td class="text-end">@t.SurchargeRevenue.ToString("N0") ₫</td></tr>
+                        <tr><td>Phí hủy</td><td class="text-end">@t.CancellationRevenue.ToString("N0") ₫</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card h-100">
+            <div class="card-header">Đối soát tiền mặt</div>
+            <div class="card-body">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr><td>Quỹ đầu ca</td><td class="text-end">@t.OpeningCash.ToString("N0") ₫</td></tr>
+                        <tr><td>Thu tiền mặt</td><td class="text-end">@t.CashIn.ToString("N0") ₫</td></tr>
+                        <tr><td>Hoàn tiền mặt</td><td class="text-end text-danger">@t.CashRefund.ToString("N0") ₫</td></tr>
+                        <tr class="table-light fw-semibold"><td>Phải có</td><td class="text-end">@t.ExpectedCash.ToString("N0") ₫</td></tr>
+                        @if (Model.Shift.CountedCash is not null)
+                        {
+                            <tr><td>Đếm thực tế</td><td class="text-end">@Model.Shift.CountedCash.Value.ToString("N0") ₫</td></tr>
+                            <tr class="fw-semibold @(Model.Shift.CashDifference is not (null or 0) ? "text-danger" : "text-success")">
+                                <td>Chênh lệch</td>
+                                <td class="text-end">@(Model.Shift.CashDifference?.ToString("N0")) ₫</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+                @if (!string.IsNullOrWhiteSpace(Model.Shift.DifferenceReason))
+                {
+                    <div class="small text-muted mt-2">Lý do chênh lệch: @Model.Shift.DifferenceReason</div>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">Hóa đơn trong ca</div>
+    @if (Model.Invoices.Count == 0)
+    {
+        <div class="card-body text-center text-muted py-4">
+            <p class="mb-0">Chưa có hóa đơn nào trong ca này.</p>
+        </div>
+    }
+    else
+    {
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Số hóa đơn</th>
+                        <th>Phòng</th>
+                        <th>Khách</th>
+                        <th class="text-end">Tổng tiền</th>
+                        <th>Trạng thái</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var inv in Model.Invoices)
+                {
+                    <tr>
+                        <td><code>@inv.InvoiceNo</code></td>
+                        <td>@inv.RoomNumber</td>
+                        <td>@inv.GuestName</td>
+                        <td class="text-end">@inv.TotalAmount.ToString("N0") ₫</td>
+                        <td><span class="badge @inv.Status.ToBadgeClass()">@inv.Status.ToDisplayName()</span></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    }
+</div>
+
+<div class="d-flex justify-content-between mt-4 pt-3 border-top text-muted small">
+    <span>Người giao ca: ...........................</span>
+    <span>Người nhận ca: ...........................</span>
+</div>

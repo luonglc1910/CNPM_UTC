@@ -1,0 +1,30 @@
+@model GuestsPageViewModel
+@{
+    ViewData["Title"] = Model.IsResidence ? "Khai báo tạm trú" : "Hồ sơ khách";
+}
+
+@*
+    Hai tab là hai đường dẫn, không phải tab JavaScript: tab tạm trú ghi nhật ký truy cập
+    dữ liệu cá nhân mỗi lần mở, nên chỉ được nạp khi người dùng thật sự chọn nó.
+*@
+<ul class="nav nav-pills report-nav mb-3">
+    <li class="nav-item">
+        <a class="nav-link @(Model.IsResidence ? "" : "active")" asp-action="Index">
+            <i class="bi bi-person-vcard"></i> Danh sách khách
+        </a>
+    </li>
+    <li class="nav-item">
+        <a class="nav-link @(Model.IsResidence ? "active" : "")" asp-action="Index" asp-route-tab="residence">
+            <i class="bi bi-file-earmark-text"></i> Khai báo tạm trú
+        </a>
+    </li>
+</ul>
+
+@if (Model.IsResidence)
+{
+    <partial name="_Residence" model="Model.Residence" />
+}
+else
+{
+    <partial name="_GuestList" model="Model.List" />
+}
