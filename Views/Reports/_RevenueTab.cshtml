@@ -1,78 +1,44 @@
 @model RevenueReportViewModel
-@{
-    ViewData["Title"] = "Báo cáo doanh thu";
-
-    string PeriodLabel(RevenuePeriod p) => p switch
-    {
-        RevenuePeriod.Day => "Ngày",
-        RevenuePeriod.Month => "Tháng",
-        RevenuePeriod.Year => "Năm",
-        _ => p.ToString()
-    };
-}
-
-<div class="card mb-3">
-    <div class="card-body">
-        <form method="get" class="row g-2 align-items-end">
-            <div class="col-sm-3">
-                <label asp-for="From" class="form-label">Từ ngày</label>
-                <input asp-for="From" type="date" class="form-control" />
-            </div>
-            <div class="col-sm-3">
-                <label asp-for="To" class="form-label">Đến ngày</label>
-                <input asp-for="To" type="date" class="form-control" />
-            </div>
-            <div class="col-sm-3">
-                <label asp-for="Period" class="form-label">Gộp theo</label>
-                <select asp-for="Period" class="form-select">
-                    @foreach (var p in Enum.GetValues<RevenuePeriod>())
-                    {
-                        <option value="@((int)p)" selected="@(Model.Period == p)">@PeriodLabel(p)</option>
-                    }
-                </select>
-            </div>
-            <div class="col-sm-3">
-                <button type="submit" class="btn btn-primary"><i class="bi bi-funnel"></i> Xem báo cáo</button>
-            </div>
-        </form>
-    </div>
-</div>
+@*
+    Nội dung tab Doanh thu — SCR-G01. Tách khỏi Index.cshtml để mỗi file giữ một việc:
+    Index lo bộ lọc và khung tab, partial này lo cách trình bày doanh thu.
+    Bộ lọc nằm ở màn chủ nên ở đây không có form.
+*@
 
 <div class="row g-2 mb-3">
     <div class="col-6 col-lg">
-        <div class="card h-100"><div class="card-body py-3">
-            <div class="text-muted small">Tiền phòng</div>
-            <div class="fs-5 fw-semibold">@Model.Total.Room.ToString("N0") ₫</div>
-        </div></div>
+        <div class="stat-card">
+            <div class="stat-label">Tiền phòng</div>
+            <div class="stat-value fs-5">@Model.Total.Room.ToString("N0") ₫</div>
+        </div>
     </div>
     <div class="col-6 col-lg">
-        <div class="card h-100"><div class="card-body py-3">
-            <div class="text-muted small">Dịch vụ</div>
-            <div class="fs-5 fw-semibold">@Model.Total.Service.ToString("N0") ₫</div>
-        </div></div>
+        <div class="stat-card">
+            <div class="stat-label">Dịch vụ</div>
+            <div class="stat-value fs-5">@Model.Total.Service.ToString("N0") ₫</div>
+        </div>
     </div>
     <div class="col-6 col-lg">
-        <div class="card h-100"><div class="card-body py-3">
-            <div class="text-muted small">Phụ thu</div>
-            <div class="fs-5 fw-semibold">@Model.Total.Surcharge.ToString("N0") ₫</div>
-        </div></div>
+        <div class="stat-card">
+            <div class="stat-label">Phụ thu</div>
+            <div class="stat-value fs-5">@Model.Total.Surcharge.ToString("N0") ₫</div>
+        </div>
     </div>
     <div class="col-6 col-lg">
-        <div class="card h-100"><div class="card-body py-3">
-            <div class="text-muted small">Phí hủy</div>
-            <div class="fs-5 fw-semibold">@Model.Total.Cancellation.ToString("N0") ₫</div>
-        </div></div>
+        <div class="stat-card">
+            <div class="stat-label">Phí hủy</div>
+            <div class="stat-value fs-5">@Model.Total.Cancellation.ToString("N0") ₫</div>
+        </div>
     </div>
     <div class="col-6 col-lg">
-        <div class="card h-100 border-primary"><div class="card-body py-3">
-            <div class="text-muted small">Doanh thu thuần</div>
-            <div class="fs-5 fw-semibold text-primary">@Model.Total.Net.ToString("N0") ₫</div>
-        </div></div>
+        <div class="stat-card">
+            <div class="stat-label">Doanh thu thuần</div>
+            <div class="stat-value fs-5">@Model.Total.Net.ToString("N0") ₫</div>
+        </div>
     </div>
 </div>
 
 <p class="text-muted small">
-    Khoảng @Model.From.ToString("dd/MM/yyyy") → @Model.To.ToString("dd/MM/yyyy").
     @Model.InvoiceCount hóa đơn đã chốt · Tổng gồm VAT: <strong>@Model.GrossSettled.ToString("N0") ₫</strong>
     (VAT @Model.Total.Vat.ToString("N0") ₫). Doanh thu thuần = phòng + dịch vụ + phụ thu − giảm giá + phí hủy.
 </p>

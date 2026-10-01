@@ -20,4 +20,11 @@ public class ReservationRoom : BaseEntity
 
     /// <summary>Giá/đêm chốt tại thời điểm đặt — BR-02.</summary>
     public decimal PricePerNight { get; set; }
+
+    // Ảnh giá hai hình thức còn lại, chốt cùng lúc với giá đêm — BR-02, BR-13.
+    // Chốt cả ba dù đơn chỉ dùng một, để đổi hình thức khi sửa đơn không phải tra lại bảng giá
+    // đã có thể thay đổi trong lúc đó.
+    public decimal PriceFirstHour { get; set; }
+    public decimal PriceExtraHour { get; set; }
+    public decimal PriceOvernight { get; set; }
 }

@@ -25,7 +25,6 @@
             <table class="table table-sm mb-0">
                 <tbody>
                     <tr><td>Tổng hóa đơn</td><td class="text-end">@s.Total.ToString("N0") ₫</td></tr>
-                    <tr><td>Đã cọc</td><td class="text-end">-@s.DepositApplied.ToString("N0") ₫</td></tr>
                     <tr class="table-light fw-semibold">
                         <td>@(Model.IsRefund ? "HOÀN LẠI KHÁCH" : "SỐ DƯ PHẢI THU")</td>
                         <td class="text-end">@Math.Abs(s.BalanceDue).ToString("N0") ₫</td>

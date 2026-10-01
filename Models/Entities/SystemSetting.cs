@@ -38,6 +38,12 @@ public static class SystemSettingKeys
     public const string StandardCheckInTime = "CheckInOut.StandardCheckInTime";
     public const string StandardCheckOutTime = "CheckInOut.StandardCheckOutTime";
 
+    /// <summary>Giờ mở gói qua đêm — mặc định 22:00, BR-13.</summary>
+    public const string OvernightStartHour = "CheckInOut.OvernightStartHour";
+
+    /// <summary>Giờ kết thúc gói qua đêm, sáng hôm sau — mặc định 10:00, BR-13.</summary>
+    public const string OvernightEndHour = "CheckInOut.OvernightEndHour";
+
     // Thuế và làm tròn — BR-04
     public const string VatRate = "Tax.VatRate";
     public const string RoundingUnit = "Tax.RoundingUnit";
@@ -56,6 +62,11 @@ public static class SystemSettingKeys
 
     /// <summary>Trả sau mốc này thì tính thêm hẳn một đêm — mặc định 18:00.</summary>
     public const string LateCheckOutFullNightHour = "Surcharge.LateCheckOutFullNightHour";
+
+    /// <summary>
+    /// Số phút lẻ được bỏ qua khi tính giờ — mặc định 20, BR-13. Lẻ quá mức này mới lên một giờ.
+    /// </summary>
+    public const string HourlyGraceMinutes = "Surcharge.HourlyGraceMinutes";
 
     // Cọc và hủy — BR-05
     public const string DepositNights = "Cancellation.DepositNights";

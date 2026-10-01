@@ -11,6 +11,13 @@
             <div class="card">
                 <div class="card-header">Mở ca làm việc</div>
                 <div class="card-body">
+                    @{
+                        var currentSlot = ShiftSlotExtensions.Resolve(DateTime.Now);
+                    }
+                    <div class="alert alert-info d-flex align-items-center gap-2">
+                        <i class="bi bi-clock"></i>
+                        <span>Hiện tại đang trong <strong>@currentSlot.ToDisplayName()</strong> — ca mới sế được phân vào ca này.</span>
+                    </div>
                     <div class="alert alert-warning d-flex align-items-center gap-2">
                         <i class="bi bi-exclamation-triangle-fill"></i>
                         <span>Bạn chưa mở ca làm việc. Mọi giao dịch thu tiền đều bị khóa (BR-10).</span>
@@ -38,6 +45,7 @@
                 <div class="card-header d-flex justify-content-between align-items-center">
                     <span>
                         Ca #@Model.OpenShift.Id
+                        <span class="badge @Model.OpenShift.Slot.ToBadgeClass() ms-1">@Model.OpenShift.Slot.ToDisplayName()</span>
                         <span class="badge @Model.OpenShift.Status.ToBadgeClass() ms-1">@Model.OpenShift.Status.ToDisplayName()</span>
                     </span>
                     <span class="text-muted small">Mở lúc @Model.OpenShift.OpenedAt.ToString("dd/MM/yyyy HH:mm")</span>
@@ -123,7 +131,7 @@
                         @foreach (var s in Model.RecentShifts)
                         {
                             <tr>
-                                <td>#@s.Id</td>
+                                <td>#@s.Id <span class="badge @s.Slot.ToBadgeClass() ms-1">@s.Slot.ToDisplayName()</span></td>
                                 @if (Model.IsAdmin)
                                 {
                                     <td>@s.EmployeeName</td>

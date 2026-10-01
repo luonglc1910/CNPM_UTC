@@ -43,10 +43,42 @@
         <span asp-validation-for="MaxCapacity" class="text-danger small"></span>
     </div>
 
-    <div class="col-md-6">
-        <label asp-for="BasePricePerNight" class="form-label">Giá / đêm (₫) <span class="text-danger">*</span></label>
-        <input asp-for="BasePricePerNight" class="form-control" type="number" min="0" step="any" />
-        <span asp-validation-for="BasePricePerNight" class="text-danger small"></span>
+    @* Ba hình thức thuê (BR-13) có ba bảng giá riêng, không suy ra được từ nhau — tách thành
+       một khối để người nhập thấy ngay mình đang đặt giá cho hình thức nào. *@
+    <div class="col-12">
+        <div class="border rounded p-3">
+            <div class="fw-semibold mb-3"><i class="bi bi-tags"></i> Bảng giá theo hình thức thuê</div>
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label asp-for="BasePricePerNight" class="form-label">Theo ngày — giá / đêm (₫) <span class="text-danger">*</span></label>
+                    <input asp-for="BasePricePerNight" class="form-control" type="number" min="0" step="any" />
+                    <span asp-validation-for="BasePricePerNight" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="PriceOvernight" class="form-label">Qua đêm — trọn gói (₫) <span class="text-danger">*</span></label>
+                    <input asp-for="PriceOvernight" class="form-control" type="number" min="0" step="any" />
+                    <div class="form-text">Gói 22:00 → 10:00 hôm sau.</div>
+                    <span asp-validation-for="PriceOvernight" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-4">
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label asp-for="PriceFirstHour" class="form-label">Giờ đầu (₫) <span class="text-danger">*</span></label>
+                            <input asp-for="PriceFirstHour" class="form-control" type="number" min="0" step="any" />
+                            <span asp-validation-for="PriceFirstHour" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6">
+                            <label asp-for="PriceExtraHour" class="form-label">Giờ tiếp (₫) <span class="text-danger">*</span></label>
+                            <input asp-for="PriceExtraHour" class="form-control" type="number" min="0" step="any" />
+                            <span asp-validation-for="PriceExtraHour" class="text-danger small"></span>
+                        </div>
+                    </div>
+                    <div class="form-text">Giá giờ tiếp cũng là đơn giá phụ thu khi ở quá gói qua đêm.</div>
+                </div>
+            </div>
+        </div>
     </div>
 
     <div class="col-md-6">

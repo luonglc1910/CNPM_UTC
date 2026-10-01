@@ -20,8 +20,32 @@ public class GuestsController : AdminControllerBase
         _audit = audit;
     }
 
-    public async Task<IActionResult> Index(GuestIndexViewModel filter, int page = 1)
-        => View(await _service.SearchAsync(filter, page));
+    /// <summary>
+    /// SCR-B01 (danh sách khách) và SCR-B04 (khai báo tạm trú) — hai tab của một màn.
+    /// Chỉ tab đang mở mới nạp dữ liệu: mở tab tạm trú ghi một dòng nhật ký truy cập dữ liệu
+    /// cá nhân, nạp sẵn cả hai thì mỗi lần xem danh sách cũng sinh nhật ký sai sự thật.
+    /// </summary>
+    public async Task<IActionResult> Index(
+        GuestIndexViewModel filter, int page = 1, string? tab = null, DateTime? date = null)
+    {
+        var vm = new GuestsPageViewModel
+        {
+            Tab = tab == GuestsPageViewModel.ResidenceTab
+                ? GuestsPageViewModel.ResidenceTab
+                : GuestsPageViewModel.ListTab
+        };
+
+        if (vm.IsResidence)
+        {
+            vm.Residence = await _service.BuildResidenceAsync(date);
+        }
+        else
+        {
+            vm.List = await _service.SearchAsync(filter, page);
+        }
+
+        return View(vm);
+    }
 
     public async Task<IActionResult> Details(int id)
     {
@@ -117,13 +141,17 @@ public class GuestsController : AdminControllerBase
     public async Task<IActionResult> CheckDuplicate(string? idNumber, string? phoneNumber, int? excludeId)
         => Json(await _service.CheckDuplicateAsync(idNumber, phoneNumber, excludeId));
 
-    /// <summary>
-    /// Danh sách khai báo tạm trú theo ngày — SCR-B04. Service tự ghi nhật ký truy cập
-    /// vì đây là dữ liệu cá nhân của nhiều khách cùng lúc.
-    /// </summary>
+    /// <summary>URL cũ của SCR-B04 trước khi gộp vào SCR-B01. Giữ để link đã lưu không gãy.</summary>
     [HttpGet]
-    public async Task<IActionResult> Residence(DateTime? date)
-        => View(await _service.BuildResidenceAsync(date));
+    public IActionResult Residence(DateTime? date)
+        // Truyền ngày dưới dạng yyyy-MM-dd chứ không để DateTime tự định dạng: chuỗi
+        // "09/15/2026 00:00:00" trong query string sẽ đè lên giá trị model, và <input type="date">
+        // không đọc được định dạng đó nên ô chọn ngày hiện ra trống.
+        => RedirectToAction(nameof(Index), new
+        {
+            tab = GuestsPageViewModel.ResidenceTab,
+            date = date?.ToString("yyyy-MM-dd")
+        });
 
     /// <summary>
     /// Đưa vào / gỡ khỏi danh sách hạn chế — SCR-B05. Chỉ Admin: đây là quyết định ảnh hưởng

@@ -21,6 +21,15 @@ public class RoomType : BaseEntity
     public decimal ExtraGuestFeePerNight { get; set; }
     public decimal ExtraBedFeePerNight { get; set; }
 
+    /// <summary>Giá giờ đầu tiên khi thuê theo giờ — BR-13.</summary>
+    public decimal PriceFirstHour { get; set; }
+
+    /// <summary>Giá mỗi giờ từ giờ thứ hai trở đi; cũng là đơn giá phụ thu quá giờ gói qua đêm — BR-13.</summary>
+    public decimal PriceExtraHour { get; set; }
+
+    /// <summary>Giá trọn gói qua đêm — BR-13.</summary>
+    public decimal PriceOvernight { get; set; }
+
     [MaxLength(500)]
     public string? Amenities { get; set; }
 

@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using HotelManagement.Web.Models.Entities;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
@@ -39,12 +39,23 @@ public class InHouseItem
     public DateTime ExpectedCheckOut { get; set; }
 }
 
-public class RoomGridItem
+public class CheckedInTodayItem
 {
-    public int RoomId { get; set; }
+    public int StayId { get; set; }
     public string RoomNumber { get; set; } = string.Empty;
-    public int Floor { get; set; }
-    public RoomStatus Status { get; set; }
+    public string GuestName { get; set; } = string.Empty;
+    public DateTime ActualCheckIn { get; set; }
+    public DateTime ExpectedCheckOut { get; set; }
+}
+
+public class CheckedOutTodayItem
+{
+    public int StayId { get; set; }
+    public string RoomNumber { get; set; } = string.Empty;
+    public string GuestName { get; set; } = string.Empty;
+    public DateTime ActualCheckIn { get; set; }
+    public DateTime ActualCheckOut { get; set; }
+    public int Nights { get; set; }
 }
 
 public class FrontDeskDashboardViewModel
@@ -52,7 +63,12 @@ public class FrontDeskDashboardViewModel
     public IReadOnlyList<ArrivalItem> Arrivals { get; set; } = new List<ArrivalItem>();
     public IReadOnlyList<DepartureItem> Departures { get; set; } = new List<DepartureItem>();
     public IReadOnlyList<InHouseItem> InHouse { get; set; } = new List<InHouseItem>();
-    public IReadOnlyList<RoomGridItem> Rooms { get; set; } = new List<RoomGridItem>();
+
+    /// <summary>Đã check-in trong ngày hôm nay.</summary>
+    public IReadOnlyList<CheckedInTodayItem> CheckedInToday { get; set; } = new List<CheckedInTodayItem>();
+
+    /// <summary>Đã check-out trong ngày hôm nay.</summary>
+    public IReadOnlyList<CheckedOutTodayItem> CheckedOutToday { get; set; } = new List<CheckedOutTodayItem>();
 
     public int AvailableCount { get; set; }
     public int OccupiedCount { get; set; }
@@ -89,6 +105,9 @@ public class CheckInViewModel
     public int Nights { get; set; }
     public decimal DepositPaid { get; set; }
 
+    /// <summary>Hình thức thuê của đơn — BR-13. Quyết định ý nghĩa của giờ nhận phòng bên dưới.</summary>
+    public RentalType RentalType { get; set; }
+
     [Display(Name = "Đã đối chiếu giấy tờ tùy thân")]
     public bool IdVerified { get; set; }
 
@@ -96,73 +115,6 @@ public class CheckInViewModel
     public DateTime ActualCheckIn { get; set; } = DateTime.Now;
 
     public List<CheckInRoomAssignment> Rooms { get; set; } = new();
-}
-
-// ---------- SCR-D03 ----------
-
-public class WalkInViewModel
-{
-    [Display(Name = "Khách có sẵn")]
-    public int? ExistingGuestId { get; set; }
-
-    // Khách mới (khi ExistingGuestId trống)
-    [Display(Name = "Họ tên")]
-    [MaxLength(100)]
-    public string? FullName { get; set; }
-
-    [Display(Name = "Loại giấy tờ")]
-    public GuestIdType IdType { get; set; } = GuestIdType.CitizenId;
-
-    [Display(Name = "Số giấy tờ")]
-    [MaxLength(20)]
-    public string? IdNumber { get; set; }
-
-    [Display(Name = "SĐT")]
-    [MaxLength(20)]
-    public string? PhoneNumber { get; set; }
-
-    [Display(Name = "Quốc tịch")]
-    [MaxLength(50)]
-    public string Nationality { get; set; } = "Việt Nam";
-
-    [Display(Name = "Phòng")]
-    [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn phòng.")]
-    public int RoomId { get; set; }
-
-    [Display(Name = "Ngày đi dự kiến")]
-    [DataType(DataType.Date)]
-    public DateTime ExpectedCheckOut { get; set; } = DateTime.Now.Date.AddDays(1);
-
-    [Display(Name = "Người lớn")]
-    [Range(1, 50)]
-    public int Adults { get; set; } = 1;
-
-    [Display(Name = "Trẻ em")]
-    [Range(0, 50)]
-    public int Children { get; set; }
-
-    // Đặt cọc tùy chọn
-    [Display(Name = "Tiền cọc")]
-    [Range(0, double.MaxValue)]
-    public decimal DepositAmount { get; set; }
-
-    [Display(Name = "Phương thức")]
-    public PaymentMethod DepositMethod { get; set; } = PaymentMethod.Cash;
-
-    [Display(Name = "Mã giao dịch")]
-    [MaxLength(50)]
-    public string? TransactionRef { get; set; }
-
-    public bool HasOpenShift { get; set; }
-    public IReadOnlyList<SelectListItem> GuestOptions { get; set; } = new List<SelectListItem>();
-
-    /// <summary>
-    /// Id những khách đang nằm trong danh sách hạn chế — SCR-B05, SCR-D03.
-    /// Gửi cả danh sách xuống thay vì một cờ, để cảnh báo hiện ngay lúc chọn khách
-    /// chứ không phải chờ gửi form rồi mới biết.
-    /// </summary>
-    public IReadOnlyList<int> BlacklistedGuestIds { get; set; } = new List<int>();
-    public IReadOnlyList<SelectListItem> RoomOptions { get; set; } = new List<SelectListItem>();
 }
 
 // ---------- SCR-D04 ----------
@@ -275,6 +227,21 @@ public class CheckOutViewModel
     public DateTime ExpectedCheckOut { get; set; }
     public int PlannedNights { get; set; }
     public bool IsAdmin { get; set; }
+
+    /// <summary>Hình thức thuê của lượt ở — BR-13. Quyết định phần tiền phòng hiện trên màn này.</summary>
+    public RentalType RentalType { get; set; }
+
+    /// <summary>Số giờ sẽ đưa lên hóa đơn nếu chốt vào giờ đang hiện — chỉ thuê theo giờ.</summary>
+    public int BilledHours { get; set; }
+
+    /// <summary>
+    /// Câu giải thích cách quy đổi giờ, ví dụ "Ở 2 giờ 35 phút — lẻ 35 phút quá 20 phút nên tính 3 giờ".
+    /// Chỉ có khi phần lẻ bị làm tròn lên; khách hỏi thì lễ tân có sẵn câu trả lời.
+    /// </summary>
+    public string? HourRoundingNote { get; set; }
+
+    /// <summary>Tiền phòng tính lại theo giờ trả đang hiện — thuê theo giờ.</summary>
+    public decimal RecalculatedRoomCharge { get; set; }
 
     // Điều kiện BR-08
     public bool IsInspected { get; set; }

@@ -128,6 +128,9 @@ namespace HotelManagement.Web.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
+                    b.Property<int>("Slot")
+                        .HasColumnType("int");
+
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
@@ -908,6 +911,9 @@ namespace HotelManagement.Web.Migrations
                     b.Property<DateTime?>("HoldUntil")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("Hours")
+                        .HasColumnType("int");
+
                     b.Property<string>("InternalNotes")
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
@@ -916,6 +922,9 @@ namespace HotelManagement.Web.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("PrimaryGuestId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RentalType")
                         .HasColumnType("int");
 
                     b.Property<int>("Source")
@@ -965,6 +974,18 @@ namespace HotelManagement.Web.Migrations
 
                     b.Property<int?>("CreatedBy")
                         .HasColumnType("int");
+
+                    b.Property<decimal>("PriceExtraHour")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PriceFirstHour")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PriceOvernight")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("PricePerNight")
                         .HasPrecision(18, 2)
@@ -1162,6 +1183,18 @@ namespace HotelManagement.Web.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("nvarchar(100)");
 
+                    b.Property<decimal>("PriceExtraHour")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PriceFirstHour")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PriceOvernight")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<int>("StandardCapacity")
                         .HasColumnType("int");
 
@@ -1259,6 +1292,9 @@ namespace HotelManagement.Web.Migrations
                     b.Property<DateTime?>("ActualCheckOut")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("BilledHours")
+                        .HasColumnType("int");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -1284,11 +1320,26 @@ namespace HotelManagement.Web.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
+                    b.Property<decimal>("PriceExtraHour")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PriceFirstHour")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("PriceOvernight")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
                     b.Property<decimal>("PricePerNight")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("PrimaryGuestId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("RentalType")
                         .HasColumnType("int");
 
                     b.Property<int?>("ReservationId")

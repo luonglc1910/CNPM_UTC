@@ -1,4 +1,5 @@
-﻿using HotelManagement.Web.Models.ViewModels;
+﻿using HotelManagement.Web.Models;
+using HotelManagement.Web.Models.ViewModels;
 using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -18,15 +19,34 @@ public class ReservationsController : AdminControllerBase
         _service = service;
     }
 
-    // SCR-C01
-    public async Task<IActionResult> Index(ReservationIndexViewModel filter, int page = 1)
+    /// <summary>
+    /// SCR-C01 (tất cả đơn) và SCR-C09 (quá hạn / no-show) — hai tab của một màn.
+    /// Mỗi tab giữ bảng và nút riêng, và chỉ tab đang mở mới chạy truy vấn của nó.
+    /// </summary>
+    public async Task<IActionResult> Index(ReservationIndexViewModel filter, int page = 1, string? tab = null)
     {
-        if (filter.HasFilter)
+        var vm = new ReservationsPageViewModel
         {
-            filter.CustomFilter = true;
+            Tab = tab == ReservationsPageViewModel.NoShowTab
+                ? ReservationsPageViewModel.NoShowTab
+                : ReservationsPageViewModel.ListTab
+        };
+
+        if (vm.IsNoShow)
+        {
+            vm.NoShow = await _service.BuildNoShowListAsync();
+        }
+        else
+        {
+            if (filter.HasFilter)
+            {
+                filter.CustomFilter = true;
+            }
+
+            vm.List = await _service.BuildIndexAsync(filter, page);
         }
 
-        return View(await _service.BuildIndexAsync(filter, page));
+        return View(vm);
     }
 
     // SCR-C02
@@ -69,7 +89,13 @@ public class ReservationsController : AdminControllerBase
     public async Task<IActionResult> Details(int id)
     {
         var vm = await _service.GetDetailsAsync(id);
-        return vm is null ? NotFound() : View(vm);
+        if (vm is not null)
+        {
+            return View(vm);
+        }
+
+        var (status, code) = await _service.GetStatusAsync(id);
+        return Blocked(BlockedReason.Reservation(status, "xem chi tiết", code), nameof(Index));
     }
 
     // SCR-C06
@@ -77,7 +103,16 @@ public class ReservationsController : AdminControllerBase
     public async Task<IActionResult> Edit(int id)
     {
         var form = await _service.BuildEditFormAsync(id);
-        return form is null ? NotFound() : View(form);
+        if (form is not null)
+        {
+            return View(form);
+        }
+
+        var (status, code) = await _service.GetStatusAsync(id);
+        return Blocked(BlockedReason.Reservation(status, "sửa", code),
+            status is null ? nameof(Index) : nameof(Details),
+            null,
+            status is null ? null : new { id });
     }
 
     [HttpPost]
@@ -108,7 +143,16 @@ public class ReservationsController : AdminControllerBase
     public async Task<IActionResult> Deposit(int id)
     {
         var form = await _service.BuildDepositFormAsync(id, CurrentEmployeeId);
-        return form is null ? NotFound() : View(form);
+        if (form is not null)
+        {
+            return View(form);
+        }
+
+        var (status, code) = await _service.GetStatusAsync(id);
+        return Blocked(BlockedReason.Reservation(status, "thu cọc", code),
+            status is null ? nameof(Index) : nameof(Details),
+            null,
+            status is null ? null : new { id });
     }
 
     [HttpPost]
@@ -121,7 +165,8 @@ public class ReservationsController : AdminControllerBase
             var reload = await _service.BuildDepositFormAsync(form.ReservationId, CurrentEmployeeId);
             if (reload is null)
             {
-                return NotFound();
+                var (st, cd) = await _service.GetStatusAsync(form.ReservationId);
+                return Blocked(BlockedReason.Reservation(st, "thu cọc", cd), nameof(Index));
             }
 
             reload.Amount = form.Amount;
@@ -147,7 +192,16 @@ public class ReservationsController : AdminControllerBase
     public async Task<IActionResult> Cancel(int id)
     {
         var vm = await _service.BuildCancelAsync(id, CurrentEmployeeId, IsAdmin);
-        return vm is null ? NotFound() : View(vm);
+        if (vm is not null)
+        {
+            return View(vm);
+        }
+
+        var (status, code) = await _service.GetStatusAsync(id);
+        return Blocked(BlockedReason.Reservation(status, "hủy", code),
+            status is null ? nameof(Index) : nameof(Details),
+            null,
+            status is null ? null : new { id });
     }
 
     [HttpPost]
@@ -173,8 +227,9 @@ public class ReservationsController : AdminControllerBase
     public async Task<IActionResult> RoomChart(DateTime? from, int days = 14)
         => View(await _service.BuildRoomChartAsync(from, days));
 
-    public async Task<IActionResult> NoShow()
-        => View(await _service.BuildNoShowListAsync());
+    /// <summary>URL cũ của SCR-C09 trước khi gộp. Giữ để link đã lưu không gãy.</summary>
+    public IActionResult NoShow()
+        => RedirectToAction(nameof(Index), new { tab = ReservationsPageViewModel.NoShowTab });
 
     [HttpPost]
     [ValidateAntiForgeryToken]
@@ -182,7 +237,7 @@ public class ReservationsController : AdminControllerBase
     {
         var result = await _service.MarkNoShowAsync(id, CurrentEmployeeId);
         SetMessage(result);
-        return RedirectToAction(nameof(NoShow));
+        return RedirectToAction(nameof(Index), new { tab = ReservationsPageViewModel.NoShowTab });
     }
 
     [HttpPost]
@@ -191,7 +246,7 @@ public class ReservationsController : AdminControllerBase
     {
         var result = await _service.ExtendHoldAsync(id, hours, CurrentEmployeeId);
         SetMessage(result);
-        return RedirectToAction(nameof(NoShow));
+        return RedirectToAction(nameof(Index), new { tab = ReservationsPageViewModel.NoShowTab });
     }
 
     private int CurrentEmployeeId => User.GetEmployeeId() ?? 0;

@@ -70,7 +70,6 @@
                     <tr><td>Tạm tính</td><td class="text-end">@inv.SubTotal.ToString("N0") ₫</td></tr>
                     <tr><td>VAT @((inv.TaxRate * 100).ToString("0.#"))%</td><td class="text-end">@inv.TaxAmount.ToString("N0") ₫</td></tr>
                     <tr class="fw-semibold"><td>Tổng</td><td class="text-end">@inv.TotalAmount.ToString("N0") ₫</td></tr>
-                    <tr><td>Đã cọc</td><td class="text-end">-@inv.DepositAmount.ToString("N0") ₫</td></tr>
                     <tr><td>Đã thanh toán</td><td class="text-end">@inv.AmountPaid.ToString("N0") ₫</td></tr>
                     @if (inv.DebtAmount > 0)
                     {

@@ -11,11 +11,20 @@
 
 ---
 
+> **Gộp màn hình (20/09/2026).** SCR-G01 và SCR-G02 trước đây là hai màn riêng, giờ là hai tab
+> của `GET /Reports` và dùng chung một bộ lọc khoảng ngày — cả hai cùng trả lời "kỳ này kinh
+> doanh thế nào" và người xem gần như luôn xem liền nhau.
+>
+> Năm màn báo cáo (G01–G05) trước chiếm 5 mục sidebar, nay gộp thành một mục **"Báo cáo"**;
+> chuyển giữa chúng bằng thanh điều hướng con ngay trong vùng nội dung (`_ReportNav`).
+>
+> Hai URL cũ `/Reports/Revenue` và `/Reports/Occupancy` vẫn sống, chuyển hướng về `/Reports`.
+
 ## SCR-G01 — Báo cáo doanh thu
 
 | | |
 |---|---|
-| **URL** | `GET /Reports/Revenue` |
+| **URL** | `GET /Reports` — tab "Doanh thu" |
 | **Quyền** | Chỉ Admin |
 | **Yêu cầu** | FR-G01, FR-G02, FR-G08 |
 
@@ -54,7 +63,7 @@ Doanh thu kỳ = Σ (hóa đơn Settled chốt trong kỳ)
 
 | | |
 |---|---|
-| **URL** | `GET /Reports/Occupancy` |
+| **URL** | `GET /Reports?tab=occupancy` — tab "Công suất phòng" |
 | **Quyền** | Chỉ Admin |
 | **Yêu cầu** | FR-G03, FR-G04 |
 

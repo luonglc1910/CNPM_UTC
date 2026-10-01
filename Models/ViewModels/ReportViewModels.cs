@@ -100,6 +100,28 @@ public class OccupancyReportViewModel : IDateRangeReport
     public bool Truncated { get; set; }
 }
 
+/// <summary>
+/// Màn hình gộp SCR-G01 (doanh thu) và SCR-G02 (công suất) — hai tab dùng chung một
+/// khoảng ngày, vì cả hai đều trả lời "kỳ này kinh doanh thế nào" và người xem
+/// gần như luôn xem liền nhau.
+/// </summary>
+public class BusinessReportViewModel : IDateRangeReport
+{
+    [Display(Name = "Từ ngày")]
+    [DataType(DataType.Date)]
+    public DateTime From { get; set; }
+
+    [Display(Name = "Đến ngày")]
+    [DataType(DataType.Date)]
+    public DateTime To { get; set; }
+
+    [Display(Name = "Gộp theo")]
+    public RevenuePeriod Period { get; set; } = RevenuePeriod.Day;
+
+    public RevenueReportViewModel Revenue { get; set; } = new();
+    public OccupancyReportViewModel Occupancy { get; set; } = new();
+}
+
 // ===================== SCR-G03 — Báo cáo dịch vụ & tồn kho =====================
 
 /// <summary>Một dịch vụ trong bảng bán chạy — SCR-G03 tab 1.</summary>

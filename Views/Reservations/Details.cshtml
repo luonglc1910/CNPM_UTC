@@ -14,10 +14,7 @@
         {
             <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@r.Id"><i class="bi bi-pencil"></i> Sửa</a>
         }
-        @if (Model.CanTakeDeposit)
-        {
-            <a class="btn btn-outline-primary" asp-action="Deposit" asp-route-id="@r.Id"><i class="bi bi-cash-coin"></i> Thu cọc</a>
-        }
+
         @if (Model.CanCheckIn)
         {
             <a class="btn btn-primary" asp-controller="FrontDesk" asp-action="CheckIn" asp-route-reservationId="@r.Id"><i class="bi bi-box-arrow-in-right"></i> Check-in</a>
@@ -41,10 +38,7 @@
 {
     <div class="alert alert-danger py-2"><i class="bi bi-exclamation-octagon"></i> Khách đứng tên đang trong danh sách hạn chế.</div>
 }
-@if (r.Status == ReservationStatus.Confirmed && r.HoldUntil is not null && Model.DepositPaid == 0)
-{
-    <div class="alert alert-warning py-2"><i class="bi bi-clock"></i> Đơn chưa cọc — hết hạn giữ chỗ lúc @r.HoldUntil.Value.ToString("dd/MM/yyyy HH:mm") (BR-05).</div>
-}
+
 
 <div class="row g-3">
     <div class="col-lg-7">
@@ -53,7 +47,7 @@
             <div class="table-responsive">
                 <table class="table mb-0">
                     <thead class="table-light">
-                        <tr><th>Loại</th><th>Phòng</th><th class="text-center">Khách</th><th class="text-end">Giá/đêm</th><th class="text-end">Thành tiền</th></tr>
+                        <tr><th>Loại</th><th>Phòng</th><th class="text-center">Khách</th><th class="text-end">Đơn giá</th><th class="text-end">Thành tiền</th></tr>
                     </thead>
                     <tbody>
                     @foreach (var line in Model.Rooms)
@@ -62,7 +56,8 @@
                             <td>@line.RoomTypeName</td>
                             <td>@(line.RoomNumber ?? "— xếp sau —")</td>
                             <td class="text-center">@line.Adults NL@(line.Children > 0 ? $" + {line.Children} TE" : "")</td>
-                            <td class="text-end">@line.PricePerNight.ToString("N0") ₫</td>
+                            @* Cột đơn giá phải nói theo hình thức thuê của đơn, không phải lúc nào cũng là giá đêm. *@
+                            <td class="text-end text-nowrap">@line.UnitText</td>
                             <td class="text-end">@line.LineTotal.ToString("N0") ₫</td>
                         </tr>
                     }
@@ -71,27 +66,7 @@
             </div>
         </div>
 
-        @if (Model.Deposits.Count > 0)
-        {
-            <div class="card mt-3">
-                <div class="card-header">Lịch sử thu cọc</div>
-                <div class="table-responsive">
-                    <table class="table mb-0">
-                        <thead class="table-light"><tr><th>Thời điểm</th><th class="text-end">Số tiền</th><th>Trạng thái</th></tr></thead>
-                        <tbody>
-                        @foreach (var d in Model.Deposits)
-                        {
-                            <tr>
-                                <td>@d.ReceivedAt.ToString("dd/MM/yyyy HH:mm")</td>
-                                <td class="text-end">@d.Amount.ToString("N0") ₫</td>
-                                <td>@d.Status</td>
-                            </tr>
-                        }
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-        }
+
     </div>
 
     <div class="col-lg-5">
@@ -102,7 +77,14 @@
                     <dt class="col-5">Khách đứng tên</dt><dd class="col-7">@Model.GuestName</dd>
                     <dt class="col-5">Liên hệ</dt><dd class="col-7">@Model.PhoneNumber</dd>
                     <dt class="col-5">Giấy tờ</dt><dd class="col-7">@(string.IsNullOrEmpty(Model.IdNumber) ? "—" : Model.IdNumber)</dd>
-                    <dt class="col-5">Nhận / Trả</dt><dd class="col-7">@r.CheckInDate.ToString("dd/MM/yyyy") → @r.CheckOutDate.ToString("dd/MM/yyyy") (@r.Nights đêm)</dd>
+                    <dt class="col-5">Hình thức</dt>
+                    <dd class="col-7">
+                        <span class="badge @r.RentalType.BadgeClass()">
+                            <i class="bi bi-@r.RentalType.IconName()"></i> @r.RentalType.DisplayName()
+                        </span>
+                    </dd>
+                    <dt class="col-5">Nhận / Trả</dt>
+                    <dd class="col-7">@r.RentalType.SpanText(r.CheckInDate, r.CheckOutDate, r.Nights, r.Hours)</dd>
                     @if (!string.IsNullOrWhiteSpace(r.SpecialRequests))
                     {
                         <dt class="col-5">Yêu cầu</dt><dd class="col-7">@r.SpecialRequests</dd>
@@ -117,8 +99,6 @@
                 <table class="table table-sm mb-0">
                     <tbody>
                         <tr><td>Tổng dự kiến</td><td class="text-end">@r.EstimatedTotal.ToString("N0") ₫</td></tr>
-                        <tr><td>Đã cọc</td><td class="text-end">@Model.DepositPaid.ToString("N0") ₫</td></tr>
-                        <tr class="fw-semibold"><td>Còn lại dự kiến</td><td class="text-end">@Model.EstimatedRemaining.ToString("N0") ₫</td></tr>
                     </tbody>
                 </table>
             </div>

@@ -1,0 +1,71 @@
+@model BusinessReportViewModel
+@{
+    ViewData["Title"] = "Doanh thu & công suất";
+
+    string PeriodLabel(RevenuePeriod p) => p switch
+    {
+        RevenuePeriod.Day => "Ngày",
+        RevenuePeriod.Month => "Tháng",
+        RevenuePeriod.Year => "Năm",
+        _ => p.ToString()
+    };
+
+    // Vào từ URL cũ /Reports/Occupancy thì mở sẵn tab công suất.
+    var openOccupancy = string.Equals(Context.Request.Query["tab"], "occupancy", StringComparison.OrdinalIgnoreCase);
+}
+
+<partial name="_ReportNav" />
+
+<div class="card mb-3">
+    <div class="card-body">
+        @* Một bộ lọc cho cả hai tab: hai báo cáo luôn nói về cùng một kỳ. *@
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-6 col-md-3">
+                <label asp-for="From" class="form-label">Từ ngày</label>
+                <input asp-for="From" type="date" class="form-control" />
+            </div>
+            <div class="col-6 col-md-3">
+                <label asp-for="To" class="form-label">Đến ngày</label>
+                <input asp-for="To" type="date" class="form-control" />
+            </div>
+            <div class="col-8 col-md-3">
+                <label asp-for="Period" class="form-label">Gộp theo (doanh thu)</label>
+                <select asp-for="Period" class="form-select">
+                    @foreach (var p in Enum.GetValues<RevenuePeriod>())
+                    {
+                        <option value="@((int)p)" selected="@(Model.Period == p)">@PeriodLabel(p)</option>
+                    }
+                </select>
+            </div>
+            <div class="col-4 col-md-3">
+                <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Xem</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<p class="text-muted small">
+    Khoảng @Model.From.ToString("dd/MM/yyyy") → @Model.To.ToString("dd/MM/yyyy") — áp dụng cho cả hai tab.
+</p>
+
+<ul class="nav nav-tabs mb-3" role="tablist">
+    <li class="nav-item">
+        <button class="nav-link @(openOccupancy ? "" : "active")" data-bs-toggle="tab" data-bs-target="#tab-revenue" type="button">
+            Doanh thu
+        </button>
+    </li>
+    <li class="nav-item">
+        <button class="nav-link @(openOccupancy ? "active" : "")" data-bs-toggle="tab" data-bs-target="#tab-occupancy" type="button">
+            Công suất phòng
+        </button>
+    </li>
+</ul>
+
+<div class="tab-content">
+    <div class="tab-pane fade @(openOccupancy ? "" : "show active")" id="tab-revenue">
+        <partial name="_RevenueTab" model="Model.Revenue" />
+    </div>
+    <div class="tab-pane fade @(openOccupancy ? "show active" : "")" id="tab-occupancy">
+        <partial name="_OccupancyTab" model="Model.Occupancy" />
+    </div>
+</div>

@@ -111,11 +111,18 @@ nơi lễ tân thực sự cần đối chiếu với giấy tờ trên tay khá
 
 ---
 
+> **Gộp màn hình (20/09/2026).** SCR-B04 trước là một mục sidebar riêng, nay là tab thứ hai
+> của SCR-B01. Hai tab là hai đường dẫn chứ không phải tab JavaScript: chỉ tab đang mở mới nạp
+> dữ liệu, vì mở tab này ghi một dòng nhật ký truy cập dữ liệu cá nhân — nạp sẵn cả hai thì
+> mỗi lần xem danh sách khách cũng sinh nhật ký sai sự thật.
+>
+> URL cũ `/Guests/Residence` vẫn sống, chuyển hướng về tab tương ứng.
+
 ## SCR-B04 — Khai báo tạm trú theo ngày
 
 | | |
 |---|---|
-| **URL** | `GET /Guests/Residence?date=...` |
+| **URL** | `GET /Guests?tab=residence&date=...` — tab của SCR-B01 |
 | **Quyền** | Admin, Lễ tân |
 | **Yêu cầu** | FR-B05 |
 
@@ -149,7 +156,7 @@ Hành động (Đưa vào / Gỡ khỏi) · **Lý do** `*` (bắt buộc, ≥ 10
 
 ### Hệ quả nghiệp vụ
 - Khi tạo đơn đặt phòng hoặc check-in cho khách trong danh sách hạn chế (SCR-C04, SCR-D02,
-  SCR-D03), hệ thống hiện **cảnh báo đỏ** kèm nhắc "cần quản lý duyệt".
+  hệ thống hiện **cảnh báo đỏ** kèm nhắc "cần quản lý duyệt". (SCR-D03 đã bỏ nên không còn áp dụng ở đó.)
 - Cảnh báo **không tự chặn** giao dịch — quyết định nhận hay từ chối khách là của con người,
   nhưng nếu lễ tân vẫn tiếp tục thì hệ thống ghi audit log việc bỏ qua cảnh báo.
 - Mọi thao tác thêm/gỡ khỏi danh sách đều ghi audit log kèm lý do.
