@@ -93,6 +93,35 @@
         <span asp-validation-for="ExtraBedFeePerNight" class="text-danger small"></span>
     </div>
 
+    <div class="col-md-6">
+        <label asp-for="BedType" class="form-label"></label>
+        <input asp-for="BedType" class="form-control" placeholder="VD: 1 Giường King cỡ lớn" />
+        <span asp-validation-for="BedType" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="SizeSqm" class="form-label"></label>
+        <input asp-for="SizeSqm" class="form-control" type="number" min="0" />
+        <span asp-validation-for="SizeSqm" class="text-danger small"></span>
+    </div>
+
+    <div class="col-12">
+        <label asp-for="ImageUrl" class="form-label"></label>
+        <input asp-for="ImageUrl" class="form-control" placeholder="Nhập đường dẫn URL hình ảnh..." />
+        <span asp-validation-for="ImageUrl" class="text-danger small"></span>
+    </div>
+
+    <div class="col-12">
+        <div class="form-check form-check-inline">
+            <input asp-for="IsFreeCancellation" class="form-check-input" />
+            <label asp-for="IsFreeCancellation" class="form-check-label"></label>
+        </div>
+        <div class="form-check form-check-inline">
+            <input asp-for="IsPayAtHotel" class="form-check-input" />
+            <label asp-for="IsPayAtHotel" class="form-check-label"></label>
+        </div>
+    </div>
+
     <div class="col-12">
         <label class="form-label">Tiện nghi</label>
         <div class="d-flex flex-wrap gap-3">

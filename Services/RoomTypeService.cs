@@ -90,6 +90,11 @@ public class RoomTypeService : IRoomTypeService
             PriceOvernight = entity.PriceOvernight,
             SelectedAmenities = SplitAmenities(entity.Amenities),
             Description = entity.Description,
+            ImageUrl = entity.ImageUrl,
+            BedType = entity.BedType,
+            SizeSqm = entity.SizeSqm,
+            IsFreeCancellation = entity.IsFreeCancellation,
+            IsPayAtHotel = entity.IsPayAtHotel,
             IsActive = entity.IsActive
         };
     }
@@ -123,6 +128,11 @@ public class RoomTypeService : IRoomTypeService
             PriceOvernight = form.PriceOvernight,
             Amenities = JoinAmenities(form.SelectedAmenities),
             Description = form.Description?.Trim(),
+            ImageUrl = form.ImageUrl?.Trim(),
+            BedType = form.BedType?.Trim(),
+            SizeSqm = form.SizeSqm,
+            IsFreeCancellation = form.IsFreeCancellation,
+            IsPayAtHotel = form.IsPayAtHotel,
             IsActive = true
         };
 
@@ -165,6 +175,11 @@ public class RoomTypeService : IRoomTypeService
         entity.PriceOvernight = form.PriceOvernight;
         entity.Amenities = JoinAmenities(form.SelectedAmenities);
         entity.Description = form.Description?.Trim();
+        entity.ImageUrl = form.ImageUrl?.Trim();
+        entity.BedType = form.BedType?.Trim();
+        entity.SizeSqm = form.SizeSqm;
+        entity.IsFreeCancellation = form.IsFreeCancellation;
+        entity.IsPayAtHotel = form.IsPayAtHotel;
         entity.IsActive = form.IsActive;
 
         // BR-11: mọi lần sửa giá đều phải ghi lại giá cũ → giá mới. Từ BR-13 một loại phòng có

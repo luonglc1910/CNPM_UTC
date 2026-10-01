@@ -11,10 +11,12 @@ namespace HotelManagement.Web.Controllers;
 public class HotelServicesController : AdminControllerBase
 {
     private readonly IServiceCatalogService _service;
+    private readonly IWebHostEnvironment _env;
 
-    public HotelServicesController(IServiceCatalogService service)
+    public HotelServicesController(IServiceCatalogService service, IWebHostEnvironment env)
     {
         _service = service;
+        _env = env;
     }
 
     public async Task<IActionResult> Index(HotelServiceIndexViewModel filter, int page = 1)
@@ -33,6 +35,20 @@ public class HotelServicesController : AdminControllerBase
         if (!ModelState.IsValid)
         {
             return View(form);
+        }
+
+        
+        if (form.ImageFile != null && form.ImageFile.Length > 0)
+        {
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "images", "services");
+            Directory.CreateDirectory(uploadsFolder);
+            var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(form.ImageFile.FileName);
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await form.ImageFile.CopyToAsync(fileStream);
+            }
+            form.ImageUrl = "/images/services/" + uniqueFileName;
         }
 
         var result = await _service.CreateAsync(form);
@@ -76,6 +92,20 @@ public class HotelServicesController : AdminControllerBase
         if (!ModelState.IsValid)
         {
             return View(form);
+        }
+
+        
+        if (form.ImageFile != null && form.ImageFile.Length > 0)
+        {
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "images", "services");
+            Directory.CreateDirectory(uploadsFolder);
+            var uniqueFileName = Guid.NewGuid().ToString() + "_" + Path.GetFileName(form.ImageFile.FileName);
+            var filePath = Path.Combine(uploadsFolder, uniqueFileName);
+            using (var fileStream = new FileStream(filePath, FileMode.Create))
+            {
+                await form.ImageFile.CopyToAsync(fileStream);
+            }
+            form.ImageUrl = "/images/services/" + uniqueFileName;
         }
 
         var result = await _service.UpdateAsync(form);

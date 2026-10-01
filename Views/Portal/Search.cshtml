@@ -1,0 +1,380 @@
+@model IEnumerable<HotelManagement.Web.Models.Entities.RoomType>
+@{
+    Layout = "_PortalLayout";
+    ViewData["Title"] = "Tìm phòng";
+}
+<div class="flex flex-col w-full bg-[#f2f4f3] text-[#16211f] font-['Be_Vietnam_Pro'] antialiased pb-20">
+<!-- 1. BREADCRUMB & HEADER -->
+<section class="relative w-full overflow-hidden bg-[#14312c] text-white pt-10 pb-16 md:pb-20 mb-[-48px]"><div class="absolute inset-0 z-0"><div class="absolute inset-0 bg-gradient-to-t from-[#14312c] via-[#14312c]/75 to-[#14312c]/50"></div><div class="absolute inset-0 bg-radial-gradient from-transparent via-[#14312c]/40 to-[#14312c]/90"></div></div><div class="relative z-10 max-w-[1240px] mx-auto px-4 md:px-8"><nav class="flex items-center gap-2 text-[13px] text-white/70 mb-5"><a class="hover:text-white transition-colors" href="#">Trang chủ</a><span class="text-white/40">/</span><span class="text-[#d8b878] font-medium">Tìm phòng &amp; Kiểm tra phòng trống</span></nav><div class="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-6"><div><div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#fed892]/20 border border-[#fed892]/40 text-[#ffdea5] text-[12px] font-medium mb-3 backdrop-blur-md"><span class="material-symbols-outlined text-[16px] text-[#fed892]">hotel</span><span class="">Kỳ nghỉ thượng lưu bên bờ biển</span></div><h1 class="text-[32px] md:text-[40px] leading-tight font-bold text-white tracking-tight drop-shadow-sm">Tìm phòng phù hợp với kỳ nghỉ của bạn</h1><p class="text-[15px] md:text-[16px] text-white/85 mt-2 max-w-2xl leading-relaxed font-light">Hiển thị các phòng còn trống theo thời gian lưu trú và số lượng khách bạn đã chọn tại Aura Boutique Hotel &amp; Resort.</p></div></div></div></section>
+<!-- 2. SEARCH & AVAILABILITY CONTROLS -->
+<section class="w-full px-4 md:px-8 max-w-[1240px] mx-auto mb-8 relative">
+<div class="bg-[#ffffff] border border-[#dde3e1] rounded-[10px] p-5 md:p-6 shadow-sm z-10">
+<form asp-action="Search" asp-controller="Portal" method="get" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
+<!-- Col 1: Check-in -->
+<div class="flex flex-col">
+<label class="text-[11px] uppercase font-semibold text-[#5e6b68] tracking-wider mb-1.5 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-[#9a7b3f]">calendar_today</span> Ngày nhận phòng
+</label>
+<div class="bg-[#f2f4f3] rounded-[6px] px-3.5 py-2.5 flex items-center justify-between border border-transparent hover:border-[#dde3e1] transition-all cursor-pointer">
+<input type="date" name="checkIn" value="@(ViewBag.CheckIn?.ToString("yyyy-MM-dd"))" class="appearance-none bg-transparent w-full text-[14px] font-semibold text-[#14312c] focus:outline-none" required />
+</div>
+</div>
+<!-- Col 2: Check-out -->
+<div class="flex flex-col">
+<label class="text-[11px] uppercase font-semibold text-[#5e6b68] tracking-wider mb-1.5 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-[#9a7b3f]">event</span> Ngày trả phòng
+</label>
+<div class="bg-[#f2f4f3] rounded-[6px] px-3.5 py-2.5 flex items-center justify-between border border-transparent hover:border-[#dde3e1] transition-all cursor-pointer">
+<input type="date" name="checkOut" value="@(ViewBag.CheckOut?.ToString("yyyy-MM-dd"))" class="appearance-none bg-transparent w-full text-[14px] font-semibold text-[#14312c] focus:outline-none" required />
+</div>
+</div>
+<!-- Col 3: Guests -->
+<div class="flex flex-col">
+<label class="text-[11px] uppercase font-semibold text-[#5e6b68] tracking-wider mb-1.5 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-[#9a7b3f]">group</span> Số lượng khách
+</label>
+<div class="bg-[#f2f4f3] rounded-[6px] px-3.5 py-2.5 flex items-center justify-between border border-transparent hover:border-[#dde3e1] transition-all cursor-pointer">
+<input type="number" name="capacity" min="1" value="@(ViewBag.Capacity ?? 2)" class="appearance-none bg-transparent w-full text-[14px] font-semibold text-[#14312c] focus:outline-none" required />
+</div>
+</div>
+<!-- Col 4: Room Category -->
+<div class="flex flex-col">
+<label class="text-[11px] uppercase font-semibold text-[#5e6b68] tracking-wider mb-1.5 flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-[#9a7b3f]">apartment</span> Hạng phòng
+</label>
+<div class="bg-[#f2f4f3] rounded-[6px] px-3.5 py-2.5 flex items-center justify-between border border-transparent hover:border-[#dde3e1] transition-all cursor-pointer">
+<select name="categoryId" class="appearance-none bg-transparent w-full text-[14px] font-semibold text-[#14312c] focus:outline-none">
+    <option value="">Tất cả</option>
+    @if(ViewBag.RoomTypes != null) {
+        foreach(var rt in ViewBag.RoomTypes) {
+            if(ViewBag.CategoryId == rt.Id) {
+                <option value="@rt.Id" selected>@rt.Name</option>
+            } else {
+                <option value="@rt.Id">@rt.Name</option>
+            }
+        }
+    }
+</select>
+<span class="material-symbols-outlined text-[18px] text-[#8a9794]">expand_more</span>
+</div>
+</div>
+<!-- Col 5: Search Button -->
+<div class="flex flex-col justify-end">
+<button type="submit" class="w-full bg-[#14312c] text-white hover:bg-[#1c4039] active:bg-[#27544a] rounded-[6px] px-5 py-2.5 h-[42px] font-medium text-[14px] flex items-center justify-center gap-2 shadow-sm transition-colors">
+<span class="material-symbols-outlined text-[20px] text-[#d8b878]">search</span>
+<span class="">Cập nhật tìm kiếm</span>
+</button>
+</div>
+</form>
+<!-- Trust Benefits Direct Booking -->
+<div class="flex flex-wrap items-center justify-between gap-y-2 pt-4 mt-4 border-t border-[#dde3e1]/70 text-[13px] text-[#5e6b68]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[17px] text-[#9a7b3f]">verified</span>
+<span class="">Cam kết giá tốt nhất khi đặt trực tiếp</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[17px] text-[#9a7b3f]">schedule</span>
+<span class="">Miễn phí hủy phòng trước 48 giờ</span>
+</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[17px] text-[#9a7b3f]">room_service</span>
+<span class="">Đồ uống chào mừng thượng hạng &amp; Bữa sáng buffet chuẩn 5 sao</span>
+</div>
+</div>
+</div>
+</section>
+<!-- 3. SEARCH SUMMARY STRIP -->
+<section class="w-full px-4 md:px-8 max-w-[1240px] mx-auto mb-6">
+<div class="bg-[#ffffff] border border-[#dde3e1] rounded-[8px] px-4 py-3 flex flex-wrap items-center justify-between gap-3 text-[14px]">
+<div class="flex items-center flex-wrap gap-2 text-[#5e6b68]">
+<span class="text-[#14312c] font-medium flex items-center gap-1.5"><span class="material-symbols-outlined text-[18px] text-[#9a7b3f]">pin_drop</span> Aura Resort &amp; Spa</span>
+<span class="text-[#dde3e1]">|</span>
+<span class="">@(ViewBag.CheckIn?.ToString("dd/MM") ?? "--") – @(ViewBag.CheckOut?.ToString("dd/MM, yyyy") ?? "--")</span>
+<span class="text-[#dde3e1]">|</span>
+<span class="">@(ViewBag.Capacity ?? 2) khách</span>
+</div>
+<div class="flex items-center gap-2.5">
+
+
+</div>
+</div>
+</section>
+<!-- 4. MAIN LAYOUT: SIDEBAR + RESULTS -->
+<div class="w-full px-4 md:px-8 max-w-[1240px] mx-auto">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
+<!-- A. LEFT COLUMN: FILTERS (3.5 / 12) -->
+<aside class="lg:col-span-4 xl:col-span-4 bg-[#ffffff] border border-[#dde3e1] rounded-[10px] p-5 shadow-sm space-y-6">
+<!-- Header -->
+<div class="flex items-center justify-between pb-3 border-b border-[#dde3e1]">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[20px] text-[#14312c]">tune</span>
+<span class="text-[16px] font-bold text-[#14312c]">Bộ lọc tìm kiếm</span>
+</div>
+<button class="text-[12px] text-[#9a7b3f] hover:text-[#765a21] font-medium transition-colors" type="button">
+            Xóa tất cả
+          </button>
+</div>
+
+<!-- Filter 2: Room Category -->
+<div>
+<label class="block text-[13px] font-semibold text-[#14312c] uppercase tracking-wider mb-3">
+            Hạng phòng
+          </label>
+<div class="space-y-2 text-[13.5px] text-[#16211f]">
+@foreach(var rt in Model) {
+    int count = ViewBag.AvailableCounts != null && ViewBag.AvailableCounts.ContainsKey(rt.Id) ? ViewBag.AvailableCounts[rt.Id] : 0;
+    <label class="flex items-center justify-between cursor-pointer group">
+        <span class="flex items-center gap-2">
+            <input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white border-[#c6cfcc] filter-checkbox category-filter" type="checkbox" value="@rt.Id">
+            <span class="group-hover:text-[#14312c]">@rt.Name</span>
+        </span>
+        <span class="text-[12px] text-[#8a9794]">(@count)</span>
+    </label>
+}
+</div>
+</div>
+<!-- Filter 3: Guests & Bedding -->
+<div class="pt-4 border-t border-[#dde3e1]/60">
+<label class="block text-[13px] font-semibold text-[#14312c] uppercase tracking-wider mb-3">
+            Sức chứa &amp; Giường
+          </label>
+<div class="space-y-2 text-[13.5px] text-[#16211f]">
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox cap-filter" type="checkbox" value="1-2">
+<span class="">1 – 2 khách</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox cap-filter" type="checkbox" value="3-4">
+<span class="">3 – 4 khách</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox cap-filter" type="checkbox" value="5">
+<span class="">Gia đình (5+ khách)</span>
+</label>
+<div class="pt-2"></div>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox bed-filter" type="checkbox" value="King">
+<span class="">1 Giường King cỡ lớn</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox bed-filter" type="checkbox" value="đơn">
+<span class="">2 Giường đơn tách biệt</span>
+</label>
+</div>
+</div>
+<!-- Filter 4: Amenities -->
+<div class="pt-4 border-t border-[#dde3e1]/60">
+<label class="block text-[13px] font-semibold text-[#14312c] uppercase tracking-wider mb-3">
+            Tiện nghi đặc quyền
+          </label>
+<div class="space-y-2 text-[13.5px] text-[#16211f]">
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox am-filter" type="checkbox" value="Hướng biển trực diện">
+<span class="">Hướng biển trực diện</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox am-filter" type="checkbox" value="Bồn tắm nằm &amp; Jacuzzi">
+<span class="">Bồn tắm nằm &amp; Jacuzzi</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox am-filter" type="checkbox" value="Ban công riêng hướng vườn/biển">
+<span class="">Ban công riêng hướng vườn/biển</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox am-filter" type="checkbox" value="Bao gồm ăn sáng thượng hạng">
+<span class="">Bao gồm ăn sáng thượng hạng</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox am-filter" type="checkbox" value="Hồ bơi riêng biệt">
+<span class="">Hồ bơi riêng biệt</span>
+</label>
+</div>
+</div>
+<!-- Filter 5: Booking Policy -->
+<div class="pt-4 border-t border-[#dde3e1]/60">
+<label class="block text-[13px] font-semibold text-[#14312c] uppercase tracking-wider mb-3">
+            Chính sách đặt phòng
+          </label>
+<div class="space-y-2 text-[13.5px] text-[#16211f]">
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox policy-filter" type="checkbox" value="free-cancel">
+<span class="">Miễn phí hủy phòng</span>
+</label>
+<label class="flex items-center gap-2 cursor-pointer">
+<input class="w-4 h-4 rounded-[4px] accent-[#14312c] text-white filter-checkbox policy-filter" type="checkbox" value="pay-hotel">
+<span class="">Thanh toán tại khách sạn</span>
+</label>
+</div>
+</div>
+</aside>
+<!-- B. RIGHT COLUMN: ROOM RESULTS (8.5 / 12) -->
+<section class="lg:col-span-8 xl:col-span-8 flex flex-col">
+<!-- Results Header & Sort Bar -->
+<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-5">
+<div class="flex items-center gap-3">
+<span class="text-[18px] font-bold text-[#14312c]">Hiển thị @Model.Count() hạng phòng</span>
+<span class="inline-block w-1.5 h-1.5 rounded-full bg-[#9a7b3f]"></span>
+<span class="text-[13px] text-[#5e6b68]">Thời gian xác nhận tức thì</span>
+</div>
+<!-- Sort dropdown -->
+<div class="flex items-center gap-2">
+<span class="text-[13px] text-[#5e6b68]">Sắp xếp:</span>
+<div class="relative inline-block">
+<select class="appearance-none bg-[#ffffff] border border-[#dde3e1] rounded-[6px] px-3 py-1.5 pr-8 text-[13px] font-medium text-[#14312c] focus:outline-none cursor-pointer">
+<option selected="">Giá: Thấp đến cao</option>
+<option>Giá: Cao đến thấp</option>
+<option>Đánh giá cao nhất</option>
+<option>Diện tích lớn nhất</option>
+</select>
+<span class="material-symbols-outlined text-[16px] text-[#8a9794] absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none">expand_more</span>
+</div>
+</div>
+</div>
+<!-- ROOM CARDS LIST -->
+<div class="space-y-6">
+    @if (!Model.Any())
+    {
+        <div class="p-8 text-center bg-[#ffffff] border border-[#dde3e1] rounded-[10px]">
+            <span class="material-symbols-outlined text-[48px] text-[#8a9794] mb-3">search_off</span>
+            <h3 class="text-[18px] font-bold text-[#14312c]">Không tìm thấy hạng phòng phù hợp</h3>
+            <p class="text-[14px] text-[#5e6b68] mt-2">Vui lòng thay đổi ngày, số lượng hoặc hạng phòng để xem thêm kết quả.</p>
+        </div>
+    }
+    @foreach(var roomType in Model)
+    {
+<article class="room-card bg-[#ffffff] border border-[#dde3e1] rounded-[10px] overflow-hidden hover:border-[#c6cfcc] transition-all duration-200 shadow-sm flex flex-col md:flex-row"
+data-category-id="@roomType.Id" data-capacity="@roomType.MaxCapacity" data-bed="@(roomType.BedType ?? "")" data-amenities="@(roomType.Amenities ?? "")" data-free-cancel="@roomType.IsFreeCancellation.ToString().ToLower()" data-pay-hotel="@roomType.IsPayAtHotel.ToString().ToLower()">
+<div class="relative w-full md:w-[320px] h-[230px] md:h-auto shrink-0 bg-[#f2f4f3]">
+<img class="w-full h-full object-cover" src="@(!string.IsNullOrEmpty(roomType.ImageUrl) ? roomType.ImageUrl : "https://lh3.googleusercontent.com/aida-public/AB6AXuCO9DjhF6ltLD3HaQJCQWwn9kCybwBzVTnvWEFCyLjY4X0jcz5Ra4kZNwd5QVLiNNJ0DT6CxLDk7aOqa7hkyRWYDyfgjUmTgnF8Ugb95vLhfBqCbk-IY83WX8tDn7__OWeFJTPBem5vOPiyMoJEW0YxBmRHxbD6RQd2MQRCPWAg-Mx2XyTVzrQGQDgacJcW8mpLTor9gr8rT1cF545cwZm8IjM-D9CQf4sTN9v12w3W1Bw_dPaCOA")" />
+<div class="absolute bottom-3 left-3 bg-[#e4f1ea] text-[#2e7d57] font-semibold text-[11px] px-2.5 py-1 rounded-[4px] border border-[#b7dec9] flex items-center gap-1 shadow-sm"><span class="inline-block w-1.5 h-1.5 rounded-full bg-[#2e7d57]"></span><span class="">Còn @(ViewBag.AvailableCounts != null && ViewBag.AvailableCounts.ContainsKey(roomType.Id) ? ViewBag.AvailableCounts[roomType.Id] : 0) phòng</span></div>
+</div>
+<div class="p-5 md:p-6 flex-1 flex flex-col justify-between">
+<div>
+<div class="flex items-start justify-between gap-3 mb-2">
+<div>
+<a href="/Portal/RoomDetails?id=@roomType.Id" class="hover:opacity-80 transition-opacity">
+    <h3 class="text-[20px] font-bold text-[#14312c] leading-snug hover:text-[#9a7b3f] transition-colors">@roomType.Name</h3>
+</a>
+<p class="text-[13px] text-[#5e6b68] mt-0.5">Tối đa @roomType.MaxCapacity người lớn</p>
+</div>
+</div>
+<p class="text-[13.5px] text-[#5e6b68] mb-4 leading-relaxed line-clamp-2">@roomType.Description</p>
+</div>
+<div class="pt-4 border-t border-[#dde3e1] flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+<div>
+<div class="text-[12px] text-[#8a9794] uppercase tracking-wider mb-0.5">Giá chỉ từ</div>
+<div class="flex items-baseline gap-1.5">
+<span class="text-[24px] font-bold text-[#14312c] tracking-tight">@roomType.BasePricePerNight.ToString("N0") đ</span>
+<span class="text-[13px] text-[#5e6b68]">/đêm</span>
+</div>
+</div>
+<div class="flex gap-2 w-full sm:w-auto">
+<a href="/Portal/RoomDetails?id=@roomType.Id" class="flex-1 sm:flex-none border border-[#14312c] text-[#14312c] hover:bg-[#f2f4f3] rounded-[6px] px-4 py-2 text-[13px] font-semibold transition-colors text-center">Chi tiết</a>
+<a href="/Portal/RoomDetails?id=@roomType.Id" class="flex-1 sm:flex-none bg-[#9a7b3f] text-white hover:bg-[#765a21] active:bg-[#5c430a] rounded-[6px] px-5 py-2 text-[13px] font-semibold shadow-sm transition-colors text-center flex items-center justify-center">Chọn phòng</a>
+</div>
+</div>
+</div>
+</article>
+    }
+</div>
+<!-- PAGINATION -->
+<div class="mt-8 pt-4 border-t border-[#dde3e1] flex items-center justify-between">
+<span class="text-[13px] text-[#5e6b68]">Trang 1 trên 2 (8 phòng tìm thấy)</span>
+<div class="flex items-center gap-1.5">
+<button class="w-8 h-8 rounded-[6px] bg-[#14312c] text-white text-[13px] font-semibold flex items-center justify-center" type="button">1</button>
+<button class="w-8 h-8 rounded-[6px] bg-[#ffffff] border border-[#dde3e1] text-[#14312c] hover:bg-[#f2f4f3] text-[13px] font-medium flex items-center justify-center transition-colors" type="button">2</button>
+<button class="px-3 h-8 rounded-[6px] bg-[#ffffff] border border-[#dde3e1] text-[#14312c] hover:bg-[#f2f4f3] text-[13px] font-medium flex items-center gap-1 transition-colors" type="button">
+<span class="">Tiếp</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+</button>
+</div>
+</div>
+<!-- CONCIERGE ASSISTANCE FOOTER NOTE -->
+<div class="mt-8 bg-[#ffffff] border border-[#dde3e1] rounded-[10px] p-5 flex flex-col sm:flex-row items-center justify-between gap-4">
+<div class="flex items-center gap-3">
+<div class="w-10 h-10 rounded-full bg-[#f2f4f3] flex items-center justify-center text-[#9a7b3f] shrink-0 border border-[#dde3e1]">
+<span class="material-symbols-outlined text-[20px]">support_agent</span>
+</div>
+<div>
+<p class="text-[14px] font-semibold text-[#14312c]">Cần hỗ trợ đặt phòng theo đoàn hoặc yêu cầu đặc biệt?</p>
+<p class="text-[13px] text-[#5e6b68]">Đội ngũ Concierge phục vụ 24/7, cam kết phản hồi trong vòng 5 phút.</p>
+</div>
+</div>
+<div class="flex items-center gap-3 shrink-0">
+<a class="text-[13px] font-semibold text-[#14312c] bg-[#f2f4f3] border border-[#dde3e1] rounded-[6px] px-3.5 py-2 hover:bg-[#ffffff] transition-colors flex items-center gap-1.5" href="tel:19006868">
+<span class="material-symbols-outlined text-[16px] text-[#9a7b3f]">call</span>
+<span class="">1900 6868</span>
+</a>
+<button class="text-[13px] font-medium text-[#14312c] border border-[#9a7b3f] text-[#9a7b3f] rounded-[6px] px-3.5 py-2 hover:bg-[#9a7b3f]/10 transition-colors" type="button">
+              Chat tư vấn
+            </button>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const checkboxes = document.querySelectorAll('.filter-checkbox');
+            const roomCards = document.querySelectorAll('.room-card');
+            
+            checkboxes.forEach(cb => cb.addEventListener('change', filterRooms));
+            
+            function filterRooms() {
+                const checkedCategories = Array.from(document.querySelectorAll('.category-filter:checked')).map(cb => cb.value);
+                const checkedCaps = Array.from(document.querySelectorAll('.cap-filter:checked')).map(cb => cb.value);
+                const checkedBeds = Array.from(document.querySelectorAll('.bed-filter:checked')).map(cb => cb.value.toLowerCase());
+                const checkedAms = Array.from(document.querySelectorAll('.am-filter:checked')).map(cb => cb.value.toLowerCase());
+                const checkedPolicies = Array.from(document.querySelectorAll('.policy-filter:checked')).map(cb => cb.value);
+                
+                let visibleCount = 0;
+                
+                roomCards.forEach(card => {
+                    let isVisible = true;
+                    
+                    if (checkedCategories.length > 0 && !checkedCategories.includes(card.getAttribute('data-category-id'))) {
+                        isVisible = false;
+                    }
+                    
+                    if (isVisible && checkedCaps.length > 0) {
+                        let cap = parseInt(card.getAttribute('data-capacity'));
+                        let capMatch = false;
+                        if (checkedCaps.includes('1-2') && cap <= 2) capMatch = true;
+                        if (checkedCaps.includes('3-4') && cap >= 3 && cap <= 4) capMatch = true;
+                        if (checkedCaps.includes('5') && cap >= 5) capMatch = true;
+                        if (!capMatch) isVisible = false;
+                    }
+                    
+                    if (isVisible && checkedBeds.length > 0) {
+                        let bed = card.getAttribute('data-bed').toLowerCase();
+                        let bedMatch = checkedBeds.some(b => bed.includes(b));
+                        if (!bedMatch) isVisible = false;
+                    }
+                    
+                    if (isVisible && checkedAms.length > 0) {
+                        let am = card.getAttribute('data-amenities').toLowerCase();
+                        let amMatch = checkedAms.every(a => am.includes(a));
+                        if (!amMatch) isVisible = false;
+                    }
+                    
+                    if (isVisible && checkedPolicies.length > 0) {
+                        if (checkedPolicies.includes('free-cancel') && card.getAttribute('data-free-cancel') !== 'true') isVisible = false;
+                        if (checkedPolicies.includes('pay-hotel') && card.getAttribute('data-pay-hotel') !== 'true') isVisible = false;
+                    }
+                    
+                    if (isVisible) {
+                        card.classList.remove('hidden');
+                        card.classList.add('flex');
+                        visibleCount++;
+                    } else {
+                        card.classList.add('hidden');
+                        card.classList.remove('flex');
+                    }
+                });
+            }
+        });
+    </script>
+}

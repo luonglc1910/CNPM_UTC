@@ -95,6 +95,23 @@ public class RoomTypeFormViewModel
     [MaxLength(500, ErrorMessage = "Mô tả tối đa 500 ký tự.")]
     public string? Description { get; set; }
 
+    [Display(Name = "Hình ảnh (URL)")]
+    [MaxLength(1000, ErrorMessage = "URL hình ảnh tối đa 1000 ký tự.")]
+    public string? ImageUrl { get; set; }
+
+    [Display(Name = "Loại giường")]
+    [MaxLength(50, ErrorMessage = "Loại giường tối đa 50 ký tự.")]
+    public string? BedType { get; set; }
+
+    [Display(Name = "Diện tích (m2)")]
+    public int SizeSqm { get; set; }
+
+    [Display(Name = "Miễn phí hủy phòng")]
+    public bool IsFreeCancellation { get; set; } = true;
+
+    [Display(Name = "Thanh toán tại khách sạn")]
+    public bool IsPayAtHotel { get; set; } = true;
+
     [Display(Name = "Đang sử dụng")]
     public bool IsActive { get; set; } = true;
 
@@ -102,6 +119,7 @@ public class RoomTypeFormViewModel
     public static readonly string[] AmenityOptions =
     {
         "Điều hòa", "TV", "Tủ lạnh", "Minibar", "Nóng lạnh", "Wifi",
-        "Bồn tắm", "Ban công", "Bàn làm việc", "Két sắt"
+        "Bồn tắm nằm & Jacuzzi", "Ban công riêng hướng vườn/biển", "Bàn làm việc", "Két sắt",
+        "Hướng biển trực diện", "Bao gồm ăn sáng thượng hạng", "Hồ bơi riêng biệt"
     };
 }

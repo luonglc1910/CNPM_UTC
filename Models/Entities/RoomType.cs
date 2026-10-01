@@ -36,6 +36,17 @@ public class RoomType : BaseEntity
     [MaxLength(500)]
     public string? Description { get; set; }
 
+    [MaxLength(1000)]
+    public string? ImageUrl { get; set; }
+
+    [MaxLength(50)]
+    public string? BedType { get; set; }
+
+    public int SizeSqm { get; set; }
+
+    public bool IsFreeCancellation { get; set; } = true;
+    public bool IsPayAtHotel { get; set; } = true;
+
     public bool IsActive { get; set; } = true;
 
     public ICollection<Room> Rooms { get; set; } = new List<Room>();

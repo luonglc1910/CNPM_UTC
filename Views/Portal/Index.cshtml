@@ -1,0 +1,612 @@
+@{
+    Layout = "_PortalLayout";
+    ViewData["Title"] = "Trang chủ";
+}
+<div class="flex flex-col w-full">
+<!-- 1. HERO SECTION -->
+<section class="relative w-full h-[720px] -mt-20 overflow-hidden flex items-center justify-center">
+<!-- Background Image with Scrim -->
+<div class="absolute inset-0 bg-cover bg-center" data-alt="Luxurious beachfront boutique hotel infinity pool at twilight, surrounded by modern architectural teak pavilions, ambient warm brass lantern lighting, calm emerald ocean reflections, modern Vietnamese minimalist aesthetic, shot on medium format camera with soft atmospheric mist" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB2GPkdHunTSWkaEE4tQZalRBlOJHqtIRvSuh2JNrTuWlP7xh_es0ZZIhVJpiHY_0t3sFBxzuKHlfRlRYshjlog_6YXgCJUZchQbUsiWQroIt95iguU0PFabk-8pkp4j4YoIoS9Hczgq0Phez3xFlnest21wzGcClDwnEC9JKU5jn9MRXu1osGJXZ67UxcqTygpC2yDS2Yy1xQ5eqrqzCctYuieITUPbsiIPsgN79yG8ceiC4TZng')"></div>
+<!-- Dark Teal & Ambient Scrim -->
+<div class="absolute inset-0 bg-gradient-to-t from-primary via-primary-container/85 to-primary-container/60"></div>
+<div class="absolute inset-0 bg-radial-gradient from-transparent via-transparent to-primary/40 pointer-events-none"></div>
+<!-- Hero Content -->
+<div class="relative z-10 max-w-[1280px] w-full mx-auto px-margin-sm md:px-margin pt-24 pb-16 flex flex-col items-center text-center">
+<!-- Eyebrow -->
+<div class="inline-flex items-center gap-space-xs px-3 py-1 rounded-full bg-surface-container-lowest/10 backdrop-blur-sm mb-space-md">
+<span class="font-label-sm text-label-sm tracking-[0.25em] uppercase text-secondary-fixed font-semibold">Welcome to Aura Boutique Hotel</span>
+</div>
+<!-- H1 -->
+<h1 class="font-display-lg text-display-lg md:text-[54px] md:leading-[64px] text-surface-container-lowest font-bold max-w-4xl tracking-tight mb-space-md">
+        Một kỳ nghỉ đáng nhớ<br class="hidden sm:inline"> bắt đầu từ đây
+      </h1>
+<!-- Description -->
+<p class="font-body-lg text-body-lg text-surface-variant max-w-2xl font-light mb-space-lg leading-relaxed">
+        Trải nghiệm không gian nghỉ dưỡng tinh tế, dịch vụ tận tâm và những tiện nghi được chăm chút cho từng khoảnh khắc lưu trú tĩnh tại và thi vị.
+      </p>
+<!-- CTAs -->
+<div class="flex flex-wrap items-center justify-center gap-space-md mb-space-xl">
+
+
+</div>
+<!-- Floating Review Badge -->
+
+</div>
+</section>
+<!-- 2. BOOKING SEARCH COMPONENT (Overlapping) -->
+<div class="relative z-20 max-w-[1200px] w-full mx-auto px-margin-sm md:px-margin -mt-16" id="booking-widget">
+<div class="bg-surface-container-lowest rounded-xl shadow-[0_12px_36px_rgba(20,49,44,0.12)] p-space-md md:p-space-lg">
+<form asp-action="Search" asp-controller="Portal" method="get" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-space-md items-end">
+<!-- 1) Check-in Date -->
+<div class="lg:col-span-3 flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary">calendar_today</span>
+            Ngày nhận phòng
+          </label>
+<div class="relative bg-surface-container-low rounded-lg p-2.5 flex items-center justify-between cursor-pointer hover:bg-surface-container transition-colors">
+<input type="date" name="checkIn" value="@DateTime.Today.ToString("yyyy-MM-dd")" class="appearance-none bg-transparent w-full font-headline-sm text-headline-sm text-on-surface font-semibold focus:outline-none" required />
+</div>
+</div>
+<!-- 2) Check-out Date -->
+<div class="lg:col-span-3 flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary">event</span>
+            Ngày trả phòng
+          </label>
+<div class="relative bg-surface-container-low rounded-lg p-2.5 flex items-center justify-between cursor-pointer hover:bg-surface-container transition-colors">
+<input type="date" name="checkOut" value="@DateTime.Today.AddDays(1).ToString("yyyy-MM-dd")" class="appearance-none bg-transparent w-full font-headline-sm text-headline-sm text-on-surface font-semibold focus:outline-none" required />
+</div>
+</div>
+<!-- 3) Guests -->
+<div class="lg:col-span-2 flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary">group</span>
+            Số lượng khách
+          </label>
+<div class="relative bg-surface-container-low rounded-lg p-2.5 flex items-center justify-between cursor-pointer hover:bg-surface-container transition-colors">
+<input type="number" name="capacity" min="1" value="2" class="appearance-none bg-transparent w-full font-headline-sm text-headline-sm text-on-surface font-semibold focus:outline-none" required />
+<span class="material-symbols-outlined text-outline text-[20px] pointer-events-none absolute right-2.5">tune</span>
+</div>
+</div>
+<!-- 4) Room Category -->
+<div class="lg:col-span-2 flex flex-col gap-1.5">
+<label class="font-label-sm text-label-sm uppercase tracking-wider text-outline font-semibold flex items-center gap-1">
+<span class="material-symbols-outlined text-[16px] text-secondary">door_front</span>
+            Hạng phòng
+          </label>
+<div class="relative bg-surface-container-low rounded-lg p-2.5 flex items-center justify-between cursor-pointer hover:bg-surface-container transition-colors">
+<select name="categoryId" class="appearance-none bg-transparent w-full font-headline-sm text-headline-sm text-on-surface font-semibold focus:outline-none">
+    <option value="">Tất cả</option>
+    @if(ViewBag.RoomTypes != null) {
+        foreach(var rt in ViewBag.RoomTypes) {
+            <option value="@rt.Id">@rt.Name</option>
+        }
+    }
+</select>
+<span class="material-symbols-outlined text-outline text-[20px] pointer-events-none absolute right-2.5">arrow_drop_down</span>
+</div>
+</div>
+<!-- 5) Action Button -->
+<div class="lg:col-span-2 flex flex-col">
+<button class="w-full h-[58px] bg-primary-container hover:bg-primary text-on-primary rounded-lg font-label-lg text-label-lg font-semibold flex items-center justify-center gap-2 shadow-[0_4px_12px_rgba(20,49,44,0.2)] transition-all" type="submit">
+<span class="material-symbols-outlined text-[20px] text-secondary-fixed">search</span>
+<span class="">Tìm phòng</span>
+</button>
+</div>
+</form>
+<!-- Trust Bar Perks -->
+<div class="mt-space-md pt-3 flex flex-wrap items-center justify-center gap-y-2 gap-x-space-lg text-on-surface-variant font-label-sm text-label-sm">
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary">verified</span>
+          Cam kết giá tốt nhất khi đặt trực tiếp
+        </span>
+<span class="hidden sm:inline text-outline-variant">•</span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary">free_cancellation</span>
+          Miễn phí hủy phòng trước 48 giờ
+        </span>
+<span class="hidden sm:inline text-outline-variant">•</span>
+<span class="flex items-center gap-1.5">
+<span class="material-symbols-outlined text-[16px] text-secondary">local_bar</span>
+          Tặng đồ uống đặc biệt khi nhận phòng
+        </span>
+</div>
+</div>
+</div>
+<!-- 3. INTRODUCTION SECTION -->
+<section class="max-w-[1280px] w-full mx-auto px-margin-sm md:px-margin pt-space-xl pb-24"><div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-center">
+  <!-- Left Column: Story, Philosophy & Stats (7 Cols) -->
+  <div class="lg:col-span-7 flex flex-col gap-space-md">
+    <!-- Eyebrow Badge -->
+    <div class="inline-flex items-center gap-2">
+      <span class="w-8 h-[2px] bg-secondary"></span>
+      <span class="font-label-sm text-label-sm tracking-[0.25em] uppercase text-secondary font-semibold">VỀ CHÚNG TÔI • CÂU CHUYỆN AURA</span>
+    </div>
+    
+    <!-- Main Headline -->
+    <h2 class="font-headline-lg text-headline-lg md:text-[36px] md:leading-[44px] text-on-surface font-semibold tracking-tight">
+      Nơi vẻ đẹp kiến trúc đương đại<br class="hidden sm:inline"> hòa quyện cùng lòng hiếu khách Việt Nam
+    </h2>
+    
+    <!-- Body Narrative -->
+    <div class="space-y-3">
+      <p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+        Được khởi nguồn từ niềm đam mê tôn vinh văn hóa bản địa, Aura Boutique Hotel &amp; Resort không đơn thuần là điểm dừng chân mà là một chốn đi về tĩnh tại. Mỗi góc nhỏ tại Aura đều phảng phất triết lý sống chậm, sử dụng các vật liệu tự nhiên mộc mạc như gỗ tếch, đá núi lửa và gốm thủ công kết hợp hoàn mỹ với tiện ích chuẩn mực 5 sao quốc tế.
+      </p>
+      <!-- Delicate Highlight Quote -->
+      <div class="p-3.5 rounded-lg bg-surface-container-low border-l-2 border-secondary flex items-start gap-3">
+        
+        <p class="font-body-sm text-body-sm text-on-surface italic leading-relaxed">
+          "Triết lý tôn vinh văn hóa bản địa qua từng chi tiết mộc mạc và chuẩn mực lưu trú quốc tế mang đến sự thư thái tuyệt đối cho tâm hồn."
+        </p>
+      </div>
+    </div>
+    
+    <!-- Redesigned Cohesive Metric Strip -->
+    <div class="grid grid-cols-3 gap-space-sm pt-2">
+      <div class="p-3.5 rounded-xl bg-surface-container-low/80 flex flex-col justify-between shadow-[0_1px_2px_rgba(20,49,44,0.06)]">
+        <span class="font-headline-lg text-headline-lg md:text-[32px] text-primary-container font-bold tracking-tight">48</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant mt-1 leading-snug font-medium">Phòng &amp; Suite cao cấp</span>
+      </div>
+      <div class="p-3.5 rounded-xl bg-surface-container-low/80 flex flex-col justify-between shadow-[0_1px_2px_rgba(20,49,44,0.06)]">
+        <span class="font-headline-lg text-headline-lg md:text-[32px] text-secondary font-bold tracking-tight">98%</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant mt-1 leading-snug font-medium">Khách hài lòng tuyệt đối</span>
+      </div>
+      <div class="p-3.5 rounded-xl bg-surface-container-low/80 flex flex-col justify-between shadow-[0_1px_2px_rgba(20,49,44,0.06)]">
+        <span class="font-headline-lg text-headline-lg md:text-[32px] text-primary-container font-bold tracking-tight">12</span>
+        <span class="font-label-sm text-label-sm text-on-surface-variant mt-1 leading-snug font-medium">Giải thưởng quốc tế</span>
+      </div>
+    </div>
+    
+    <!-- CTA Action Link -->
+    
+  </div>
+  
+  <!-- Right Column: Editorial Overlapping Multi-photo Composition (5 Cols) -->
+  <div class="lg:col-span-5 relative mt-space-md lg:mt-0">
+    <div class="relative w-full">
+      <!-- Primary Main Photo (Lobby / Architectural Space) -->
+      <div class="w-full rounded-2xl overflow-hidden shadow-[0_8px_24px_rgba(20,49,44,0.08)] group h-[440px]">
+        <div class="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-700" data-alt="Modern serene luxury hotel lobby featuring high ceilings, warm natural wood slatted walls, stone water features, soft linen lounge seating, and subtle brass lighting fixtures" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuB5LTj-561bDrykcmgbSJrnaoYacqL1PDzW5vhF2MAT6xP5vwfCGufjsCkpnrkVrLUBqUn9veffnkns3dRdWWxi1r-SERmlC7K9NUXkZFRSIY1wZpV26asyoW336DGUIT05MtHLUIoHtI0JpUYJuToZJU7o39P44egSrst0a0JchukLaamECFTMrhYAYJtXMMjcsHELXBdZyLA5yeH7UR1zySfmzhtlB4xsDdjDrlh1xNkDpJrsFA')"></div>
+      </div>
+      
+      <!-- Layered Inset Photo (Craftsman detail / Tea setting) -->
+      
+      
+      <!-- Authentic Heritage Badge -->
+      
+    </div>
+  </div>
+</div></section>
+<!-- 4. FEATURED ROOMS -->
+<section class="w-full bg-surface-container-low py-space-xl" id="featured-rooms">
+<div class="max-w-[1280px] w-full mx-auto px-margin-sm md:px-margin">
+<!-- Section Header -->
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-lg">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="w-6 h-[2px] bg-secondary"></span>
+<span class="font-label-sm text-label-sm tracking-[0.2em] uppercase text-secondary font-semibold">Khám phá phòng nghỉ</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-semibold">Hạng phòng &amp; Không gian lưu trú</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Nơi mỗi giác quan được nâng niu bằng những chất liệu tinh tuyển nhất.</p>
+</div>
+<a class="inline-flex items-center gap-1.5 font-label-lg text-label-lg font-semibold text-primary hover:text-secondary transition-colors" data-path="phong-nghi" href="#">
+<span class="">Xem tất cả 48 phòng</span>
+<span class="material-symbols-outlined text-[18px]">east</span>
+</a>
+</div>
+<!-- 3 Prominent Room Cards -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+@foreach(var room in (ViewBag.RoomTypes as IEnumerable<HotelManagement.Web.Models.Entities.RoomType>)?.Take(3) ?? Array.Empty<HotelManagement.Web.Models.Entities.RoomType>()) {
+    <div class="group bg-surface-container-lowest rounded-xl overflow-hidden shadow-[0_2px_12px_rgba(20,49,44,0.06)] hover:shadow-[0_8px_28px_rgba(20,49,44,0.12)] transition-all flex flex-col">
+    <div class="relative h-64 overflow-hidden">
+    <div class="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-500" style="background-image: url('@(!string.IsNullOrEmpty(room.ImageUrl) ? room.ImageUrl : "https://lh3.googleusercontent.com/aida-public/AB6AXuCO9DjhF6ltLD3HaQJCQWwn9kCybwBzVTnvWEFCyLjY4X0jcz5Ra4kZNwd5QVLiNNJ0DT6CxLDk7aOqa7hkyRWYDyfgjUmTgnF8Ugb95vLhfBqCbk-IY83WX8tDn7__OWeFJTPBem5vOPiyMoJEW0YxBmRHxbD6RQd2MQRCPWAg-Mx2XyTVzrQGQDgacJcW8mpLTor9gr8rT1cF545cwZm8IjM-D9CQf4sTN9v12w3W1Bw_dPaCOA")')"></div>
+    </div>
+    <div class="p-space-lg flex flex-col flex-1">
+    <a href="/Portal/RoomDetails?id=@room.Id" class="group-hover:opacity-80 transition-opacity">
+        <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold group-hover:text-secondary transition-colors">
+                      @room.Name
+        </h3>
+    </a>
+    <p class="font-body-sm text-body-sm text-on-surface-variant mt-1 line-clamp-2">
+                  @room.Description
+                </p>
+    <div class="grid grid-cols-2 gap-2 my-space-md text-on-surface-variant font-label-sm text-label-sm">
+    <div class="flex items-center gap-1.5">
+    <span class="material-symbols-outlined text-[18px] text-secondary">king_bed</span>
+    <span class="">@(room.BedType ?? "Không xác định")</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+    <span class="material-symbols-outlined text-[18px] text-secondary">group</span>
+    <span class="">Tối đa @room.MaxCapacity khách</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+    <span class="material-symbols-outlined text-[18px] text-secondary">straighten</span>
+    <span class="">@room.SizeSqm m²</span>
+    </div>
+    <div class="flex items-center gap-1.5">
+    <span class="material-symbols-outlined text-[18px] text-secondary">wifi</span>
+    <span class="">Wi-Fi miễn phí</span>
+    </div>
+    </div>
+    <div class="mt-auto pt-space-sm flex items-center justify-between">
+    <div>
+    <span class="font-label-sm text-label-sm text-outline block">Giá chỉ từ</span>
+    <span class="font-headline-sm text-headline-sm font-bold text-primary">@room.BasePricePerNight.ToString("N0")₫</span>
+    <span class="font-body-sm text-body-sm text-on-surface-variant">/đêm</span>
+    </div>
+    <div class="flex items-center gap-2">
+    <a class="px-3 py-2 rounded-lg bg-surface-container text-on-surface hover:bg-surface-container-high font-label-md text-label-md font-semibold transition-colors" href="/Portal/RoomDetails?id=@room.Id">
+                      Chi tiết
+                    </a>
+    <a class="px-3.5 py-2 rounded-lg bg-primary-container hover:bg-primary text-on-primary font-label-md text-label-md font-semibold transition-colors shadow-sm" href="/Portal/RoomDetails?id=@room.Id">
+                      Đặt ngay
+                    </a>
+    </div>
+    </div>
+    </div>
+    </div>
+}
+</div>
+</div>
+</section>
+<!-- 5. HOTEL AMENITIES -->
+<section class="max-w-[1280px] w-full mx-auto px-margin-sm md:px-margin py-24">
+<div class="text-center max-w-2xl mx-auto mb-space-xl">
+<div class="inline-flex items-center gap-2 mb-2">
+<span class="w-6 h-[2px] bg-secondary"></span>
+<span class="font-label-sm text-label-sm tracking-[0.2em] uppercase text-secondary font-semibold">Tiện nghi &amp; Trải nghiệm</span>
+<span class="w-6 h-[2px] bg-secondary"></span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-semibold">Nâng tầm kỳ nghỉ của bạn</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2">
+        Mỗi tiện ích tại Aura được kiến tạo để mang lại trải nghiệm tái tạo năng lượng thể chất và thư giãn tâm trí trọn vẹn nhất.
+      </p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-gutter">
+<!-- Item 1 -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group flex flex-col">
+<div class="w-12 h-12 rounded-lg bg-surface-container-lowest flex items-center justify-center text-secondary mb-space-md shadow-sm group-hover:bg-primary-container group-hover:text-secondary-fixed transition-colors">
+<span class="material-symbols-outlined text-[28px]">pool</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface mb-2">Hồ bơi chân mây</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          Nhiệt độ nước ấm quanh năm với tầm nhìn ôm trọn bờ vịnh, kết hợp quầy sky-bar cocktail chiều hoàng hôn lãng mạn.
+        </p>
+</div>
+<!-- Item 2 -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group flex flex-col">
+<div class="w-12 h-12 rounded-lg bg-surface-container-lowest flex items-center justify-center text-secondary mb-space-md shadow-sm group-hover:bg-primary-container group-hover:text-secondary-fixed transition-colors">
+<span class="material-symbols-outlined text-[28px]">restaurant</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface mb-2">The Brass Lantern Fine-Dining</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          Giao thoa giữa hương vị truyền thống Việt Nam và kỹ nghệ ẩm thực Pháp hiện đại do đầu bếp sao Michelin đảm trách.
+        </p>
+</div>
+<!-- Item 3 -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group flex flex-col">
+<div class="w-12 h-12 rounded-lg bg-surface-container-lowest flex items-center justify-center text-secondary mb-space-md shadow-sm group-hover:bg-primary-container group-hover:text-secondary-fixed transition-colors">
+<span class="material-symbols-outlined text-[28px]">spa</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface mb-2">Lotus Wellness &amp; Spa</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          Liệu trình thảo mộc Đông y cổ truyền, phòng xông hơi đá muối Himalaya cùng không gian thiền định yên ả tuyệt đối.
+        </p>
+</div>
+<!-- Item 4 -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group flex flex-col">
+<div class="w-12 h-12 rounded-lg bg-surface-container-lowest flex items-center justify-center text-secondary mb-space-md shadow-sm group-hover:bg-primary-container group-hover:text-secondary-fixed transition-colors">
+<span class="material-symbols-outlined text-[28px]">fitness_center</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface mb-2">Trung tâm thể thao cao cấp</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          Trang bị hệ thống máy Technogym thế hệ mới cùng huấn luyện viên thể hình cá nhân và lớp Yoga ban mai hướng biển.
+        </p>
+</div>
+<!-- Item 5 -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group flex flex-col">
+<div class="w-12 h-12 rounded-lg bg-surface-container-lowest flex items-center justify-center text-secondary mb-space-md shadow-sm group-hover:bg-primary-container group-hover:text-secondary-fixed transition-colors">
+<span class="material-symbols-outlined text-[28px]">laptop_mac</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface mb-2">Wi-Fi Tốc độ cao &amp; Co-working</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          Đường truyền cáp quang riêng biệt, khu vực làm việc tĩnh lặng kèm trà thảo mộc tự nhiên phục vụ xuyên suốt ngày.
+        </p>
+</div>
+<!-- Item 6 -->
+<div class="p-space-lg rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors group flex flex-col">
+<div class="w-12 h-12 rounded-lg bg-surface-container-lowest flex items-center justify-center text-secondary mb-space-md shadow-sm group-hover:bg-primary-container group-hover:text-secondary-fixed transition-colors">
+<span class="material-symbols-outlined text-[28px]">ev_station</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm font-semibold text-on-surface mb-2">Bãi xe an toàn &amp; Trạm sạc EV</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+          Hầm đỗ xe thông minh có camera giám sát 24/7 và hệ thống sạc nhanh xe điện dành riêng cho cư dân lưu trú.
+        </p>
+</div>
+</div>
+</section>
+<!-- 6. SERVICES SECTION -->
+<section class="w-full bg-surface-container py-space-xl">
+<div class="max-w-[1280px] w-full mx-auto px-margin-sm md:px-margin">
+<div class="flex flex-col md:flex-row md:items-end justify-between gap-space-md mb-space-lg">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="w-6 h-[2px] bg-secondary"></span>
+<span class="font-label-sm text-label-sm tracking-[0.2em] uppercase text-secondary font-semibold">Dịch vụ khách sạn</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-semibold">Tận tâm trong từng chi tiết</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Chuẩn mực phục vụ bespoke sẵn sàng đồng hành cùng mọi nhu cầu của bạn.</p>
+</div>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-gutter">
+@foreach(var service in (ViewBag.Services as IEnumerable<HotelManagement.Web.Models.Entities.HotelService>) ?? Array.Empty<HotelManagement.Web.Models.Entities.HotelService>())
+{
+    <div class="bg-surface-container-lowest rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-shadow flex flex-col group">
+        <div class="h-48 overflow-hidden">
+            <div class="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-500" style="background-image: url('@(string.IsNullOrEmpty(service.ImageUrl) ? "https://placehold.co/600x400?text=Service" : service.ImageUrl)')"></div>
+        </div>
+        <div class="p-space-md flex flex-col flex-1">
+            <h4 class="font-headline-sm text-headline-sm font-semibold text-on-surface">@service.Name</h4>
+            <p class="font-body-sm text-body-sm text-on-surface-variant mt-1 mb-4 flex-1">
+                @service.Description
+            </p>
+        </div>
+    </div>
+}
+</div>
+</div>
+</section>
+<!-- 7. SPECIAL OFFER BANNER -->
+
+<!-- 8. GALLERY SECTION (Bento / Asymmetric Grid) -->
+<section class="max-w-[1280px] w-full mx-auto px-margin-sm md:px-margin py-24">
+<div class="text-center max-w-2xl mx-auto mb-space-xl">
+<div class="inline-flex items-center gap-2 mb-2">
+<span class="w-6 h-[2px] bg-secondary"></span>
+<span class="font-label-sm text-label-sm tracking-[0.2em] uppercase text-secondary font-semibold">Khám phá không gian</span>
+<span class="w-6 h-[2px] bg-secondary"></span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-semibold">Từng khoảnh khắc kiến trúc tĩnh tại</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Một góc nhìn chân thực về sự giao hòa hoàn hảo giữa thiên nhiên và nghệ thuật bài trí.</p>
+</div>
+<!-- Curated Editorial Bento Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-4 gap-space-md">
+<!-- Big Card -->
+<div class="md:col-span-2 lg:col-span-2 md:row-span-2 rounded-xl overflow-hidden shadow-sm relative group h-[480px]">
+<div class="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-700" data-alt="Wide panoramic view of hotel exterior facade blending into oceanfront cliffs, lush tropical gardens, infinity pool terrace reflecting dusk sky with architectural warm downlights" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDPF3028cg_lvvBgtzoThJwfJWRo0qj03pC0pEKWr5p__6o3srO4Wf1sGpFkVUPAcwCffODcrUSWZjYKKAuH0oLwCFTq8tmtEBe7EWyAR_Tv9TENC63mm_nmAIRbnJ4p_CvfBswksbXkf2yHHSo72m-KB-4v6UMjsoBj9NMwJNmRMGzlKzpJb3d1dGpxuqtU-UOIswaZPfkVBXfDsRoHNvplFhqwrqdiWuA5NXxp-73DtNE4ClzIw')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent opacity-80 group-hover:opacity-90 transition-opacity"></div>
+<div class="absolute bottom-4 left-4 text-surface-container-lowest">
+<span class="font-label-sm text-label-sm uppercase tracking-widest text-secondary-fixed">Khuôn viên ngoài trời</span>
+<h4 class="font-headline-sm text-headline-sm font-semibold">Toàn cảnh khu nghỉ dưỡng nhìn từ bãi biển</h4>
+</div>
+</div>
+<!-- Small 1 -->
+<div class="rounded-xl overflow-hidden shadow-sm relative group h-[230px]">
+<div class="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-700" data-alt="Luxury boutique hotel cocktail bar with brass counter, rows of premium spirits, warm glowing ambient pendant lights, and attentive mixologist serving a crafted cocktail" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuBG8SGMAv_h2X_H8t4D47Axe2w9GdmTe0IPFTvt_7XU0-WGGnbQ4oXPaQyT0KQJeJDlgFvTJinSRkUrozh3MO343guQk-ASWqUSQQIS0EBNmPYancHaBW3VMuRNLkpIQ4Xr7r0fI2iFyk076kuxwRtPVoOQAK6HGsGgFPWGAmlIWEUn733cawgVVwcyVbErnLs9zKXZp9VDtM6R5KvwCT3l8B82_6DPmz4ZBXxfMVg2iNPIxL2GEA')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent opacity-60"></div>
+<div class="absolute bottom-3 left-3 text-surface-container-lowest">
+<h5 class="font-label-lg text-label-lg font-medium">Skyline Cocktail Lounge</h5>
+</div>
+</div>
+<!-- Small 2 -->
+<div class="rounded-xl overflow-hidden shadow-sm relative group h-[230px]">
+<div class="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-700" data-alt="Quiet tranquil spa treatment room with two massage beds adorned with fresh white orchids, warm bamboo dividers, stone diffuser emitting aromatic steam" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuA1Ue-zaIWw8ItsnwKnOVH4N-N8YUcfPlk5rRVnOyzrze1P6Ocq_c7WRd6m5o_U9esV6MLxOFBjVmDIqD9174VZ2Ca9yb5otUo9W6XsyAIsIO-5m6rzyAoDbjl-VivCItGO93WC_7sXYUVVgpIDjqAHJ0dogBb4zPZG_op6iYwkqXYtVwyMRnibjVSfJea8jy-twfODCmajDm9qX9mwMxaeGGy-SzXtClgw7jWYIgIEEasNYKjcEg')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent opacity-60"></div>
+<div class="absolute bottom-3 left-3 text-surface-container-lowest">
+<h5 class="font-label-lg text-label-lg font-medium">Phòng trị liệu Lotus Sanctuary</h5>
+</div>
+</div>
+<!-- Small 3 -->
+<div class="rounded-xl overflow-hidden shadow-sm relative group h-[230px]">
+<div class="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-700" data-alt="Close up architectural detail of custom brass door handles and dark natural oak woodwork in the resort corridor with soft wall-grazing warm lights" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuC5V3C0xNj0g4gBR44A6fn7FwCG3P7uR9Jj5XufnEqC9nmmhNWgVhmwWb4iEeNNbXL6Nvk_4Ak45INhTB0WFQU5ApvlpkVhay5KsijWL1h3vcyDHWHCScEcshC2XbMhftQQKCj4AXQgiLQrDmnJwMXZN1cFW_jUHPGNtercJh4bn-opE1Qi5RHhl9IxBvh9jDOuK-We9XJSAdLtB72RN_3gxBjjnSOjlATtwTHTIKyrQ8Vo8bBO1g')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent opacity-60"></div>
+<div class="absolute bottom-3 left-3 text-surface-container-lowest">
+<h5 class="font-label-lg text-label-lg font-medium">Chi tiết thủ công tinh xảo</h5>
+</div>
+</div>
+<!-- Small 4 -->
+<div class="rounded-xl overflow-hidden shadow-sm relative group h-[230px]">
+<div class="w-full h-full bg-cover bg-center group-hover:scale-105 transition-transform duration-700" data-alt="Fine dining table set with white porcelain dinnerware, silver cutlery, polished crystal wine glasses, and freshly plucked lotus flowers centerpiece" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDydPQk8YZnmkTK4wZ0jcIPz7givIrKPBFraa-1zEXfyZ8oS7QbUZWgZmECMm2bJVd_X3plzBHCAH6BoxX1FDc4310n09qZjbHrnTgjjzHPSPgO0AsdWWHVxzpl6DoqcdwYPFpja7m7qWJQQx6ovcDhY5K94PGI6E7v3vjJ6mJfg-mwRKEvHSUs7btgaMtkAHTX6KHw3dAdVGMB2gyN7hgV5hPPSJkVW5x08AxX3v8hZzbMJPdvbA')"></div>
+<div class="absolute inset-0 bg-gradient-to-t from-primary/80 via-transparent to-transparent opacity-60"></div>
+<div class="absolute bottom-3 left-3 text-surface-container-lowest">
+<h5 class="font-label-lg text-label-lg font-medium">Ẩm thực The Brass Lantern</h5>
+</div>
+</div>
+</div>
+</section>
+<!-- 9. TESTIMONIALS -->
+<section class="w-full bg-surface-container-low py-space-xl">
+<div class="max-w-[1280px] w-full mx-auto px-margin-sm md:px-margin">
+<div class="text-center max-w-2xl mx-auto mb-space-xl">
+<div class="inline-flex items-center gap-2 mb-2">
+<span class="w-6 h-[2px] bg-secondary"></span>
+<span class="font-label-sm text-label-sm tracking-[0.2em] uppercase text-secondary font-semibold">Đánh giá từ khách hàng</span>
+<span class="w-6 h-[2px] bg-secondary"></span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-semibold">Những câu chuyện đáng nhớ tại Aura</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">Sự hài lòng và bình yên của quý khách là niềm tự hào lớn nhất của chúng tôi.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter">
+<!-- Review 1 -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex text-secondary mb-3">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface italic leading-relaxed mb-space-md">
+              "Khách sạn mang một phong cách tĩnh tại hiếm có. Bồn tắm đá núi lửa ngoài ban công ngắm hoàng hôn là trải nghiệm không thể quên. Đội ngũ nhân viên luôn nhớ thói quen dùng trà gừng mỗi sáng của vợ chồng tôi."
+            </p>
+</div>
+<div class="flex items-center gap-3 pt-space-sm">
+<div class="w-11 h-11 rounded-full bg-surface-container-high flex items-center justify-center font-semibold text-primary">
+              AN
+            </div>
+<div>
+<div class="font-label-lg text-label-lg font-semibold text-on-surface">Nguyễn Anh Tuấn</div>
+<div class="font-label-sm text-label-sm text-outline">Du khách từ Hà Nội • Lưu trú 4 đêm</div>
+</div>
+</div>
+</div>
+<!-- Review 2 -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex text-secondary mb-3">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface italic leading-relaxed mb-space-md">
+              "As an architect, I was genuinely captivated by the precision of Aura's craftsmanship. The seamless dialogue between raw teak wood, brass details, and tropical greenery created an unmatched sanctuary."
+            </p>
+</div>
+<div class="flex items-center gap-3 pt-space-sm">
+<div class="w-11 h-11 rounded-full bg-surface-container-high flex items-center justify-center font-semibold text-primary">
+              DT
+            </div>
+<div>
+<div class="font-label-lg text-label-lg font-semibold text-on-surface">David Tan</div>
+<div class="font-label-sm text-label-sm text-outline">Du khách từ Singapore • Executive Suite</div>
+</div>
+</div>
+</div>
+<!-- Review 3 -->
+<div class="p-space-lg rounded-xl bg-surface-container-lowest shadow-sm flex flex-col justify-between">
+<div>
+<div class="flex text-secondary mb-3">
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+<span class="material-symbols-outlined text-[20px]" style="font-variation-settings: 'FILL' 1;">star</span>
+</div>
+<p class="font-body-md text-body-md text-on-surface italic leading-relaxed mb-space-md">
+              "Gia đình chúng tôi ở căn Pool Villa 3 phòng ngủ. Không gian hoàn hảo cho các con bơi lội, quản gia hỗ trợ chu đáo từ món ăn dặm đến đặt thuyền tham quan. Chắc chắn sẽ quay lại vào dịp Tết tới!"
+            </p>
+</div>
+<div class="flex items-center gap-3 pt-space-sm">
+<div class="w-11 h-11 rounded-full bg-surface-container-high flex items-center justify-center font-semibold text-primary">
+              LH
+            </div>
+<div>
+<div class="font-label-lg text-label-lg font-semibold text-on-surface">Lê Hoàng Mai Chi</div>
+<div class="font-label-sm text-label-sm text-outline">Du khách từ TP. Hồ Chí Minh • Pool Villa</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 10. LOCATION & CONTACT SECTION -->
+<section class="max-w-[1280px] w-full mx-auto px-margin-sm md:px-margin py-24">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-center">
+<!-- Left: Distances & Quick Contact -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<div>
+<div class="flex items-center gap-2 mb-1">
+<span class="w-6 h-[2px] bg-secondary"></span>
+<span class="font-label-sm text-label-sm tracking-[0.2em] uppercase text-secondary font-semibold">Vị trí thuận tiện</span>
+</div>
+<h2 class="font-headline-lg text-headline-lg text-on-surface font-semibold">Dễ dàng kết nối các điểm đến</h2>
+<p class="font-body-md text-body-md text-on-surface-variant mt-2 leading-relaxed">
+            Tọa lạc tại vị trí đắc địa ngay cung đường ven biển thanh bình, Aura mang đến sự riêng tư tuyệt đối nhưng chỉ cách trung tâm thành phố và sân bay ít phút di chuyển.
+          </p>
+</div>
+<div class="flex flex-col gap-3 py-2">
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-[22px]">flight_takeoff</span>
+<span class="font-label-lg text-label-lg font-medium text-on-surface">Sân bay Quốc tế</span>
+</div>
+<span class="font-label-sm text-label-sm font-semibold text-primary">20 phút lái xe</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-[22px]">beach_access</span>
+<span class="font-label-lg text-label-lg font-medium text-on-surface">Bãi biển riêng</span>
+</div>
+<span class="font-label-sm text-label-sm font-semibold text-primary">3 phút đi bộ</span>
+</div>
+<div class="flex items-center justify-between p-3 rounded-lg bg-surface-container-low">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-secondary text-[22px]">storefront</span>
+<span class="font-label-lg text-label-lg font-medium text-on-surface">Khu phố cổ &amp; Chợ trung tâm</span>
+</div>
+<span class="font-label-sm text-label-sm font-semibold text-primary">8 phút di chuyển</span>
+</div>
+</div>
+<div class="p-space-md rounded-xl bg-surface-container-lowest shadow-sm flex flex-col gap-2">
+<div class="font-label-md text-label-md uppercase tracking-wider text-outline font-semibold">Hỗ trợ đặt phòng trực tiếp</div>
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-secondary text-[20px]">call</span>
+<a class="font-headline-sm text-headline-sm font-bold text-primary hover:text-secondary transition-colors" href="tel:19006868">1900 6868</a>
+<span class="text-outline text-label-sm">/(+84) 24 3988 7766</span>
+</div>
+<div class="flex items-center gap-2 text-on-surface-variant font-body-sm text-body-sm">
+<span class="material-symbols-outlined text-secondary text-[18px]">mail</span>
+<span class="">reservations@auraboutique.com</span>
+</div>
+</div>
+</div>
+<!-- Right: Stylized Interactive Map Preview -->
+<div class="lg:col-span-7">
+<div class="relative w-full h-[440px] rounded-2xl overflow-hidden shadow-[0_4px_20px_rgba(20,49,44,0.08)] bg-surface-container-high">
+<!-- Static Location Pipeline Trigger -->
+<div class="w-full h-full bg-cover bg-center" data-location="108 Vo Nguyen Giap, Da Nang, Vietnam" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuDuVzzZE0figLjDnhR7vNu7nSflAwKBNVJePyCg2a4MRHTFOMx4xhB9dWjzEhdwFFUp61UzcdDRgkJ9G0fVSD8MGHtE-qd0m_pq8AV1n8lZmbsXmCGdAHAHc0CqRVzeKxhxSodoweZvXgNvOWMBA95wzqg6C-fX_5Ksp1GsTTHvqkj3W0uS0cPMkg1IZ4AzAQ5hmCcHtmp8-sWm7-alSDthXcf1FFqRIACbBT-nNueIcm0300PgfA')"></div>
+<!-- Map Overlay Pin -->
+<div class="absolute inset-0 bg-primary/10 pointer-events-none"></div>
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 flex flex-col items-center pointer-events-none">
+<div class="px-4 py-2 rounded-xl bg-primary-container text-surface-container-lowest shadow-2xl flex items-center gap-2">
+<span class="w-2.5 h-2.5 rounded-full bg-secondary-fixed animate-ping"></span>
+<span class="font-label-md text-label-md font-semibold text-secondary-fixed">Aura Boutique Hotel &amp; Resort</span>
+</div>
+<div class="w-3 h-3 bg-primary-container rotate-45 -mt-1.5 shadow-md"></div>
+</div>
+<div class="absolute bottom-4 left-4 right-4 bg-surface-container-lowest/90 backdrop-blur-md p-space-md rounded-xl flex items-center justify-between shadow-lg">
+<div class="flex items-center gap-2.5">
+<span class="material-symbols-outlined text-secondary text-[24px]">pin_drop</span>
+<div>
+<div class="font-label-md text-label-md font-semibold text-on-surface">108 Võ Nguyên Giáp, Sơn Trà, Đà Nẵng</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant">Tọa độ vàng kết nối bán đảo Sơn Trà &amp; bờ biển Mỹ Khê</div>
+</div>
+</div>
+<a class="hidden sm:inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-surface-container text-primary font-label-sm text-label-sm font-semibold hover:bg-surface-container-high transition-colors" href="https://maps.google.com" rel="noopener noreferrer" target="_blank">
+              Mở chỉ đường
+              <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+</a>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- 11. FINAL CTA -->
+<section class="w-full bg-primary-container text-surface-container-lowest py-20 relative overflow-hidden">
+<div class="absolute inset-0 opacity-10 bg-[radial-gradient(#d8b878_1px,transparent_1px)] [background-size:24px_24px] pointer-events-none"></div>
+<div class="relative z-10 max-w-[960px] w-full mx-auto px-margin-sm md:px-margin text-center flex flex-col items-center">
+<span class="font-label-sm text-label-sm tracking-[0.25em] uppercase text-secondary-fixed font-semibold mb-3">Kỳ nghỉ trong mơ đang chờ đón</span>
+<h2 class="font-headline-lg text-headline-lg md:text-[40px] md:leading-[48px] font-bold text-surface-container-lowest max-w-2xl mb-4">
+        Sẵn sàng cho kỳ nghỉ tiếp theo tại Aura?
+      </h2>
+<p class="font-body-lg text-body-lg text-on-primary-container max-w-xl font-light mb-space-lg leading-relaxed">
+        Đặt phòng trực tiếp ngay hôm nay để nhận mức giá ưu đãi tốt nhất được đảm bảo, kèm theo đồ uống chào mừng và dịch vụ hỗ trợ cá nhân hóa 24/7.
+      </p>
+<div class="flex flex-wrap items-center justify-center gap-space-md">
+<a class="inline-flex items-center justify-center px- space-xl py-3.5 rounded-lg bg-secondary-fixed text-on-secondary-fixed hover:bg-secondary-fixed-dim font-label-lg text-label-lg font-semibold tracking-wide shadow-lg transition-all" data-path="dat-phong" href="#">
+<span class="material-symbols-outlined text-[20px] mr-2">calendar_month</span>
+<span class="">Đặt phòng trực tuyến</span>
+</a>
+<a class="inline-flex items-center justify-center px- space-xl py-3.5 rounded-lg bg-surface-container-lowest/15 backdrop-blur-md text-surface-container-lowest hover:bg-surface-container-lowest/25 font-label-lg text-label-lg font-medium tracking-wide transition-all" href="tel:19006868">
+<span class="material-symbols-outlined text-[20px] mr-2 text-secondary-fixed">call</span>
+<span class="">Gọi tư vấn: 1900 6868</span>
+</a>
+</div>
+</div>
+</section>
+</div>
