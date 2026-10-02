@@ -91,6 +91,7 @@ public class RoomTypeService : IRoomTypeService
             SelectedAmenities = SplitAmenities(entity.Amenities),
             Description = entity.Description,
             ImageUrl = entity.ImageUrl,
+            AdditionalImageUrls = entity.AdditionalImageUrls,
             BedType = entity.BedType,
             SizeSqm = entity.SizeSqm,
             IsFreeCancellation = entity.IsFreeCancellation,
@@ -129,6 +130,7 @@ public class RoomTypeService : IRoomTypeService
             Amenities = JoinAmenities(form.SelectedAmenities),
             Description = form.Description?.Trim(),
             ImageUrl = form.ImageUrl?.Trim(),
+            AdditionalImageUrls = form.AdditionalImageUrls?.Trim(),
             BedType = form.BedType?.Trim(),
             SizeSqm = form.SizeSqm,
             IsFreeCancellation = form.IsFreeCancellation,
@@ -176,6 +178,7 @@ public class RoomTypeService : IRoomTypeService
         entity.Amenities = JoinAmenities(form.SelectedAmenities);
         entity.Description = form.Description?.Trim();
         entity.ImageUrl = form.ImageUrl?.Trim();
+        entity.AdditionalImageUrls = form.AdditionalImageUrls?.Trim();
         entity.BedType = form.BedType?.Trim();
         entity.SizeSqm = form.SizeSqm;
         entity.IsFreeCancellation = form.IsFreeCancellation;

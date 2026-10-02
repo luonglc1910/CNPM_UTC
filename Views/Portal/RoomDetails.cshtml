@@ -15,7 +15,7 @@
 <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
 <a class="hover:text-primary transition-colors" href="#">Phòng nghỉ</a>
 <span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
-<span class="text-primary font-semibold">Deluxe King Ocean View</span>
+<span class="text-primary font-semibold">@Model.Name</span>
 </nav>
 </div>
 </div>
@@ -27,28 +27,31 @@
 <div class="lg:col-span-7 flex flex-col gap-space-sm">
 <!-- Main Large Image -->
 <div class="relative w-full aspect-[16/10] overflow-hidden rounded-[10px] bg-surface-container group shadow-sm">
-<img class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" data-alt="Deluxe King Ocean View suite at luxury coastal resort, wide panoramic glass doors open to turquoise ocean and tropical palms, elegant modernist king bed with crisp white 400-thread-count cotton linens, raw teak wood furniture, warm natural afternoon sunlight, minimalist interior styling in deep emerald ink and muted brass accents, 8k architectural photography" id="mainGalleryImage" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAz4CokVCD1sz9BkcHkU3WgWB10wR25PApJ49sD6zfLz-UyBABHXvXMayP0cKbC2VPbaMhBHN95tA996fm5WKsMDzVl4nDTIaqP6Nf3dNId95L54x8CAL3kuaaaiMIxpB-ENOciWXbWIp1Ji4M6fn2Jltua_nOCXA4PeEE_EWbeU_BNNIVrRa5d2k4D-UPBwbdzO4cPbyW1gKIaekXptYLnQQK2QDjwGpqockqgT_iW9WmQrdqBbg">
+<img class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" data-alt="@Model.Name" id="mainGalleryImage" src="@Model.ImageUrl">
 
 
 </div>
 <!-- 4 Sub Thumbnails -->
 <div class="grid grid-cols-4 gap-space-xs sm:gap-space-sm">
-<div class="aspect-[4/3] rounded-[6px] overflow-hidden relative group cursor-pointer bg-surface-container shadow-sm" onclick="swapGallery(this)">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Close up of luxury king size hotel bed with bespoke raw teak headboard, architectural brass bedside sconces, soft ambient lamp illumination, pristine beige and deep emerald throw blankets, editorial interior design" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAI8y9gqHKvzkzbr28PXHE6ctfFiU5J6xPhxRXpKFutn_UyU4zAfVtIBGorm0Px2XgbkDX9k8omHzTIIEvmF9rmcPlE3m4H5H4OEj-sF0oBp87NgpZVnfsdLtVQJXT5rvzYWtGyZn_VPNsccZgcxrdg3hnQRasGf3yqy4S32uby0mApz1MbJiInzAgI50aYDtnO4cU9qdDmnL-SYk_d71INSTaIiwVc7IPWxmu-GjBhWnFkjAI0cg">
-</div>
-<div class="aspect-[4/3] rounded-[6px] overflow-hidden relative group cursor-pointer bg-surface-container shadow-sm" onclick="swapGallery(this)">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Opulent marble hotel bathroom with deep standalone soaking tub surrounded by natural sea-washed stones, tropical garden view window, designer brass rain shower fittings, organic botanical bath amenities, soft diffused daylight" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAOSt0vgFHaja9F2xewg941CXjN7I1ejqxUoTpL5kQ6LQZ5OTv3FEuETVhgcs8g8J-GzGagpIF-Wci-fv1-A9ZN1seUZ6SStdxoM6sb_s0iM3NM40KLJZ8sMp-tEbCDxwRbvxlMk_16-0jaWkJh9mxYERhrYUoIYgVmfkddHLqm9l2BNq6dbXM6FO1cTcpJJUnOmN9uiDKy4y9G3MBRoqQsQnfRKiEhsx45gSEJriu6S2uewv2fPQ">
-</div>
-<div class="aspect-[4/3] rounded-[6px] overflow-hidden relative group cursor-pointer bg-surface-container shadow-sm" onclick="swapGallery(this)">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" data-alt="Private resort suite sunlit balcony overlooking azure ocean with modernist lounge chairs, woven rattan table, morning espresso cup, tropical palm leaves foreground, calm serenity" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvGPcyf-zkU3Ffe_GmPHE_8SSNU--93fLbTKDQpzBJgHcqZfvxM_gu6mhEG8FiUuYsocXrwFC4YCEPIUJuoreBjINGgS6Jz8W1S-tVmG29Km6aYQAlqPG-pcmyYzTAElNTR6czz2X3cDfeX3wLeqWS1M_Qsi7jGGSglpCdTPXN-Dz75HPm2MOJ9L5jixl6ZkIUQFj46fmqe78pGUWQd0H8fMv6hV6q20OdW-MjSLag-9KIb1ZhSg">
-</div>
-<div class="aspect-[4/3] rounded-[6px] overflow-hidden relative group cursor-pointer bg-surface-container shadow-sm" onclick="openFullGallery()">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300 brightness-75" data-alt="Bespoke hotel room desk workstation made of solid teak wood with ergonomic chair, Harman Kardon bluetooth speaker, Nespresso machine, architectural stationery set, warm ambient lighting" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCNANzJEO6luE0cUex35lVFX0Df855qJzOT7a2A_kY016PEKH-YOuKrtg1dO7SFcKS6ddegoStKFMpo_B6bgrBrjnfsqK7nxyWtUUcR0t4Ii7yTfXQ3vyKCWcJBEjFHo23dHS7e55oGnvXtLOWknsWY5fgMk8IvPdGITDKAZrui0PCBvcvRUgTwOsI9baw-mbWHKXQriWPPIsVf9DpUHOrovkUh_7YMbXAb5FPW8vqPnaBbHxBN4w">
-<div class="absolute inset-0 bg-primary-container/60 hover:bg-primary-container/70 flex flex-col items-center justify-center text-surface-container-lowest gap-0.5 p-1 text-center transition-colors">
-<span class="material-symbols-outlined text-[20px] text-secondary-fixed">collections</span>
-<span class="font-label-sm text-label-sm font-semibold tracking-tight">12 bức ảnh</span>
-</div>
-</div>
+    @{
+        var additionalImages = string.IsNullOrWhiteSpace(Model.AdditionalImageUrls)
+            ? new List<string>()
+            : Model.AdditionalImageUrls.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        
+        for (int i = 0; i < Math.Min(4, additionalImages.Count); i++)
+        {
+            <div class="aspect-[4/3] rounded-[6px] overflow-hidden relative group cursor-pointer bg-surface-container shadow-sm" onclick="swapGallery(this)">
+                <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="@additionalImages[i]">
+                @if (i == 3 && additionalImages.Count > 4)
+                {
+                    <div class="absolute inset-0 bg-primary-container/60 hover:bg-primary-container/70 flex flex-col items-center justify-center text-surface-container-lowest gap-0.5 p-1 text-center transition-colors">
+                        <span class="material-symbols-outlined text-[20px] text-secondary-fixed">collections</span>
+                        <span class="font-label-sm text-label-sm font-semibold tracking-tight">@additionalImages.Count bức ảnh</span>
+                    </div>
+                }
+            </div>
+        }
+    }
 </div>
 </div>
 <!-- RIGHT: ROOM DETAILS & DIRECT BOOKING CARD (approx 38%) -->
@@ -68,9 +71,9 @@
 <!-- Title & PMS Inventory Badge -->
 <div class="flex flex-col gap-1.5">
 <h1 class="font-headline-lg text-headline-lg text-primary font-semibold leading-tight">
-              Deluxe King Ocean View
+              @Model.Name
             </h1>
-<p class="font-body-sm text-body-sm text-on-surface-variant">Phòng Deluxe Hướng Biển Tĩnh Lặng &amp; Ban Công Riêng</p>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Phòng @Model.Name đẳng cấp</p>
 <div class="pt-1 flex items-center gap-2">
 <span class="inline-flex items-center gap-1.5 bg-[#2e7d57]/10 text-[#2e7d57] px-2.5 py-0.5 rounded-[4px] font-label-sm text-label-sm font-medium">
 <span class="w-1.5 h-1.5 rounded-full bg-[#2e7d57] animate-pulse"></span>
@@ -85,8 +88,7 @@
 <!-- Pricing Display -->
 <div class="bg-surface-container-low p-space-md rounded-[8px] flex flex-col gap-1">
 <div class="flex items-baseline gap-2">
-<span class="font-body-sm text-body-sm line-through text-outline font-medium">2.800.000 ₫</span>
-<span class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">2.250.000 ₫</span>
+<span class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">@Model.BasePricePerNight.ToString("N0") ₫</span>
 <span class="font-label-md text-label-md text-on-surface-variant">/ đêm</span>
 </div>
 <p class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
@@ -122,7 +124,7 @@
 <!-- Price Breakdown Summary -->
 <div class="py-2 flex items-center justify-between font-label-md text-label-md">
 <span class="text-on-surface-variant">Tổng dự kiến (3 đêm lưu trú):</span>
-<span class="font-headline-sm text-headline-sm font-bold text-primary">6.750.000 ₫</span>
+<span class="font-headline-sm text-headline-sm font-bold text-primary">@((Model.BasePricePerNight * 3).ToString("N0")) ₫</span>
 </div>
 <!-- Primary CTA -->
 <button class="w-full h-11 bg-primary-container hover:bg-primary text-surface-container-lowest rounded-[6px] font-label-lg text-label-lg font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2" type="submit">
@@ -156,7 +158,7 @@
 </div>
 <div class="flex flex-col min-w-0">
 <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Diện tích</span>
-<span class="font-headline-sm text-headline-sm text-primary font-semibold">36 m²</span>
+<span class="font-headline-sm text-headline-sm text-primary font-semibold">@Model.SizeSqm m²</span>
 <span class="font-body-sm text-body-sm text-on-surface-variant truncate">Rộng rãi, thoáng đãng</span>
 </div>
 </div>
@@ -166,8 +168,8 @@
 </div>
 <div class="flex flex-col min-w-0">
 <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Loại giường</span>
-<span class="font-headline-sm text-headline-sm text-primary font-semibold">1 Giường King</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Đệm Micro-Coil êm ái</span>
+<span class="font-headline-sm text-headline-sm text-primary font-semibold">@Model.BedType</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Êm ái, thoải mái</span>
 </div>
 </div>
 <div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex items-center gap-space-sm">
@@ -176,8 +178,8 @@
 </div>
 <div class="flex flex-col min-w-0">
 <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Sức chứa</span>
-<span class="font-headline-sm text-headline-sm text-primary font-semibold">Tối đa 3 khách</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant truncate">2 Người lớn &amp; 1 Trẻ em</span>
+<span class="font-headline-sm text-headline-sm text-primary font-semibold">Tối đa @Model.MaxCapacity khách</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Tiêu chuẩn @Model.StandardCapacity khách</span>
 </div>
 </div>
 <div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex items-center gap-space-sm">
@@ -201,10 +203,7 @@
           Tổng quan phòng nghỉ
         </h2>
 <p class="font-body-lg text-body-lg text-on-surface leading-relaxed mt-1">
-          Không gian <strong>Deluxe King Ocean View</strong> kết hợp hài hòa giữa nét thẩm mỹ đương đại và văn hóa bản địa duyên hải miền Trung. Thiết kế tường kính tràn đón trọn nguồn ánh sáng tự nhiên cùng làn gió biển trong lành mỗi sớm mai, mang đến sự tĩnh lặng tuyệt đối cho kỳ nghỉ dưỡng tái tạo năng lượng của bạn.
-        </p>
-<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-          Từng chi tiết được hoàn thiện tỉ mỉ bằng vật liệu tự nhiên: gỗ tếch mộc, đá xám bazan tự nhiên, và vải lanh đan thủ công từ các làng nghề địa phương. Bạn có thể thư giãn trên ban công riêng rộng 8m² với tách trà thơm hoặc đắm mình trong bồn tắm ngâm sâu sau một ngày dạo chơi trên bãi cát mịn màng.
+          @Model.Description
         </p>
 <div class="pt-2 flex items-center gap-6 text-on-surface-variant font-label-md text-label-md">
 <div class="flex items-center gap-1.5">
@@ -238,120 +237,22 @@
 <h2 class="font-headline-lg text-headline-lg text-primary font-semibold">Tiện nghi phòng đẳng cấp</h2>
 </div>
 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter-sm md:gap-gutter">
-<!-- Group 1: Bedroom -->
-<div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex flex-col gap-space-sm">
-<div class="w-10 h-10 rounded-[6px] bg-secondary/10 flex items-center justify-center text-secondary">
-<span class="material-symbols-outlined text-[22px]">single_bed</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm text-primary font-semibold">Phòng ngủ &amp; Nghỉ ngơi</h3>
-<ul class="flex flex-col gap-2 font-body-sm text-body-sm text-on-surface-variant">
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Đệm Micro-Coil đàn hồi đa vùng độc quyền</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Ga trải giường cotton Ai Cập 400 sợi êm ái</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Tủ quần áo âm tường bằng gỗ tếch tự nhiên</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Rèm cản sáng 100% cảm biến thông minh</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Bàn làm việc &amp; đọc sách công thái học</span>
-</li>
-</ul>
-</div>
-<!-- Group 2: Bathroom -->
-<div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex flex-col gap-space-sm">
-<div class="w-10 h-10 rounded-[6px] bg-secondary/10 flex items-center justify-center text-secondary">
-<span class="material-symbols-outlined text-[22px]">bathtub</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm text-primary font-semibold">Phòng tắm sang trọng</h3>
-<ul class="flex flex-col gap-2 font-body-sm text-body-sm text-on-surface-variant">
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Bồn tắm đá ngâm hoa tự nhiên hướng biển</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Vòi sen mưa áp lực nước thư giãn trị liệu</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Áo choàng tắm lụa dệt kim &amp; khăn bông cao cấp</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Máy sấy tóc tạo kiểu ion Dyson Supersonic</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Bộ mỹ phẩm hữu cơ chiết xuất hoa sen &amp; cam hương</span>
-</li>
-</ul>
-</div>
-<!-- Group 3: Tech & Connectivity -->
-<div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex flex-col gap-space-sm">
-<div class="w-10 h-10 rounded-[6px] bg-secondary/10 flex items-center justify-center text-secondary">
-<span class="material-symbols-outlined text-[22px]">devices</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm text-primary font-semibold">Tiện ích công nghệ</h3>
-<ul class="flex flex-col gap-2 font-body-sm text-body-sm text-on-surface-variant">
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Wi-Fi 6 thế hệ mới tốc độ không giới hạn</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Smart TV 55 inch 4K HDR (Netflix, YouTube)</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Hệ thống loa Bluetooth Harman Kardon Studio</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Cổng sạc không dây &amp; USB Type-C đầu giường</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Bảng điều khiển ngữ cảnh chiếu sáng thông minh</span>
-</li>
-</ul>
-</div>
-<!-- Group 4: Food & Room Service -->
-<div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex flex-col gap-space-sm">
-<div class="w-10 h-10 rounded-[6px] bg-secondary/10 flex items-center justify-center text-secondary">
-<span class="material-symbols-outlined text-[22px]">coffee_maker</span>
-</div>
-<h3 class="font-headline-sm text-headline-sm text-primary font-semibold">Đồ uống &amp; Dịch vụ</h3>
-<ul class="flex flex-col gap-2 font-body-sm text-body-sm text-on-surface-variant">
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Máy pha cà phê Nespresso &amp; 04 capsule mỗi ngày</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Minibar lạnh chọn lọc với đồ uống &amp; snack nhập khẩu</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Bộ ấm đun siêu tốc thủy tinh &amp; trà thảo mộc organic</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Dọn phòng 2 lần/ngày kèm dịch vụ Turn-down tối</span>
-</li>
-<li class="flex items-start gap-2">
-<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check</span>
-<span class="">Phục vụ ẩm thực tại phòng 24/7 từ Bếp Trưởng</span>
-</li>
+<div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex flex-col gap-space-sm w-full md:col-span-2 lg:col-span-4">
+<h3 class="font-headline-sm text-headline-sm text-primary font-semibold">Các tiện nghi hiện có</h3>
+<ul class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 font-body-sm text-body-sm text-on-surface-variant">
+    @{
+        var amenitiesList = string.IsNullOrWhiteSpace(Model.Amenities) 
+            ? new List<string>() 
+            : Model.Amenities.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        
+        foreach (var item in amenitiesList)
+        {
+            <li class="flex items-start gap-2">
+            <span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check_circle</span>
+            <span class="">@item</span>
+            </li>
+        }
+    }
 </ul>
 </div>
 </div>
