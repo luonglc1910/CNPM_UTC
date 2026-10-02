@@ -21,6 +21,10 @@ public class HotelService : BaseEntity
     [MaxLength(500)]
     public string? ImageUrl { get; set; }
 
+    public string? IconSvg { get; set; }
+
+    public ServiceType Type { get; set; } = ServiceType.Service;
+
     public ServiceCategory Category { get; set; } = ServiceCategory.Other;
 
     public decimal UnitPrice { get; set; }

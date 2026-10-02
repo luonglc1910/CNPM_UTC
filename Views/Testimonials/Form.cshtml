@@ -1,0 +1,48 @@
+@model TestimonialFormViewModel
+@{
+    var isNew = Model.Id == 0;
+    ViewData["Title"] = isNew ? "Thêm Đánh giá" : "Sửa Đánh giá";
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Quay lại danh sách</a>
+</div>
+
+<div class="card" style="max-width: 600px">
+    <div class="card-body">
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label asp-for="CustomerName" class="form-label"></label>
+                    <input asp-for="CustomerName" class="form-control" />
+                    <span asp-validation-for="CustomerName" class="text-danger small"></span>
+                </div>
+                
+                <div class="col-12">
+                    <label asp-for="Content" class="form-label"></label>
+                    <textarea asp-for="Content" class="form-control" rows="5"></textarea>
+                    <span asp-validation-for="Content" class="text-danger small"></span>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Rating" class="form-label"></label>
+                    <select asp-for="Rating" class="form-select">
+                        <option value="5">5 Sao - Rất hài lòng</option>
+                        <option value="4">4 Sao - Hài lòng</option>
+                        <option value="3">3 Sao - Bình thường</option>
+                        <option value="2">2 Sao - Không hài lòng</option>
+                        <option value="1">1 Sao - Tệ</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label asp-for="Source" class="form-label"></label>
+                    <input asp-for="Source" class="form-control" placeholder="Google Maps, TripAdvisor..." />
+                </div>
+            </div>
+
+            <hr class="my-4" />
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Lưu thay đổi</button>
+        </form>
+    </div>
+</div>

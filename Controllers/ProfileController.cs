@@ -177,7 +177,7 @@ public class ProfileController : Controller
             await _db.SaveChangesAsync();
             return Json(ApiResponse.Ok("Cập nhật hồ sơ thành công!"));
         }
-        catch (Exception ex)
+        catch (Exception)
         {
             return Json(ApiResponse.Fail("Lỗi hệ thống khi lưu dữ liệu.", "DB_ERROR"));
         }

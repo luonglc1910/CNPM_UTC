@@ -39,7 +39,7 @@
             <div class="w-full bg-white/20 rounded-full h-1">
                 <div class="bg-tertiary-fixed h-1 rounded-full shadow-[0_0_8px_#a4f4c5]" style="width: @(ViewData["ProgressPercent"])%"></div>
             </div>
-            @if ((int)ViewData["PointsNeeded"] > 0)
+            @if (ViewData["PointsNeeded"] != null && (int)ViewData["PointsNeeded"] > 0)
             {
                 <p class="text-[10px] text-white/60 text-right mt-1">@(ViewData["PointsNeeded"]) pts nữa để thăng hạng</p>
             }

@@ -26,6 +26,10 @@ public class HotelDbContext : DbContext
     // Danh mục & cấu hình
     public DbSet<Employee> Employees => Set<Employee>();
     public DbSet<RoomType> RoomTypes => Set<RoomType>();
+    public DbSet<Amenity> Amenities => Set<Amenity>();
+    public DbSet<RoomTypeAmenity> RoomTypeAmenities => Set<RoomTypeAmenity>();
+    public DbSet<Promotion> Promotions => Set<Promotion>();
+    public DbSet<Testimonial> Testimonials => Set<Testimonial>();
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<HotelService> HotelServices => Set<HotelService>();
     public DbSet<HotelGalleryImage> HotelGalleryImages => Set<HotelGalleryImage>();
@@ -114,6 +118,11 @@ public class HotelDbContext : DbContext
         b.Entity<RoomType>(e =>
         {
             e.HasIndex(x => x.Code).IsUnique();
+        });
+
+        b.Entity<RoomTypeAmenity>(e =>
+        {
+            e.HasKey(x => new { x.RoomTypeId, x.AmenityId });
         });
 
         b.Entity<Room>(e =>

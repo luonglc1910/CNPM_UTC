@@ -1,0 +1,75 @@
+@model PromotionIndexViewModel
+@{
+    ViewData["Title"] = "Ưu đãi & Khuyến mãi";
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="h3 mb-0 text-gray-800">Ưu đãi & Khuyến mãi</h1>
+    <a asp-action="Create" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i> Thêm ưu đãi mới
+    </a>
+</div>
+
+@if (Model.Results.TotalItems == 0)
+{
+    <div class="card"><div class="card-body text-center text-muted py-5">
+        <p class="mb-0">Chưa có ưu đãi nào.</p>
+    </div></div>
+}
+else
+{
+    <div class="card">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th style="width: 80px">Ảnh</th>
+                        <th>Tên gói</th>
+                        <th class="text-end">Giá hiển thị</th>
+                        <th class="text-center">Thời gian áp dụng</th>
+                        <th class="text-center">Nổi bật</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
+                </thead>
+                <tbody>
+                @foreach (var item in Model.Results.Items)
+                {
+                    <tr>
+                        <td>
+                            @if (!string.IsNullOrEmpty(item.ImageUrl))
+                            {
+                                <img src="@item.ImageUrl" alt="Banner" class="img-thumbnail" style="height: 48px; object-fit: cover;" />
+                            }
+                        </td>
+                        <td class="fw-semibold">
+                            @item.Title
+                            <div class="small text-muted text-truncate" style="max-width: 300px" title="@item.Description">@item.Description</div>
+                        </td>
+                        <td class="text-end">@item.DisplayPrice.ToString("N0") ₫</td>
+                        <td class="text-center small">
+                            @item.StartDate.ToString("dd/MM/yyyy") - @item.EndDate.ToString("dd/MM/yyyy")
+                            @if (item.EndDate < DateTime.Today)
+                            {
+                                <br/><span class="badge text-bg-secondary">Đã hết hạn</span>
+                            }
+                        </td>
+                        <td class="text-center">
+                            @if (item.IsHeroOffer)
+                            {
+                                <i class="bi bi-star-fill text-warning" title="Hero Offer"></i>
+                            }
+                        </td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@item.Id" title="Sửa"><i class="bi bi-pencil"></i></a>
+                            <form method="post" asp-action="Delete" asp-route-id="@item.Id" class="d-inline" onsubmit="return confirm('Xóa ưu đãi @item.Title?');">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa"><i class="bi bi-trash"></i></button>
+                            </form>
+                        </td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" />
+}

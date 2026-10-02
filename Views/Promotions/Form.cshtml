@@ -1,0 +1,64 @@
+@model PromotionFormViewModel
+@{
+    var isNew = Model.Id == 0;
+    ViewData["Title"] = isNew ? "Thêm Ưu đãi mới" : $"Sửa Ưu đãi: {Model.Title}";
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Quay lại danh sách</a>
+</div>
+
+<div class="card" style="max-width: 800px">
+    <div class="card-body">
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label asp-for="Title" class="form-label"></label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+                
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="ImageUrl" class="form-label"></label>
+                    <input asp-for="ImageUrl" class="form-control" placeholder="https://..." />
+                    <div class="form-text">Nhập link ảnh (URL) để làm banner.</div>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="DisplayPrice" class="form-label"></label>
+                    <div class="input-group">
+                        <input asp-for="DisplayPrice" class="form-control text-end" type="number" />
+                        <span class="input-group-text">₫</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="StartDate" class="form-label"></label>
+                    <input asp-for="StartDate" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="EndDate" class="form-label"></label>
+                    <input asp-for="EndDate" class="form-control" />
+                </div>
+
+                <div class="col-12">
+                    <div class="form-check mt-2">
+                        <input asp-for="IsHeroOffer" class="form-check-input" />
+                        <label asp-for="IsHeroOffer" class="form-check-label fw-semibold"></label>
+                        <div class="form-text">Nếu đánh dấu, ưu đãi này sẽ hiển thị to nhất ở đầu trang Khuyến mãi.</div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4" />
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Lưu thay đổi</button>
+        </form>
+    </div>
+</div>

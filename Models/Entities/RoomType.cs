@@ -11,6 +11,9 @@ public class RoomType : BaseEntity
     [MaxLength(100)]
     public string Name { get; set; } = string.Empty;
 
+    [MaxLength(100)]
+    public string Slug { get; set; } = string.Empty;
+
     /// <summary>Sức chứa chuẩn — vượt mức này thì tính phụ thu thêm người (BR-03).</summary>
     public int StandardCapacity { get; set; }
 
@@ -33,17 +36,22 @@ public class RoomType : BaseEntity
     [MaxLength(500)]
     public string? Amenities { get; set; }
 
-    [MaxLength(500)]
-    public string? Description { get; set; }
+    [MaxLength(1000)]
+    public string? Description { get; set; } // Short Description
+
+    public string? DetailDescription { get; set; } // Detailed HTML description
 
     [MaxLength(1000)]
-    public string? ImageUrl { get; set; }
+    public string? ImageUrl { get; set; } // Thumbnail Image
 
     [MaxLength(2000)]
-    public string? AdditionalImageUrls { get; set; }
+    public string? AdditionalImageUrls { get; set; } // Gallery images
 
     [MaxLength(50)]
     public string? BedType { get; set; }
+
+    [MaxLength(50)]
+    public string? ViewType { get; set; }
 
     public int SizeSqm { get; set; }
 
@@ -53,4 +61,6 @@ public class RoomType : BaseEntity
     public bool IsActive { get; set; } = true;
 
     public ICollection<Room> Rooms { get; set; } = new List<Room>();
+    public ICollection<RoomTypeAmenity> RoomTypeAmenities { get; set; } = new List<RoomTypeAmenity>();
+    public ICollection<Promotion> Promotions { get; set; } = new List<Promotion>();
 }

@@ -53,6 +53,7 @@ public class RoomTypeService : IRoomTypeService
                 Id = t.Id,
                 Code = t.Code,
                 Name = t.Name,
+                ImageUrl = t.ImageUrl,
                 StandardCapacity = t.StandardCapacity,
                 MaxCapacity = t.MaxCapacity,
                 BasePricePerNight = t.BasePricePerNight,
@@ -92,6 +93,9 @@ public class RoomTypeService : IRoomTypeService
             Description = entity.Description,
             ImageUrl = entity.ImageUrl,
             AdditionalImageUrls = entity.AdditionalImageUrls,
+            Slug = entity.Slug,
+            DetailDescription = entity.DetailDescription,
+            ViewType = entity.ViewType,
             BedType = entity.BedType,
             SizeSqm = entity.SizeSqm,
             IsFreeCancellation = entity.IsFreeCancellation,
@@ -131,6 +135,9 @@ public class RoomTypeService : IRoomTypeService
             Description = form.Description?.Trim(),
             ImageUrl = form.ImageUrl?.Trim(),
             AdditionalImageUrls = form.AdditionalImageUrls?.Trim(),
+            Slug = form.Slug?.Trim(),
+            DetailDescription = form.DetailDescription?.Trim(),
+            ViewType = form.ViewType?.Trim(),
             BedType = form.BedType?.Trim(),
             SizeSqm = form.SizeSqm,
             IsFreeCancellation = form.IsFreeCancellation,
@@ -179,6 +186,9 @@ public class RoomTypeService : IRoomTypeService
         entity.Description = form.Description?.Trim();
         entity.ImageUrl = form.ImageUrl?.Trim();
         entity.AdditionalImageUrls = form.AdditionalImageUrls?.Trim();
+        entity.Slug = form.Slug?.Trim();
+        entity.DetailDescription = form.DetailDescription?.Trim();
+        entity.ViewType = form.ViewType?.Trim();
         entity.BedType = form.BedType?.Trim();
         entity.SizeSqm = form.SizeSqm;
         entity.IsFreeCancellation = form.IsFreeCancellation;

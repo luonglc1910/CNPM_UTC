@@ -19,6 +19,9 @@ public static class DbInitializer
         await SeedRoomTypesAndRoomsAsync(db);
         await SeedServicesAsync(db);
         await SeedGalleryAsync(db);
+        await SeedAmenitiesAsync(db);
+        await SeedPromotionsAsync(db);
+        await SeedTestimonialsAsync(db);
     }
 
     /// <summary>
@@ -87,22 +90,36 @@ public static class DbInitializer
         if (await db.RoomTypes.AnyAsync())
         {
             // Backfill giá giờ/qua đêm nếu = 0 — xảy ra khi migration thêm cột sau khi DB đã có data.
-            // ExecuteUpdateAsync chỉ đụng đúng cột cần fix, không xáo trộn data khác.
-            await db.RoomTypes.Where(t => t.Code == "STD" && t.PriceFirstHour == 0)
+            // Cập nhật luôn các trường giao diện (Slug, DetailDescription, ImageUrl, ViewType)
+            await db.RoomTypes.Where(t => t.Code == "STD")
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(t => t.PriceFirstHour,  120_000m)
-                    .SetProperty(t => t.PriceExtraHour,   20_000m)
-                    .SetProperty(t => t.PriceOvernight,  350_000m));
-            await db.RoomTypes.Where(t => t.Code == "DLX" && t.PriceFirstHour == 0)
+                    .SetProperty(t => t.PriceFirstHour, t => t.PriceFirstHour == 0 ? 120_000m : t.PriceFirstHour)
+                    .SetProperty(t => t.PriceExtraHour, t => t.PriceExtraHour == 0 ? 20_000m : t.PriceExtraHour)
+                    .SetProperty(t => t.PriceOvernight, t => t.PriceOvernight == 0 ? 350_000m : t.PriceOvernight)
+                    .SetProperty(t => t.Slug, "standard-room")
+                    .SetProperty(t => t.DetailDescription, "<p>Phòng nghỉ tiêu chuẩn với không gian ấm cúng, thiết kế hiện đại, đầy đủ tiện nghi cơ bản mang lại sự thoải mái nhất.</p>")
+                    .SetProperty(t => t.ImageUrl, "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=800&auto=format&fit=crop")
+                    .SetProperty(t => t.ViewType, "Hướng phố"));
+                    
+            await db.RoomTypes.Where(t => t.Code == "DLX")
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(t => t.PriceFirstHour,  200_000m)
-                    .SetProperty(t => t.PriceExtraHour,   40_000m)
-                    .SetProperty(t => t.PriceOvernight,  600_000m));
-            await db.RoomTypes.Where(t => t.Code == "VIP" && t.PriceFirstHour == 0)
+                    .SetProperty(t => t.PriceFirstHour, t => t.PriceFirstHour == 0 ? 200_000m : t.PriceFirstHour)
+                    .SetProperty(t => t.PriceExtraHour, t => t.PriceExtraHour == 0 ? 40_000m : t.PriceExtraHour)
+                    .SetProperty(t => t.PriceOvernight, t => t.PriceOvernight == 0 ? 600_000m : t.PriceOvernight)
+                    .SetProperty(t => t.Slug, "deluxe-room")
+                    .SetProperty(t => t.DetailDescription, "<p>Tận hưởng không gian sang trọng và thoáng đãng với diện tích rộng rãi. Phòng tắm được trang bị bồn tắm nằm thư giãn.</p>")
+                    .SetProperty(t => t.ImageUrl, "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=800&auto=format&fit=crop")
+                    .SetProperty(t => t.ViewType, "Hướng biển"));
+                    
+            await db.RoomTypes.Where(t => t.Code == "VIP")
                 .ExecuteUpdateAsync(s => s
-                    .SetProperty(t => t.PriceFirstHour,  300_000m)
-                    .SetProperty(t => t.PriceExtraHour,   50_000m)
-                    .SetProperty(t => t.PriceOvernight, 1_200_000m));
+                    .SetProperty(t => t.PriceFirstHour, t => t.PriceFirstHour == 0 ? 300_000m : t.PriceFirstHour)
+                    .SetProperty(t => t.PriceExtraHour, t => t.PriceExtraHour == 0 ? 50_000m : t.PriceExtraHour)
+                    .SetProperty(t => t.PriceOvernight, t => t.PriceOvernight == 0 ? 1_200_000m : t.PriceOvernight)
+                    .SetProperty(t => t.Slug, "vip-suite")
+                    .SetProperty(t => t.DetailDescription, "<p>Trải nghiệm đẳng cấp thượng lưu với hạng phòng VIP Suite. Thiết kế phong cách tổng thống, có phòng khách và ban công riêng biệt ôm trọn tầm nhìn ra đại dương bao la.</p>")
+                    .SetProperty(t => t.ImageUrl, "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=800&auto=format&fit=crop")
+                    .SetProperty(t => t.ViewType, "Hướng toàn cảnh Panorama"));
             return;
         }
 
@@ -111,6 +128,7 @@ public static class DbInitializer
         {
             Code = "STD",
             Name = "Standard",
+            Slug = "standard-room",
             StandardCapacity = 2,
             MaxCapacity = 3,
             BasePricePerNight = 500_000m,
@@ -120,13 +138,17 @@ public static class DbInitializer
             PriceExtraHour = 20_000m,
             PriceOvernight = 350_000m,
             Amenities = "Điều hòa, TV, Nóng lạnh, Wifi",
-            Description = "Phòng tiêu chuẩn 2 khách"
+            Description = "Phòng tiêu chuẩn 2 khách",
+            DetailDescription = "<p>Phòng nghỉ tiêu chuẩn với không gian ấm cúng, thiết kế hiện đại, đầy đủ tiện nghi cơ bản mang lại sự thoải mái nhất.</p>",
+            ImageUrl = "https://images.unsplash.com/photo-1611892440504-42a792e24d32?q=80&w=800&auto=format&fit=crop",
+            ViewType = "Hướng phố"
         };
 
         var deluxe = new RoomType
         {
             Code = "DLX",
             Name = "Deluxe",
+            Slug = "deluxe-room",
             StandardCapacity = 2,
             MaxCapacity = 4,
             BasePricePerNight = 900_000m,
@@ -136,13 +158,17 @@ public static class DbInitializer
             PriceExtraHour = 40_000m,
             PriceOvernight = 600_000m,
             Amenities = "Điều hòa, TV, Nóng lạnh, Wifi, Minibar, Bồn tắm",
-            Description = "Phòng rộng, có minibar"
+            Description = "Phòng rộng, có minibar",
+            DetailDescription = "<p>Tận hưởng không gian sang trọng và thoáng đãng với diện tích rộng rãi. Phòng tắm được trang bị bồn tắm nằm thư giãn.</p>",
+            ImageUrl = "https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?q=80&w=800&auto=format&fit=crop",
+            ViewType = "Hướng biển"
         };
 
         var vip = new RoomType
         {
             Code = "VIP",
             Name = "VIP Suite",
+            Slug = "vip-suite",
             StandardCapacity = 2,
             MaxCapacity = 5,
             BasePricePerNight = 1_800_000m,
@@ -152,7 +178,10 @@ public static class DbInitializer
             PriceExtraHour = 50_000m,
             PriceOvernight = 1_200_000m,
             Amenities = "Điều hòa, Smart TV, Wifi, Minibar, Bồn tắm, Phòng khách riêng, Ban công",
-            Description = "Hạng phòng cao cấp nhất"
+            Description = "Hạng phòng cao cấp nhất",
+            DetailDescription = "<p>Trải nghiệm đẳng cấp thượng lưu với hạng phòng VIP Suite. Thiết kế phong cách tổng thống, có phòng khách và ban công riêng biệt ôm trọn tầm nhìn ra đại dương bao la.</p>",
+            ImageUrl = "https://images.unsplash.com/photo-1631049307264-da0ec9d70304?q=80&w=800&auto=format&fit=crop",
+            ViewType = "Hướng toàn cảnh Panorama"
         };
 
         db.RoomTypes.AddRange(standard, deluxe, vip);
@@ -227,6 +256,82 @@ public static class DbInitializer
         };
 
         await db.HotelGalleryImages.AddRangeAsync(images);
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedAmenitiesAsync(HotelDbContext db)
+    {
+        if (await db.Amenities.AnyAsync()) return;
+
+        var amenities = new[]
+        {
+            new Amenity { Name = "Wifi tốc độ cao", IconSvg = "<i class=\"bi bi-wifi\"></i>" },
+            new Amenity { Name = "Smart TV", IconSvg = "<i class=\"bi bi-tv\"></i>" },
+            new Amenity { Name = "Bồn tắm nằm", IconSvg = "<i class=\"bi bi-droplet\"></i>" },
+            new Amenity { Name = "Ban công riêng", IconSvg = "<i class=\"bi bi-box\"></i>" },
+            new Amenity { Name = "Dịch vụ phòng 24/7", IconSvg = "<i class=\"bi bi-bell\"></i>" },
+            new Amenity { Name = "Minibar", IconSvg = "<i class=\"bi bi-cup-straw\"></i>" }
+        };
+
+        db.Amenities.AddRange(amenities);
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedPromotionsAsync(HotelDbContext db)
+    {
+        if (await db.Promotions.AnyAsync()) return;
+
+        var promotions = new[]
+        {
+            new Promotion
+            {
+                Title = "Nghỉ Dưỡng Thảnh Thơi",
+                Description = "Dành riêng cho kỳ nghỉ từ 3 đêm trở lên tại các hạng phòng hướng biển hoặc biệt thự riêng tư. Bao gồm bữa sáng buffet 5 sao hàng ngày và ưu đãi 20% dịch vụ Spa & Ẩm thực.",
+                ImageUrl = "https://images.unsplash.com/photo-1540555700478-4be289fbecef?q=80&w=800&auto=format&fit=crop",
+                DisplayPrice = 2500000m,
+                StartDate = DateTime.Today,
+                EndDate = DateTime.Today.AddMonths(2),
+                IsHeroOffer = true
+            },
+            new Promotion
+            {
+                Title = "Trăng Mật Lãng Mạn",
+                Description = "Gói trăng mật ngọt ngào dành cho các cặp đôi. Tặng ngay rượu vang, hoa hồng, bánh kem và 01 bữa tối lãng mạn dưới ánh nến tại nhà hàng The Brass Lantern.",
+                ImageUrl = "https://images.unsplash.com/photo-1517400508447-f8dd518b86db?q=80&w=800&auto=format&fit=crop",
+                DisplayPrice = 4500000m,
+                StartDate = DateTime.Today,
+                EndDate = DateTime.Today.AddMonths(6),
+                IsHeroOffer = false
+            }
+        };
+
+        db.Promotions.AddRange(promotions);
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedTestimonialsAsync(HotelDbContext db)
+    {
+        if (await db.Testimonials.AnyAsync()) return;
+
+        var testimonials = new[]
+        {
+            new Testimonial
+            {
+                CustomerName = "Trần Minh Hoàng",
+                Content = "Một kỳ nghỉ tuyệt vời! Khách sạn có thiết kế sang trọng, nhân viên cực kỳ chuyên nghiệp và thân thiện. Dịch vụ Spa là một điểm sáng không thể bỏ lỡ.",
+                Rating = 5,
+                Source = "TripAdvisor"
+            },
+            new Testimonial
+            {
+                CustomerName = "Nguyễn Ngọc Bích",
+                Content = "Bữa sáng buffet rất đa dạng và ngon miệng. Phòng ốc sạch sẽ, view ngắm biển hoàng hôn cực chill. Nhất định gia đình tôi sẽ quay lại.",
+                Rating = 5,
+                Source = "Google Maps"
+            }
+        };
+
+        db.Testimonials.AddRange(testimonials);
         await db.SaveChangesAsync();
     }
 }

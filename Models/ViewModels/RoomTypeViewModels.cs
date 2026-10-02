@@ -8,6 +8,7 @@ public class RoomTypeListItemViewModel
     public int Id { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
     public int StandardCapacity { get; set; }
     public int MaxCapacity { get; set; }
     public decimal BasePricePerNight { get; set; }
@@ -98,6 +99,15 @@ public class RoomTypeFormViewModel
     [Display(Name = "Hình ảnh chính (URL)")]
     [MaxLength(1000, ErrorMessage = "URL hình ảnh tối đa 1000 ký tự.")]
     public string? ImageUrl { get; set; }
+
+    [Display(Name = "URL SEO (Slug)")]
+    public string? Slug { get; set; }
+
+    [Display(Name = "Mô tả chi tiết (HTML)")]
+    public string? DetailDescription { get; set; }
+
+    [Display(Name = "Hướng nhìn (View)")]
+    public string? ViewType { get; set; }
 
     [Display(Name = "Hình ảnh bổ sung (URL, cách nhau bằng dấu phẩy)")]
     [MaxLength(2000, ErrorMessage = "URL hình ảnh bổ sung tối đa 2000 ký tự.")]

@@ -149,6 +149,24 @@
         <span asp-validation-for="Description" class="text-danger small"></span>
     </div>
 
+    <div class="col-12">
+        <label asp-for="DetailDescription" class="form-label"></label>
+        <textarea asp-for="DetailDescription" class="form-control" rows="5"></textarea>
+        <span asp-validation-for="DetailDescription" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="Slug" class="form-label"></label>
+        <input asp-for="Slug" class="form-control" placeholder="VD: deluxe-ocean-view" />
+        <span asp-validation-for="Slug" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-6">
+        <label asp-for="ViewType" class="form-label"></label>
+        <input asp-for="ViewType" class="form-control" placeholder="VD: Hướng biển" />
+        <span asp-validation-for="ViewType" class="text-danger small"></span>
+    </div>
+
     @if (Model.IsEdit)
     {
         <div class="col-12">
