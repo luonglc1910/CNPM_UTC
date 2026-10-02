@@ -1,0 +1,64 @@
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        window.Toast = Swal.mixin({
+            toast: true,
+            position: 'top-end',
+            showConfirmButton: false,
+            timer: 4000,
+            timerProgressBar: true,
+            background: '#14312c',
+            color: '#ffffff',
+            iconColor: '#a4f4c5',
+            customClass: {
+                popup: 'rounded-2xl shadow-2xl border border-[#a4f4c5]/20 backdrop-blur-md',
+                title: 'text-sm font-medium font-sans tracking-wide',
+                timerProgressBar: 'bg-[#a4f4c5]'
+            },
+            didOpen: (toast) => {
+                toast.addEventListener('mouseenter', Swal.stopTimer)
+                toast.addEventListener('mouseleave', Swal.resumeTimer)
+            }
+        });
+
+        @if (TempData["Success"] != null)
+        {
+            <text>
+            Toast.fire({
+                icon: 'success',
+                title: '@Html.Raw(TempData["Success"]?.ToString()?.Replace("'", "\\'"))'
+            });
+            </text>
+        }
+
+        @if (TempData["Error"] != null)
+        {
+            <text>
+            Toast.fire({
+                icon: 'error',
+                title: '@Html.Raw(TempData["Error"]?.ToString()?.Replace("'", "\\'"))'
+            });
+            </text>
+        }
+
+        @if (TempData["Info"] != null)
+        {
+            <text>
+            Toast.fire({
+                icon: 'info',
+                title: '@Html.Raw(TempData["Info"]?.ToString()?.Replace("'", "\\'"))'
+            });
+            </text>
+        }
+        
+        @if (TempData["Warning"] != null)
+        {
+            <text>
+            Toast.fire({
+                icon: 'warning',
+                title: '@Html.Raw(TempData["Warning"]?.ToString()?.Replace("'", "\\'"))'
+            });
+            </text>
+        }
+    });
+</script>

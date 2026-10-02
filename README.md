@@ -43,24 +43,26 @@ Dự án sử dụng Entity Framework Core. Trước khi chạy, bạn cần t�
 dotnet ef database update
 ```
 
-*(Lưu ý: Đảm bảo SQL Server của bạn đang hoạt động và cấu hình connection string ở file `appsettings.json` là chính xác trước khi chạy lệnh này).*
+_(Lưu ý: Đảm bảo SQL Server của bạn đang hoạt động và cấu hình connection string ở file `appsettings.json` là chính xác trước khi chạy lệnh này)._
 
 ### Bước 3: Build và Chạy Dự Án
 
 Có 2 cách để chạy:
 
 **Cách 1: Chạy bình thường (dành cho môi trường production hoặc test)**
+
 ```bash
 dotnet run
 ```
 
 **Cách 2: Chạy với Hot Reload (dành cho lúc dev, code tự động cập nhật lại khi bạn save file)**
+
 ```bash
 dotnet watch run
 ```
 
 ### Bước 4: Truy cập ứng dụng
 
-Sau khi khởi chạy thành công, Terminal sẽ hiển thị đường link của ứng dụng (Thường là `http://localhost:5000` hoặc `https://localhost:5001`). 
+Sau khi khởi chạy thành công, Terminal sẽ hiển thị đường link của ứng dụng (Thường là `http://localhost:5000` hoặc `https://localhost:5001`).
 
 Mở đường dẫn này trên trình duyệt (Chrome/Edge/Firefox) để sử dụng hệ thống.

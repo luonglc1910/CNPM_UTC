@@ -1,0 +1,338 @@
+@model ClientRegisterViewModel
+@{
+    Layout = null;
+
+    ViewData["Title"] = "Đăng ký — Aura Boutique Hotel";
+}
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans:wght@400;500;600;700&display=swap"
+        rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    fontFamily: {
+                        sans: ['"Noto Sans"', '-apple-system', 'BlinkMacSystemFont', '"Segoe UI"', 'Roboto', 'Helvetica', 'Arial', 'sans-serif'],
+                    },
+                    colors: {
+                        primary: {
+                            DEFAULT: '#0194f3',
+                            hover: '#007ce8',
+                        },
+                        dark: '#1c2024',
+                        gray: {
+                            100: '#f7f9fa',
+                            200: '#e5e9ed',
+                            400: '#96a0ab',
+                            500: '#687176',
+                        }
+                    },
+                    boxShadow: {
+                        'card': '0 4px 12px 0 rgba(0,0,0,0.05), 0 1px 2px 0 rgba(0,0,0,0.08)',
+                    }
+                }
+            }
+        }
+    </script>
+    <style>
+        body {
+            background-image: url('/images/hotel_bg.png');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+            background-repeat: no-repeat;
+        }
+
+        /* Phủ mờ phía sau để tôn form lên */
+        body::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.4);
+            z-index: -1;
+        }
+
+        .input-field {
+            border: 1px solid #cdd0d1;
+            transition: border-color 0.2s;
+        }
+
+        .input-field:focus {
+            outline: none;
+            border-color: #0194f3;
+        }
+
+        .input-field.is-valid {
+            border-color: #16a34a;
+            background-color: #f0fdf4;
+        }
+
+        .input-field.is-invalid {
+            border-color: #dc2626;
+            background-color: #fef2f2;
+        }
+
+        .strength-bar {
+            transition: width 0.3s ease, background-color 0.3s ease;
+        }
+    </style>
+</head>
+
+<body class="font-sans antialiased text-dark">
+    <div class="min-h-screen flex flex-col items-center justify-center p-4">
+
+        <div class="w-full max-w-[480px]">
+            <!-- Logo -->
+            <div class="text-center mb-6 relative z-10">
+                <a href="/Portal/Index" class="inline-block">
+                    <div class="text-3xl font-bold tracking-tight text-white">AURA</div>
+                    <div class="text-[11px] font-semibold text-white/80 tracking-[0.2em] uppercase mt-1">Boutique Hotel
+                        & Resort</div>
+                </a>
+            </div>
+
+            <!-- Form Card -->
+            <div class="bg-white rounded-2xl shadow-card p-6 md:p-8">
+
+                <div class="mb-4">
+                    <h1 class="text-2xl font-bold">Đăng ký tài khoản</h1>
+                    <p class="text-sm text-gray-500 mt-1">Hoàn toàn miễn phí, đăng ký chỉ trong 1 phút</p>
+                </div>
+
+                @if (!ViewData.ModelState.IsValid 
+&& ViewData.ModelState.TryGetValue(string.Empty, out var ms) && ms.Errors.Count > 0)
+                {
+                    <div class="mb-4 p-3 bg-
+   [            #ffebee] border border-[#ef9a9a] rounded-lg">
+                        <div asp-validation-summary="ModelOnly" class="text-[#c62828] text-sm space-y-1"></div>
+                    </div>
+                }
+
+                <form asp-action="Register" asp-controller="ClientAuth" method="post" id="register-form" novalidate>
+                    @Html.AntiForgeryToken()
+
+                    <!-- Họ tên -->
+                    <div class="mb-3">
+                        <label asp-for="FullName" class="block text-sm font-semibold mb-1"></label>
+                        <input asp-for="FullName" type="text" autocomplete="name" placeholder="VD: Nguyễn Văn A"
+                            class="input-field w-full px-4 py-2.5 rounded-xl text-sm" />
+                        <span asp-validation-for="FullName"
+                            class="text-[#c62828] text-[11px] font-medium mt-1 block"></span>
+                    </div>
+
+                    <!-- Email -->
+                    <div class="mb-3 relative">
+                        <label asp-for="Email" class="block text-sm font-semibold mb-1"></label>
+                        <input asp-for="Email" type="email" id="email-input" autocomplete="email"
+                            placeholder="VD: email@example.com"
+                            class="input-field w-full px-4 py-2.5 rounded-xl text-sm pr-10" />
+                        <span id="email-check" class="absolute right-3 top-[28px] hidden text-green-500 p-1.5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M5 13l4 4L19 7" />
+                            </svg>
+                        </span>
+                        <span asp-validation-for="Email"
+                            class="text-[#c62828] text-[11px] font-medium mt-1 block"></span>
+                    </div>
+
+                    <!-- Số điện thoại -->
+                    <div class="mb-3">
+                        <label asp-for="PhoneNumber" class="block text-sm font-semibold mb-1"></label>
+                        <div class="flex">
+                            <span
+                                class="inline-flex items-center px-4 rounded-l-xl border border-r-0 border-[#cdd0d1] bg-gray-100 text-gray-500 text-sm font-medium">
+                                +84
+                            </span>
+                            <input asp-for="PhoneNumber" type="tel" autocomplete="tel" placeholder="0912 345 678"
+                                class="input-field flex-1 px-4 py-2.5 rounded-r-xl text-sm" />
+                        </div>
+                        <span asp-validation-for="PhoneNumber"
+                            class="text-[#c62828] text-[11px] font-medium mt-1 block"></span>
+                    </div>
+
+                    <!-- Mật khẩu -->
+                    <div class="mb-3 relative">
+                        <label asp-for="Password" class="block text-sm font-semibold mb-1"></label>
+                        <input asp-for="Password" type="password" id="pw-input" autocomplete="new-password"
+                            placeholder="Tối thiểu 8 ký tự"
+                            class="input-field w-full px-4 py-2.5 rounded-xl text-sm pr-12" />
+                        <button type="button" id="toggle-pw" tabindex="-1"
+                            class="absolute right-3 top-[28px] p-1.5 text-gray-400 hover:text-dark">
+                            <svg id="eye1-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <svg id="eye1-closed" class="w-5 h-5 hidden" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                        </button>
+
+                        <div id="strength-wrap" class="hidden mt-1.5">
+                            <div class="flex gap-1 h-1.5 mb-1">
+                                <div class="strength-bar flex-1 rounded-full bg-gray-200" id="s1"></div>
+                                <div class="strength-bar flex-1 rounded-full bg-gray-200" id="s2"></div>
+                                <div class="strength-bar flex-1 rounded-full bg-gray-200" id="s3"></div>
+                                <div class="strength-bar flex-1 rounded-full bg-gray-200" id="s4"></div>
+                            </div>
+                            <p id="strength-label" class="text-[10px] text-gray-500"></p>
+                        </div>
+                        <span asp-validation-for="Password"
+                            class="text-[#c62828] text-[11px] font-medium mt-1 block"></span>
+                    </div>
+
+                    <!-- Xác nhận mật khẩu -->
+                    <div class="mb-4 relative">
+                        <label asp-for="ConfirmPassword" class="block text-sm font-semibold mb-1"></label>
+                        <input asp-for="ConfirmPassword" type="password" id="confirm-pw" autocomplete="new-password"
+                            placeholder="Nhập lại mật khẩu"
+                            class="input-field w-full px-4 py-2.5 rounded-xl text-sm pr-12" />
+                        <button type="button" id="toggle-cpw" tabindex="-1"
+                            class="absolute right-3 top-[28px] p-1.5 text-gray-400 hover:text-dark">
+                            <svg id="eye2-open" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                            <svg id="eye2-closed" class="w-5 h-5 hidden" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                            </svg>
+                        </button>
+                        <span asp-validation-for="ConfirmPassword"
+                            class="text-[#c62828] text-[11px] font-medium mt-1 block"></span>
+                    </div>
+
+                    <button type="submit" id="btn-submit"
+                        class="w-full bg-primary hover:bg-primary-hover text-white font-semibold py-3 rounded-xl transition-colors text-sm flex justify-center items-center gap-2">
+                        <span>Đăng ký tài khoản</span>
+                    </button>
+
+                    <p class="text-center text-[11px] text-gray-500 mt-3 leading-relaxed">
+                        Bằng cách đăng ký, bạn đồng ý với <a href="#" class="text-primary hover:underline">Điều
+                            khoản</a> và <a href="#" class="text-primary hover:underline">Chính sách bảo mật</a> của
+                        Aura.
+                    </p>
+                </form>
+            </div>
+
+            <!-- Footer links -->
+            <div class="mt-8 text-center text-sm text-white/80 space-y-3 relative z-10">
+                <p>Đã có tài khoản? <a href="/ClientAuth/Login" class="text-white font-semibold hover:underline">Đăng
+                        nhập</a></p>
+                <div class="flex items-center justify-center gap-3 mt-4 text-xs">
+                    <a href="/Portal/Index" class="hover:text-white transition-colors">Về trang chủ</a>
+                </div>
+            </div>
+
+        </div>
+    </div>
+
+    <script>
+            (function () {
+                // Eye toggles
+                function makeToggle(btnId, inputId, openId, closedId) {
+                    const btn = document.getElementById(btnId);
+                    const input = document.getElementById(inputId);
+                    const open = document.getElementById(openId);
+                    const closed = document.getElementById(closedId);
+                    btn?.addEventListener('click', () => {
+                        const isHidden = input.type === 'password';
+                        input.type = isHidden ? 'text' : 'password';
+                        open.classList.toggle('hidden', isHidden);
+                        closed.classList.toggle('hidden', !isHidden);
+                    });
+                }
+                makeToggle('toggle-pw', 'pw-input', 'eye1-open', 'eye1-closed');
+                makeToggle('toggle-cpw', 'confirm-pw', 'eye2-open', 'eye2-closed');
+
+                // Email regex check
+                const emailInput = document.getElementById('email-input');
+                const emailCheck = document.getElementById('email-check');
+                const emailRegex = /^[^\s@@]+@@[^\s@@]+\.[^\s@@]+$/;
+                emailInput?.addEventListener('input', () => {
+                    if (emailRegex.test(emailInput.value.trim())) {
+                        emailCheck.classList.remove('hidden');
+                    } else {
+                        emailCheck.classList.add('hidden');
+                    }
+                });
+
+                // Password strength meter
+                const pwInput = document.getElementById('pw-input');
+                const strengthWrap = document.getElementById('strength-wrap');
+                const bars = [document.getElementById('s1'), document.getElementById('s2'), document.getElementById('s3'), document.getElementById('s4')];
+                const strengthLabel = document.getElementById('strength-label');
+                const levels = [
+                    { color: 'bg-[#ef5350]', text: 'Yếu - Cần ít nhất 8 ký tự' }, // Red
+                    { color: 'bg-[#ff9800]', text: 'Trung bình - Thêm chữ hoa, số' }, // Orange
+                    { color: 'bg-[#ffca28]', text: 'Khá' }, // Yellow
+                    { color: 'bg-[#66bb6a]', text: 'Mạnh' }, // Green
+                ];
+
+                function calcStrength(pw) {
+                    let score = 0;
+                    if (pw.length >= 8) score++;
+                    if (/[A-Z]/.test(pw)) score++;
+                    if (/\d/.test(pw)) score++;
+                    if (/[^A-Za-z0-9]/.test(pw)) score++;
+                    return Math.max(0, score - 1);
+                }
+
+                pwInput?.addEventListener('input', () => {
+                    const val = pwInput.value;
+                    if (!val) { strengthWrap.classList.add('hidden'); return; }
+                    strengthWrap.classList.remove('hidden');
+                    const lvl = calcStrength(val);
+                    bars.forEach((b, i) => {
+                        b.className = `strength-bar flex-1 rounded-full ${i <= lvl ? levels[lvl].color : 'bg-gray-200'}`;
+                    });
+                    strengthLabel.textContent = levels[lvl].text;
+                    strengthLabel.className = `text-xs mt-1 font-medium ${lvl >= 3 ? 'text-[#2e7d32]' : lvl >= 2 ? 'text-[#f57f17]' : 'text-[#c62828]'}`;
+                });
+
+                // Password match
+                const confirmInput = document.getElementById('confirm-pw');
+                confirmInput?.addEventListener('input', () => {
+                    const match = pwInput.value && confirmInput.value === pwInput.value;
+                co  nfirmInput.classList.toggle('is-valid', match);
+                        confirmInput.clas sList.toggle('is-invalid', !match && confirmInput.value.length > 0);
+        });
+
+                    //         Loading
+                    document.getElementById('register-form')?.addEventListener('submit', function(e) {
+            if (typeof jQuery !== 'undefined' && !$(this).valid()) {
+                            return; // Prevent loading state if form is invalid
+                    }
+            const btn = document.getElementById('btn-submit');
+                    btn.disabled = true;
+                    btn.classList.add('opacity-75', 'cursor-not-allowed');
+                    btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> <span>Đang xử lý...</span>';
+              });
+                          })();
+                        < /script>
+
+    <!-- Cl
+      i ent-side validation scripts -->
+        <script src="htt ps://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<script src="htt
+    ps://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.3/jquery.validate.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js"></script>
+</body>
+</html>
+

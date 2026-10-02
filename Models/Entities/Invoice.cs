@@ -12,6 +12,19 @@ public class Invoice : BaseEntity
     [MaxLength(20)]
     public string InvoiceNo { get; set; } = string.Empty;
 
+    // ── E-Invoice / Hóa đơn đỏ (VAT) ──
+    [MaxLength(200)]
+    public string? CompanyName { get; set; }
+
+    [MaxLength(20)]
+    public string? TaxCode { get; set; }
+
+    [MaxLength(500)]
+    public string? CompanyAddress { get; set; }
+
+    [MaxLength(100)]
+    public string? InvoiceEmail { get; set; }
+
     public int FolioId { get; set; }
     public Folio Folio { get; set; } = null!;
 

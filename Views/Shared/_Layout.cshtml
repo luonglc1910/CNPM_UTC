@@ -78,35 +78,6 @@
             </header>
 
             <main class="admin-content" id="main">
-                @* Bốn kênh thông báo theo 00-conventions.md mục 4. *@
-                @if (TempData["Success"] is string success)
-                {
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        @success
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
-                    </div>
-                }
-                @if (TempData["Error"] is string error)
-                {
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        @error
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
-                    </div>
-                }
-                @if (TempData["Warning"] is string warning)
-                {
-                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        @warning
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
-                    </div>
-                }
-                @if (TempData["Info"] is string info)
-                {
-                    <div class="alert alert-info alert-dismissible fade show" role="alert">
-                        @info
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
-                    </div>
-                }
                 @RenderBody()
             </main>
         </div>
@@ -115,6 +86,7 @@
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <partial name="_Notification" />
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

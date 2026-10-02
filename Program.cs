@@ -1,7 +1,6 @@
 using HotelManagement.Web.Data;
 using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
-using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.FileProviders;
@@ -67,35 +66,70 @@ builder.Services.AddDbContext<HotelDbContext>(options =>
         // đi qua ITransactionRunner (bọc execution strategy) mới mở được transaction thủ công.
         sql => sql.EnableRetryOnFailure()));
 
-// Xác thực bằng cookie — SCR-S01, NFR-02.
-builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme)
-    .AddCookie(options =>
+// ── DUAL COOKIE AUTHENTICATION — SCR-S01, NFR-02 ──────────────────────────────
+// Hai scheme hoàn toàn độc lập: StaffCookie cho nhân viên, ClientCookie cho khách hàng.
+// DefaultScheme trỏ về Staff để FallbackPolicy bảo vệ các trang nội bộ theo mặc định.
+builder.Services.AddAuthentication(AppSchemes.Staff)
+    // 1. SCHEME NHÂN VIÊN (Staff)
+    .AddCookie(AppSchemes.Staff, options =>
     {
-        options.LoginPath = "/Account/Login";
-        options.LogoutPath = "/Account/Logout";
-        // SCR-S03: sai quyền thì trả trang 403, không im lặng đá về trang chủ.
-        options.AccessDeniedPath = "/Home/Forbidden";
-        options.ReturnUrlParameter = "returnUrl";
-        options.ExpireTimeSpan = TimeSpan.FromHours(8);
-        options.SlidingExpiration = true;
-        options.Cookie.Name = "HotelAuth";
-        options.Cookie.HttpOnly = true;
-        options.Cookie.SameSite = SameSiteMode.Lax;
-        options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
-        options.Cookie.IsEssential = true;
-
-        // Toàn bộ sự kiện nằm trong EmployeeCookieEvents: vừa xử lý chuyển hướng khi hết phiên,
-        // vừa đối chiếu vai trò/trạng thái trong cookie với DB ở mỗi request (SCR-A10, SCR-A11).
-        // Phải dùng EventsType vì lớp đó cần DbContext, tức là phải lấy từ DI theo từng request.
-        options.EventsType = typeof(EmployeeCookieEvents);
+        options.Cookie.Name          = "StaffAuth";
+        options.LoginPath            = "/Account/Login";
+        options.LogoutPath           = "/Account/Logout";
+        options.AccessDeniedPath     = "/Home/Forbidden"; // SCR-S03: 403, không im lặng redirect.
+        options.ReturnUrlParameter   = "returnUrl";
+        options.ExpireTimeSpan       = TimeSpan.FromHours(8); // Hết hạn sau 1 ca làm việc.
+        options.SlidingExpiration    = true;
+        options.Cookie.HttpOnly      = true;
+        options.Cookie.SameSite      = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy  = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.IsEssential   = true;
+        // Mỗi request đối chiếu vai trò & trạng thái với DB — SCR-A10, SCR-A11.
+        options.EventsType           = typeof(EmployeeCookieEvents);
+    })
+    // 2. SCHEME KHÁCH HÀNG (Client)
+    .AddCookie(AppSchemes.Client, options =>
+    {
+        options.Cookie.Name          = "ClientAuth";
+        options.LoginPath            = "/ClientAuth/Login";
+        options.LogoutPath           = "/ClientAuth/Logout";
+        options.AccessDeniedPath     = "/ClientAuth/Login";
+        options.ReturnUrlParameter   = "returnUrl";
+        options.ExpireTimeSpan       = TimeSpan.FromDays(30); // Khách hàng lưu phiên lâu hơn.
+        options.SlidingExpiration    = true;
+        options.Cookie.HttpOnly      = true;
+        options.Cookie.SameSite      = SameSiteMode.Lax;
+        options.Cookie.SecurePolicy  = CookieSecurePolicy.SameAsRequest;
+        options.Cookie.IsEssential   = true;
     });
 
-// Mặc định mọi endpoint đều phải đăng nhập; trang công khai phải tự đánh [AllowAnonymous].
-// Chọn FallbackPolicy thay vì [Authorize] trên AdminControllerBase vì Home và Account
-// không kế thừa lớp đó — đặt ở đây thì quên cũng không hở.
+// ── AUTHORIZATION POLICIES ──────────────────────────────────────────────────────
 builder.Services.AddAuthorization(options =>
 {
-    options.FallbackPolicy = new AuthorizationPolicyBuilder()
+    // Policy: chỉ dành cho Nhân viên (mọi chức vụ).
+    options.AddPolicy("StaffOnly", policy =>
+    {
+        policy.AddAuthenticationSchemes(AppSchemes.Staff);
+        policy.RequireAuthenticatedUser();
+    });
+
+    // Policy: chỉ dành cho Admin.
+    options.AddPolicy("AdminOnly", policy =>
+    {
+        policy.AddAuthenticationSchemes(AppSchemes.Staff);
+        policy.RequireRole(Roles.Admin);
+    });
+
+    // Policy: chỉ dành cho Khách hàng đã đăng nhập trên Portal.
+    options.AddPolicy("ClientOnly", policy =>
+    {
+        policy.AddAuthenticationSchemes(AppSchemes.Client);
+        policy.RequireAuthenticatedUser();
+    });
+
+    // FallbackPolicy: bất kỳ endpoint nào không có [AllowAnonymous] đều phải qua StaffAuth.
+    // Điều này bảo vệ toàn bộ trang nội bộ mà không cần [Authorize] trên từng Controller.
+    options.FallbackPolicy = new AuthorizationPolicyBuilder(AppSchemes.Staff)
         .RequireAuthenticatedUser()
         .Build();
 });

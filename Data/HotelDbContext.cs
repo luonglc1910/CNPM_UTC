@@ -166,6 +166,11 @@ public class HotelDbContext : DbContext
 
             e.HasIndex(x => x.PhoneNumber);
             e.HasIndex(x => x.FullName);
+
+            // Email dùng làm tài khoản đăng nhập khách hàng (ClientCookie) — phải duy nhất.
+            e.HasIndex(x => x.Email)
+                .IsUnique()
+                .HasFilter("[Email] IS NOT NULL");
         });
     }
 
