@@ -33,6 +33,7 @@ builder.Services.AddScoped<ISettingsService, SettingsService>();
 
 // Nghiệp vụ khách hàng.
 builder.Services.AddScoped<IGuestService, GuestService>();
+builder.Services.AddScoped<ILoyaltyService, LoyaltyService>();
 
 // Hạ tầng dùng chung cho phần vận hành (SP0) — đặt phòng, lễ tân, thu ngân, báo cáo đều dựa vào.
 builder.Services.AddScoped<ISettingsReader, SettingsReader>();

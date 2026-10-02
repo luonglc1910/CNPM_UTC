@@ -34,6 +34,7 @@ public class HotelDbContext : DbContext
 
     // Khách hàng
     public DbSet<Guest> Guests => Set<Guest>();
+    public DbSet<PointTransaction> PointTransactions => Set<PointTransaction>();
 
     // Đặt phòng
     public DbSet<Reservation> Reservations => Set<Reservation>();
@@ -171,6 +172,22 @@ public class HotelDbContext : DbContext
             e.HasIndex(x => x.Email)
                 .IsUnique()
                 .HasFilter("[Email] IS NOT NULL");
+        });
+
+        b.Entity<PointTransaction>(e =>
+        {
+            e.HasIndex(x => x.GuestId);
+            e.HasIndex(x => x.CreatedAt);
+
+            e.HasOne(x => x.Guest)
+                .WithMany()
+                .HasForeignKey(x => x.GuestId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.Booking)
+                .WithMany()
+                .HasForeignKey(x => x.BookingId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 

@@ -37,9 +37,16 @@
             </div>
             <div class="text-2xl font-bold font-numeric-table text-tertiary-fixed mb-2">@ViewData["RewardPoints"] <span class="text-sm font-normal text-white/70">pts</span></div>
             <div class="w-full bg-white/20 rounded-full h-1">
-                <div class="bg-tertiary-fixed h-1 rounded-full shadow-[0_0_8px_#a4f4c5]" style="width: 45%"></div>
+                <div class="bg-tertiary-fixed h-1 rounded-full shadow-[0_0_8px_#a4f4c5]" style="width: @(ViewData["ProgressPercent"])%"></div>
             </div>
-            <p class="text-[10px] text-white/60 text-right mt-1">550 pts nữa để thăng hạng</p>
+            @if ((int)ViewData["PointsNeeded"] > 0)
+            {
+                <p class="text-[10px] text-white/60 text-right mt-1">@(ViewData["PointsNeeded"]) pts nữa để thăng hạng</p>
+            }
+            else
+            {
+                <p class="text-[10px] text-white/60 text-right mt-1">Đã đạt mức thẻ cao nhất</p>
+            }
         </div>
     </div>
 </div>

@@ -37,8 +37,43 @@ public class ProfileController : Controller
             Address = guest.Address
         };
 
-        ViewData["RewardPoints"] = guest.RewardPoints;
-        ViewData["Tier"] = guest.Tier;
+        var currentPoints = guest.RewardPoints;
+        ViewData["RewardPoints"] = currentPoints;
+        
+        string tierName = guest.Tier switch {
+            HotelManagement.Web.Models.MemberTier.Diamond => "Diamond",
+            HotelManagement.Web.Models.MemberTier.Gold => "Gold",
+            HotelManagement.Web.Models.MemberTier.Silver => "Silver",
+            _ => "Standard"
+        };
+        ViewData["Tier"] = tierName;
+
+        int nextTierPoints = guest.Tier switch {
+            HotelManagement.Web.Models.MemberTier.Diamond => 500, // max
+            HotelManagement.Web.Models.MemberTier.Gold => 500,
+            HotelManagement.Web.Models.MemberTier.Silver => 200,
+            _ => 50
+        };
+
+        int prevTierPoints = guest.Tier switch {
+            HotelManagement.Web.Models.MemberTier.Diamond => 500,
+            HotelManagement.Web.Models.MemberTier.Gold => 200,
+            HotelManagement.Web.Models.MemberTier.Silver => 50,
+            _ => 0
+        };
+
+        int pointsNeeded = nextTierPoints - currentPoints;
+        if (pointsNeeded < 0) pointsNeeded = 0;
+        
+        int range = nextTierPoints - prevTierPoints;
+        int currentProgress = currentPoints - prevTierPoints;
+        if (currentProgress < 0) currentProgress = 0;
+
+        int percent = range == 0 ? 100 : (int)Math.Round((double)currentProgress / range * 100);
+        if (percent > 100) percent = 100;
+
+        ViewData["ProgressPercent"] = percent;
+        ViewData["PointsNeeded"] = guest.Tier == HotelManagement.Web.Models.MemberTier.Diamond ? 0 : pointsNeeded;
 
         return View(model);
     }
@@ -55,8 +90,43 @@ public class ProfileController : Controller
             var g = await _db.Guests.FindAsync(guestId);
             if (g != null)
             {
-                ViewData["RewardPoints"] = g.RewardPoints;
-                ViewData["Tier"] = g.Tier;
+                var currentPoints = g.RewardPoints;
+                ViewData["RewardPoints"] = currentPoints;
+                
+                string tierName = g.Tier switch {
+                    HotelManagement.Web.Models.MemberTier.Diamond => "Diamond",
+                    HotelManagement.Web.Models.MemberTier.Gold => "Gold",
+                    HotelManagement.Web.Models.MemberTier.Silver => "Silver",
+                    _ => "Standard"
+                };
+                ViewData["Tier"] = tierName;
+
+                int nextTierPoints = g.Tier switch {
+                    HotelManagement.Web.Models.MemberTier.Diamond => 500,
+                    HotelManagement.Web.Models.MemberTier.Gold => 500,
+                    HotelManagement.Web.Models.MemberTier.Silver => 200,
+                    _ => 50
+                };
+
+                int prevTierPoints = g.Tier switch {
+                    HotelManagement.Web.Models.MemberTier.Diamond => 500,
+                    HotelManagement.Web.Models.MemberTier.Gold => 200,
+                    HotelManagement.Web.Models.MemberTier.Silver => 50,
+                    _ => 0
+                };
+
+                int pointsNeeded = nextTierPoints - currentPoints;
+                if (pointsNeeded < 0) pointsNeeded = 0;
+                
+                int range = nextTierPoints - prevTierPoints;
+                int currentProgress = currentPoints - prevTierPoints;
+                if (currentProgress < 0) currentProgress = 0;
+
+                int percent = range == 0 ? 100 : (int)Math.Round((double)currentProgress / range * 100);
+                if (percent > 100) percent = 100;
+
+                ViewData["ProgressPercent"] = percent;
+                ViewData["PointsNeeded"] = g.Tier == HotelManagement.Web.Models.MemberTier.Diamond ? 0 : pointsNeeded;
             }
             return View(model);
         }
