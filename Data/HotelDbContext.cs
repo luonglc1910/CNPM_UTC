@@ -28,6 +28,7 @@ public class HotelDbContext : DbContext
     public DbSet<RoomType> RoomTypes => Set<RoomType>();
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<HotelService> HotelServices => Set<HotelService>();
+    public DbSet<HotelGalleryImage> HotelGalleryImages => Set<HotelGalleryImage>();
     public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<NumberSequence> NumberSequences => Set<NumberSequence>();

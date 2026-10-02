@@ -18,6 +18,7 @@ public static class DbInitializer
         await SeedEmployeesAsync(db);
         await SeedRoomTypesAndRoomsAsync(db);
         await SeedServicesAsync(db);
+        await SeedGalleryAsync(db);
     }
 
     /// <summary>
@@ -202,7 +203,30 @@ public static class DbInitializer
             new HotelService { Code = "TR002", Name = "Thuê xe máy", Category = ServiceCategory.Transport, UnitPrice = 150_000m, Unit = "ngày" }
         };
 
-        db.HotelServices.AddRange(services);
+        await db.HotelServices.AddRangeAsync(services);
+        await db.SaveChangesAsync();
+    }
+
+    private static async Task SeedGalleryAsync(HotelDbContext db)
+    {
+        if (await db.HotelGalleryImages.AnyAsync())
+        {
+            return;
+        }
+
+        var images = new[]
+        {
+            new HotelGalleryImage { ImageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuDPF3028cg_lvvBgtzoThJwfJWRo0qj03pC0pEKWr5p__6o3srO4Wf1sGpFkVUPAcwCffODcrUSWZjYKKAuH0oLwCFTq8tmtEBe7EWyAR_Tv9TENC63mm_nmAIRbnJ4p_CvfBswksbXkf2yHHSo72m-KB-4v6UMjsoBj9NMwJNmRMGzlKzpJb3d1dGpxuqtU-UOIswaZPfkVBXfDsRoHNvplFhqwrqdiWuA5NXxp-73DtNE4ClzIw", Title = "Toàn cảnh khu nghỉ dưỡng", SortOrder = 1 },
+            new HotelGalleryImage { ImageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuBG8SGMAv_h2X_H8t4D47Axe2w9GdmTe0IPFTvt_7XU0-WGGnbQ4oXPaQyT0KQJeJDlgFvTJinSRkUrozh3MO343guQk-ASWqUSQQIS0EBNmPYancHaBW3VMuRNLkpIQ4Xr7r0fI2iFyk076kuxwRtPVoOQAK6HGsGgFPWGAmlIWEUn733cawgVVwcyVbErnLs9zKXZp9VDtM6R5KvwCT3l8B82_6DPmz4ZBXxfMVg2iNPIxL2GEA", Title = "Skyline Cocktail Lounge", SortOrder = 2 },
+            new HotelGalleryImage { ImageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuA1Ue-zaIWw8ItsnwKnOVH4N-N8YUcfPlk5rRVnOyzrze1P6Ocq_c7WRd6m5o_U9esV6MLxOFBjVmDIqD9174VZ2Ca9yb5otUo9W6XsyAIsIO-5m6rzyAoDbjl-VivCItGO93WC_7sXYUVVgpIDjqAHJ0dogBb4zPZG_op6iYwkqXYtVwyMRnibjVSfJea8jy-twfODCmajDm9qX9mwMxaeGGy-SzXtClgw7jWYIgIEEasNYKjcEg", Title = "Phòng trị liệu Lotus Sanctuary", SortOrder = 3 },
+            new HotelGalleryImage { ImageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuC5V3C0xNj0g4gBR44A6fn7FwCG3P7uR9Jj5XufnEqC9nmmhNWgVhmwWb4iEeNNbXL6Nvk_4Ak45INhTB0WFQU5ApvlpkVhay5KsijWL1h3vcyDHWHCScEcshC2XbMhftQQKCj4AXQgiLQrDmnJwMXZN1cFW_jUHPGNtercJh4bn-opE1Qi5RHhl9IxBvh9jDOuK-We9XJSAdLtB72RN_3gxBjjnSOjlATtwTHTIKyrQ8Vo8bBO1g", Title = "Chi tiết thủ công tinh xảo", SortOrder = 4 },
+            new HotelGalleryImage { ImageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuDydPQk8YZnmkTK4wZ0jcIPz7givIrKPBFraa-1zEXfyZ8oS7QbUZWgZmECMm2bJVd_X3plzBHCAH6BoxX1FDc4310n09qZjbHrnTgjjzHPSPgO0AsdWWHVxzpl6DoqcdwYPFpja7m7qWJQQx6ovcDhY5K94PGI6E7v3vjJ6mJfg-mwRKEvHSUs7btgaMtkAHTX6KHw3dAdVGMB2gyN7hgV5hPPSJkVW5x08AxX3v8hZzbMJPdvbA", Title = "Ẩm thực The Brass Lantern", SortOrder = 5 },
+            new HotelGalleryImage { ImageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuB5LTj-561bDrykcmgbSJrnaoYacqL1PDzW5vhF2MAT6xP5vwfCGufjsCkpnrkVrLUBqUn9veffnkns3dRdWWxi1r-SERmlC7K9NUXkZFRSIY1wZpV26asyoW336DGUIT05MtHLUIoHtI0JpUYJuToZJU7o39P44egSrst0a0JchukLaamECFTMrhYAYJtXMMjcsHELXBdZyLA5yeH7UR1zySfmzhtlB4xsDdjDrlh1xNkDpJrsFA", Title = "Sảnh đón tiếp sang trọng", SortOrder = 6 },
+            new HotelGalleryImage { ImageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuB2GPkdHunTSWkaEE4tQZalRBlOJHqtIRvSuh2JNrTuWlP7xh_es0ZZIhVJpiHY_0t3sFBxzuKHlfRlRYshjlog_6YXgCJUZchQbUsiWQroIt95iguU0PFabk-8pkp4j4YoIoS9Hczgq0Phez3xFlnest21wzGcClDwnEC9JKU5jn9MRXu1osGJXZ67UxcqTygpC2yDS2Yy1xQ5eqrqzCctYuieITUPbsiIPsgN79yG8ceiC4TZng", Title = "Bể bơi vô cực hoàng hôn", SortOrder = 7 },
+            new HotelGalleryImage { ImageUrl = "https://lh3.googleusercontent.com/aida-public/AB6AXuCO9DjhF6ltLD3HaQJCQWwn9kCybwBzVTnvWEFCyLjY4X0jcz5Ra4kZNwd5QVLiNNJ0DT6CxLDk7aOqa7hkyRWYDyfgjUmTgnF8Ugb95vLhfBqCbk-IY83WX8tDn7__OWeFJTPBem5vOPiyMoJEW0YxBmRHxbD6RQd2MQRCPWAg-Mx2XyTVzrQGQDgacJcW8mpLTor9gr8rT1cF545cwZm8IjM-D9CQf4sTN9v12w3W1Bw_dPaCOA", Title = "Không gian phòng nghỉ cao cấp", SortOrder = 8 }
+        };
+
+        await db.HotelGalleryImages.AddRangeAsync(images);
         await db.SaveChangesAsync();
     }
 }

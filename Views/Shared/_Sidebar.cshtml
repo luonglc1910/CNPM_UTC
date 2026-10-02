@@ -1,4 +1,4 @@
-﻿@inject HotelManagement.Web.Security.IScreenAccess Screens
+@inject HotelManagement.Web.Security.IScreenAccess Screens
 @{
     var controller = ViewContext.RouteData.Values["controller"] as string;
     var action = ViewContext.RouteData.Values["action"] as string;
@@ -13,6 +13,7 @@
 
         ("Danh mục & Cấu hình",   "Phòng",                "door-closed",        "Rooms",         "Index"),
         (null,                    "Dịch vụ",              "cup-hot",            "HotelServices", "Index"),
+        (null,                    "Thư viện ảnh",         "images",             "Gallery",       "Index"),
         (null,                    "Nhân viên",            "people",             "Employees",     "Index"),
         (null,                    "Cấu hình hệ thống",    "sliders",            "Settings",      "Index"),
 

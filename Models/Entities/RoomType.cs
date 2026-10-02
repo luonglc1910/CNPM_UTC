@@ -39,6 +39,9 @@ public class RoomType : BaseEntity
     [MaxLength(1000)]
     public string? ImageUrl { get; set; }
 
+    [MaxLength(2000)]
+    public string? AdditionalImageUrls { get; set; }
+
     [MaxLength(50)]
     public string? BedType { get; set; }
 

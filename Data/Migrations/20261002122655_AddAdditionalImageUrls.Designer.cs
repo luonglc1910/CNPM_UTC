@@ -4,16 +4,19 @@ using HotelManagement.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
 
-namespace HotelManagement.Web.Migrations
+namespace HotelManagement.Web.Data.Migrations
 {
     [DbContext(typeof(HotelDbContext))]
-    partial class HotelDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261002122655_AddAdditionalImageUrls")]
+    partial class AddAdditionalImageUrls
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -454,14 +457,8 @@ namespace HotelManagement.Web.Migrations
                     b.Property<int>("IdType")
                         .HasColumnType("int");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
-
                     b.Property<bool>("IsBlacklisted")
                         .HasColumnType("bit");
-
-                    b.Property<DateTime?>("LastLoginAt")
-                        .HasColumnType("datetime2");
 
                     b.Property<string>("Nationality")
                         .IsRequired()
@@ -472,20 +469,10 @@ namespace HotelManagement.Web.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("nvarchar(500)");
 
-                    b.Property<string>("PasswordHash")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
                     b.Property<string>("PhoneNumber")
                         .IsRequired()
                         .HasMaxLength(20)
                         .HasColumnType("nvarchar(20)");
-
-                    b.Property<int>("RewardPoints")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Tier")
-                        .HasColumnType("int");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("datetime2");
@@ -494,10 +481,6 @@ namespace HotelManagement.Web.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Email")
-                        .IsUnique()
-                        .HasFilter("[Email] IS NOT NULL");
 
                     b.HasIndex("FullName");
 
@@ -744,14 +727,6 @@ namespace HotelManagement.Web.Migrations
                     b.Property<int>("CashierShiftId")
                         .HasColumnType("int");
 
-                    b.Property<string>("CompanyAddress")
-                        .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)");
-
-                    b.Property<string>("CompanyName")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -772,10 +747,6 @@ namespace HotelManagement.Web.Migrations
 
                     b.Property<int>("FolioId")
                         .HasColumnType("int");
-
-                    b.Property<string>("InvoiceEmail")
-                        .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)");
 
                     b.Property<string>("InvoiceNo")
                         .IsRequired()
@@ -810,10 +781,6 @@ namespace HotelManagement.Web.Migrations
                     b.Property<decimal>("TaxAmount")
                         .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
-
-                    b.Property<string>("TaxCode")
-                        .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)");
 
                     b.Property<decimal>("TaxRate")
                         .HasPrecision(18, 2)
@@ -947,43 +914,6 @@ namespace HotelManagement.Web.Migrations
                     b.HasIndex("CashierShiftId", "PaidAt");
 
                     b.ToTable("Payments");
-                });
-
-            modelBuilder.Entity("HotelManagement.Web.Models.Entities.PointTransaction", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uniqueidentifier");
-
-                    b.Property<int>("Amount")
-                        .HasColumnType("int");
-
-                    b.Property<int?>("BookingId")
-                        .HasColumnType("int");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)");
-
-                    b.Property<int>("GuestId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Type")
-                        .HasColumnType("int");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("BookingId");
-
-                    b.HasIndex("CreatedAt");
-
-                    b.HasIndex("GuestId");
-
-                    b.ToTable("PointTransactions");
                 });
 
             modelBuilder.Entity("HotelManagement.Web.Models.Entities.Reservation", b =>
@@ -1746,24 +1676,6 @@ namespace HotelManagement.Web.Migrations
                     b.Navigation("Invoice");
 
                     b.Navigation("Reservation");
-                });
-
-            modelBuilder.Entity("HotelManagement.Web.Models.Entities.PointTransaction", b =>
-                {
-                    b.HasOne("HotelManagement.Web.Models.Entities.Reservation", "Booking")
-                        .WithMany()
-                        .HasForeignKey("BookingId")
-                        .OnDelete(DeleteBehavior.SetNull);
-
-                    b.HasOne("HotelManagement.Web.Models.Entities.Guest", "Guest")
-                        .WithMany()
-                        .HasForeignKey("GuestId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("Booking");
-
-                    b.Navigation("Guest");
                 });
 
             modelBuilder.Entity("HotelManagement.Web.Models.Entities.Reservation", b =>

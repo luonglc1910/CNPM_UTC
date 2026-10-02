@@ -18,6 +18,11 @@ public class PortalController : Controller
     {
         ViewBag.RoomTypes = await _context.RoomTypes.Where(rt => rt.IsActive).ToListAsync();
         ViewBag.Services = await _context.HotelServices.Where(s => s.IsActive && !string.IsNullOrEmpty(s.ImageUrl)).Take(3).ToListAsync();
+        ViewBag.GalleryImages = await _context.HotelGalleryImages
+            .Where(g => g.IsActive)
+            .OrderBy(g => g.SortOrder)
+            .ThenByDescending(g => g.Id)
+            .ToListAsync();
         return View();
     }
 

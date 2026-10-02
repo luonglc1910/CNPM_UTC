@@ -95,9 +95,13 @@ public class RoomTypeFormViewModel
     [MaxLength(500, ErrorMessage = "Mô tả tối đa 500 ký tự.")]
     public string? Description { get; set; }
 
-    [Display(Name = "Hình ảnh (URL)")]
+    [Display(Name = "Hình ảnh chính (URL)")]
     [MaxLength(1000, ErrorMessage = "URL hình ảnh tối đa 1000 ký tự.")]
     public string? ImageUrl { get; set; }
+
+    [Display(Name = "Hình ảnh bổ sung (URL, cách nhau bằng dấu phẩy)")]
+    [MaxLength(2000, ErrorMessage = "URL hình ảnh bổ sung tối đa 2000 ký tự.")]
+    public string? AdditionalImageUrls { get; set; }
 
     [Display(Name = "Loại giường")]
     [MaxLength(50, ErrorMessage = "Loại giường tối đa 50 ký tự.")]
