@@ -43,6 +43,8 @@ public class PromotionsController : AdminControllerBase
             Description = form.Description,
             ImageUrl = form.ImageUrl,
             DisplayPrice = form.DisplayPrice,
+            PromoCode = form.PromoCode,
+            DiscountPercentage = form.DiscountPercentage,
             StartDate = form.StartDate,
             EndDate = form.EndDate,
             IsHeroOffer = form.IsHeroOffer
@@ -68,6 +70,8 @@ public class PromotionsController : AdminControllerBase
             Description = promo.Description,
             ImageUrl = promo.ImageUrl,
             DisplayPrice = promo.DisplayPrice,
+            PromoCode = promo.PromoCode,
+            DiscountPercentage = promo.DiscountPercentage,
             StartDate = promo.StartDate,
             EndDate = promo.EndDate,
             IsHeroOffer = promo.IsHeroOffer
@@ -87,6 +91,8 @@ public class PromotionsController : AdminControllerBase
         promo.Description = form.Description;
         promo.ImageUrl = form.ImageUrl;
         promo.DisplayPrice = form.DisplayPrice;
+        promo.PromoCode = form.PromoCode;
+        promo.DiscountPercentage = form.DiscountPercentage;
         promo.StartDate = form.StartDate;
         promo.EndDate = form.EndDate;
         promo.IsHeroOffer = form.IsHeroOffer;

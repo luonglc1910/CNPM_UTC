@@ -90,12 +90,23 @@ public class PortalController : Controller
         if (roomType == null)
             return NotFound();
             
+        ViewBag.Promotions = await _context.Promotions
+            .Where(p => p.IsActive)
+            .Select(p => new { p.PromoCode, p.DiscountPercentage, p.DisplayPrice })
+            .ToListAsync();
+            
         return View(roomType);
     }
 
-    public IActionResult Offers()
+    public async Task<IActionResult> Offers()
     {
-        return View();
+        var promotions = await _context.Promotions
+            .Where(p => p.IsActive)
+            .OrderByDescending(p => p.IsHeroOffer)
+            .ThenByDescending(p => p.Id)
+            .ToListAsync();
+            
+        return View(promotions);
     }
 
     public IActionResult Contact()

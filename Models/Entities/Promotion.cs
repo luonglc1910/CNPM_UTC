@@ -14,6 +14,10 @@ public class Promotion : BaseEntity
     public string? ImageUrl { get; set; }
 
     public decimal DisplayPrice { get; set; }
+    
+    [MaxLength(50)]
+    public string PromoCode { get; set; } = string.Empty;
+    public decimal DiscountPercentage { get; set; }
 
     public DateTime StartDate { get; set; }
     public DateTime EndDate { get; set; }

@@ -39,6 +39,19 @@
                 </div>
 
                 <div class="col-md-4">
+                    <label asp-for="PromoCode" class="form-label"></label>
+                    <input asp-for="PromoCode" class="form-control text-uppercase" placeholder="VD: SUMMER2026" />
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="DiscountPercentage" class="form-label"></label>
+                    <div class="input-group">
+                        <input asp-for="DiscountPercentage" class="form-control text-end" type="number" step="0.1" />
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
                     <label asp-for="StartDate" class="form-label"></label>
                     <input asp-for="StartDate" class="form-control" />
                 </div>

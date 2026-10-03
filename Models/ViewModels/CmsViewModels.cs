@@ -24,6 +24,12 @@ public class PromotionFormViewModel
 
     [Display(Name = "Giá hiển thị (nếu có)")]
     public decimal DisplayPrice { get; set; }
+    
+    [Display(Name = "Mã giảm giá (Promo Code)")]
+    public string PromoCode { get; set; } = string.Empty;
+
+    [Display(Name = "Phần trăm giảm giá (%)")]
+    public decimal DiscountPercentage { get; set; }
 
     [Display(Name = "Ngày bắt đầu")]
     [DataType(DataType.Date)]
