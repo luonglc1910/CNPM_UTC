@@ -19,6 +19,7 @@ Chi tiết nghiệp vụ từng màn hình nằm trong các file con.
 | [`06-housekeeping.md`](06-housekeeping.md) | Bảng buồng phòng, kiểm minibar, báo hỏng, yêu cầu phục vụ |
 | [`07-billing.md`](07-billing.md) | Folio, thêm chi phí, giảm giá, thanh toán, hóa đơn, ca làm việc |
 | [`08-reports-admin.md`](08-reports-admin.md) | Doanh thu, công suất, ADR/RevPAR, báo cáo ca, nhật ký thao tác |
+| [`09-portal-client.md`](09-portal-client.md) | Cổng khách hàng, tìm phòng, chi tiết phòng, tiến trình đặt phòng, xác nhận đơn |
 
 ## Bảng tổng hợp màn hình
 
@@ -124,16 +125,25 @@ Ký hiệu quyền: **A** = Admin, **L** = Lễ tân.
 | SCR-G04 | Báo cáo theo nhân viên / ca | `/Reports/Staff` | ✔ | — |
 | SCR-G05 | Nhật ký thao tác (Audit log) | `/Reports/AuditLog` | ✔ | — |
 
+### Nhóm P — Khách hàng (Portal/Client)
+
+| Mã | Màn hình | URL | Quyền |
+|---|---|---|:-:|
+| SCR-P01 | Trang chủ & Tìm phòng | `/Portal/Index` | Public |
+| SCR-P02 | Chi tiết loại phòng | `/Portal/RoomDetails/{id}` | Public |
+| SCR-P03 | Đặt phòng & Thanh toán | `/Portal/BookRoom` | Public |
+| SCR-P04 | Báo đặt phòng thành công | `/Portal/BookingSuccess/{id}` | Public |
+
 ## Thống kê
 
-- **Tổng số màn hình: 56** (Create và Edit của cùng một danh mục tính là một màn hình vì
+- **Tổng số màn hình: 60** (Create và Edit của cùng một danh mục tính là một màn hình vì
   dùng chung form).
 
-| Nhóm | S | A | B | C | D | E | F | G | Tổng |
-|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
-| Số màn hình | 4 | 12 | 5 | 9 | 8 | 4 | 9 | 5 | **56** |
+| Nhóm | S | A | B | C | D | E | F | G | P | Tổng |
+|---|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|:-:|
+| Số màn hình | 4 | 12 | 5 | 9 | 8 | 4 | 9 | 5 | 4 | **60** |
 
-- **Bản chạy được tối thiểu (MVP) — 44 màn hình:** toàn bộ nhóm S, D, E, C; A01–A07;
+- **Bản chạy được tối thiểu (MVP) — 48 màn hình:** toàn bộ nhóm S, D, E, C, P; A01–A07;
   B01–B03; F01–F07; G01–G02.
 - **Có thể lùi sang giai đoạn sau — 12 màn hình:** SCR-A08, A09 (tồn kho) · A10, A11
   (quản lý nhân viên — giai đoạn đầu seed sẵn tài khoản) · A12 (cấu hình — giai đoạn đầu

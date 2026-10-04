@@ -1,0 +1,64 @@
+@model HotelManagement.Web.Models.Entities.Reservation
+@{
+    Layout = "_PortalLayout";
+    ViewData["Title"] = "Đặt phòng thành công";
+}
+
+<div class="w-full max-w-3xl mx-auto px-margin py-space-xl flex flex-col items-center text-center gap-space-lg">
+    <div class="w-20 h-20 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center">
+        <span class="material-symbols-outlined text-[40px]">check_circle</span>
+    </div>
+    
+    <h1 class="font-display-lg text-display-lg text-primary">Đặt phòng thành công!</h1>
+    <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
+        Cảm ơn quý khách <strong>@Model.PrimaryGuest.FullName</strong> đã lựa chọn Aura Resort. 
+        Mã đơn đặt phòng của quý khách là <strong class="text-primary">@Model.Code</strong>.
+    </p>
+
+    <div class="bg-surface-container p-space-lg rounded-xl w-full text-left flex flex-col gap-space-md shadow-sm">
+        <h2 class="font-headline-sm text-headline-sm text-primary border-b border-surface-dim pb-2">Thông tin đơn phòng</h2>
+        
+        <div class="grid grid-cols-2 gap-space-md">
+            <div class="flex flex-col gap-1">
+                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Mã đơn</span>
+                <span class="font-body-md text-body-md font-semibold text-on-surface">@Model.Code</span>
+            </div>
+            <div class="flex flex-col gap-1">
+                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Trạng thái</span>
+                <span class="font-body-md text-body-md font-semibold text-secondary">Chờ thanh toán / Đã xác nhận</span>
+            </div>
+            <div class="flex flex-col gap-1">
+                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Ngày nhận phòng</span>
+                <span class="font-body-md text-body-md font-semibold text-on-surface">@Model.CheckInDate.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+            <div class="flex flex-col gap-1">
+                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Ngày trả phòng</span>
+                <span class="font-body-md text-body-md font-semibold text-on-surface">@Model.CheckOutDate.ToString("dd/MM/yyyy HH:mm")</span>
+            </div>
+        </div>
+        
+        <div class="mt-4 pt-4 border-t border-surface-dim">
+            <h3 class="font-label-lg text-label-lg text-on-surface-variant uppercase mb-3">Chi tiết phòng đã đặt</h3>
+            <ul class="flex flex-col gap-2">
+                @foreach (var rr in Model.Rooms)
+                {
+                    <li class="bg-surface-container-low p-3 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
+                        <div class="flex flex-col">
+                            <span class="font-body-md font-semibold text-primary">@rr.RoomType.Name</span>
+                            <span class="font-label-sm text-label-sm text-on-surface-variant">Phòng: @(rr.Room != null ? rr.Room.RoomNumber : "Đang chờ xếp phòng") | Số khách: @rr.Adults người</span>
+                        </div>
+                        <span class="font-numeric-table font-medium text-secondary">
+                            @(Model.EstimatedTotal.ToString("N0")) đ
+                        </span>
+                    </li>
+                }
+            </ul>
+        </div>
+    </div>
+
+    <div class="flex items-center gap-space-md mt-space-md">
+        <a href="/Portal/Index" class="h-11 px-space-md bg-surface-container-high hover:bg-surface-dim text-on-surface rounded-lg font-label-md text-label-md font-semibold flex items-center justify-center transition-colors">
+            Về trang chủ
+        </a>
+    </div>
+</div>

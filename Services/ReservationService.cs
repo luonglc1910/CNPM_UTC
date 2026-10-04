@@ -415,6 +415,7 @@ public class ReservationService : IReservationService
         r.CheckOutDate = period.CheckOut;
         r.Nights = period.Nights;
         r.Hours = period.Hours;
+        r.Status = form.ConfirmNow ? ReservationStatus.Confirmed : ReservationStatus.Draft;
         r.Source = form.Source;
         r.SpecialRequests = Trimmed(form.SpecialRequests);
         r.InternalNotes = Trimmed(form.InternalNotes);

@@ -2,7 +2,8 @@
 @{
     Layout = "_PortalLayout";
     ViewData["Title"] = "Chi tiết phòng";
-    var availableRoomList = Model.Rooms.Where(r => r.IsActive && r.Status == HotelManagement.Web.Models.RoomStatus.Available).ToList();
+    var occupiedRoomIds = ViewBag.OccupiedRoomIds as List<int> ?? new List<int>();
+    var availableRoomList = Model.Rooms.Where(r => r.IsActive && r.Status == HotelManagement.Web.Models.RoomStatus.Available && !occupiedRoomIds.Contains(r.Id)).ToList();
     int availableRooms = availableRoomList.Count;
 }
 <div class="flex flex-col w-full">
@@ -100,11 +101,11 @@ else
             </p>
 </div>
 <!-- Interactive Booking Widget Inside Card -->
-<form class="flex flex-col gap-space-sm" onsubmit="event.preventDefault(); alert('Chức năng đặt phòng đang được hoàn thiện.');">
+<form class="flex flex-col gap-space-sm" action="/Portal/BookRoom" method="GET">
 <!-- Room Selector -->
 <div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary relative cursor-pointer" onclick="try{ document.getElementById('selectedRoom').showPicker(); } catch(e){}">
 <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="selectedRoom">Chọn phòng trống</label>
-<select id="selectedRoom" class="mt-0.5 w-full text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer appearance-none pr-8" onclick="event.stopPropagation()">
+<select id="selectedRoom" name="roomId" class="mt-0.5 w-full text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer appearance-none pr-8" onclick="event.stopPropagation()">
     @if(availableRoomList.Any())
     {
         foreach(var room in availableRoomList)
@@ -122,7 +123,7 @@ else
 <!-- Rental Type Selector -->
 <div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary relative cursor-pointer" onclick="try{ document.getElementById('rentalType').showPicker(); } catch(e){}">
 <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="rentalType">Hình thức thuê</label>
-<select id="rentalType" class="mt-0.5 w-full text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer appearance-none pr-8" onchange="calculatePrice()" onclick="event.stopPropagation()">
+<select id="rentalType" name="rentalType" class="mt-0.5 w-full text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer appearance-none pr-8" onchange="calculatePrice()" onclick="event.stopPropagation()">
     <option value="Daily">Theo ngày (@Model.BasePricePerNight.ToString("N0") ₫)</option>
     <option value="Hourly">Theo giờ (Giờ đầu: @Model.PriceFirstHour.ToString("N0") ₫)</option>
     <option value="Overnight">Qua đêm (@Model.PriceOvernight.ToString("N0") ₫)</option>
@@ -132,18 +133,18 @@ else
 <div class="grid grid-cols-2 gap-2">
 <div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary cursor-pointer" onclick="try{ document.getElementById('checkInDate').showPicker(); } catch(e){}">
 <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="checkInDate">Nhận phòng</label>
-<input type="date" id="checkInDate" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer w-full" onchange="calculatePrice()" onclick="event.stopPropagation()" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+<input type="date" id="checkInDate" name="checkIn" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer w-full" onchange="calculatePrice()" onclick="event.stopPropagation()" value="@DateTime.Now.ToString("yyyy-MM-dd")">
 </div>
 <div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary cursor-pointer" onclick="try{ document.getElementById('checkOutDate').showPicker(); } catch(e){}">
 <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="checkOutDate">Trả phòng</label>
-<input type="date" id="checkOutDate" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer w-full" onchange="calculatePrice()" onclick="event.stopPropagation()" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")">
+<input type="date" id="checkOutDate" name="checkOut" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer w-full" onchange="calculatePrice()" onclick="event.stopPropagation()" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")">
 </div>
 </div>
 <!-- Khách & Giường phụ -->
 <div class="grid grid-cols-2 gap-2">
 <div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary">
 <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" for="guestCount">Số khách</label>
-<input type="number" id="guestCount" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none w-full" value="@Model.StandardCapacity" min="1" max="@Model.MaxCapacity" onchange="calculatePrice()">
+<input type="number" id="guestCount" name="guests" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none w-full" value="@Model.StandardCapacity" min="1" max="@Model.MaxCapacity" onchange="calculatePrice()">
 @if(Model.ExtraGuestFeePerNight > 0)
 {
     <span class="text-[11px] text-on-surface-variant mt-1">Phụ thu > @Model.StandardCapacity người: +@Model.ExtraGuestFeePerNight.ToString("N0") ₫/đêm</span>
@@ -151,7 +152,7 @@ else
 </div>
 <div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col justify-center items-start group hover:bg-surface-container transition-colors cursor-pointer" onclick="document.getElementById('extraBed').click()">
 <label class="flex items-center gap-2 cursor-pointer w-full">
-<input type="checkbox" id="extraBed" class="w-4 h-4 text-primary rounded border-outline focus:ring-primary" onchange="calculatePrice(); event.stopPropagation()" onclick="event.stopPropagation()">
+<input type="checkbox" id="extraBed" name="extraBed" value="true" class="w-4 h-4 text-primary rounded border-outline focus:ring-primary" onchange="calculatePrice(); event.stopPropagation()" onclick="event.stopPropagation()">
 <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Thêm giường phụ</span>
 </label>
 @if(Model.ExtraBedFeePerNight > 0)
@@ -164,7 +165,7 @@ else
 <div class="flex flex-col gap-1.5 mt-2">
     <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" for="promoCode">Mã ưu đãi (Tùy chọn)</label>
     <div class="flex gap-2">
-        <input type="text" id="promoCode" class="flex-1 bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm text-on-surface font-body-md border-none outline-none focus:ring-2 focus:ring-primary uppercase" placeholder="Nhập mã..." onkeyup="this.value = this.value.toUpperCase()">
+        <input type="text" id="promoCode" name="promoCode" class="flex-1 bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm text-on-surface font-body-md border-none outline-none focus:ring-2 focus:ring-primary uppercase" placeholder="Nhập mã..." onkeyup="this.value = this.value.toUpperCase()">
         <button type="button" class="bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-on-secondary font-label-md px-4 rounded-[6px] transition-colors" onclick="applyPromo()">Áp dụng</button>
     </div>
     <span id="promoMessage" class="text-sm font-medium"></span>

@@ -1,0 +1,376 @@
+@model HotelManagement.Web.Models.ViewModels.ClientBookingViewModel
+@{
+    ViewData["Title"] = "Đặt phòng & Thanh toán";
+    Layout = "_PortalLayout";
+}
+<div class="flex flex-col w-full">
+            <!-- Minimal Ambient Header Clearance & Status Notification -->
+            <section class="w-full bg-surface-container-low/70 py-space-xs">
+
+            </section>
+            <!-- Checkout Main Container -->
+            <div class="w-full max-w-7xl mx-auto px-margin py-space-lg">
+                <!-- Breadcrumb & Page Meta -->
+                <div class="flex flex-col md:flex-row md:items-center justify-between gap-space-md mb-space-lg">
+                    <nav aria-label="Đường dẫn trang" class="flex items-center gap-space-xs flex-wrap font-label-md text-label-md text-on-surface-variant">
+                        <a class="hover:text-primary transition-colors" data-path="trang-chu" href="#">Trang chủ</a>
+                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                        <a class="hover:text-primary transition-colors" data-path="phong-nghi" href="#">Tìm phòng</a>
+                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                        <a class="hover:text-primary transition-colors" href="#">@Model.RoomTypeName (Phòng @Model.RoomNumber)</a>
+                        <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+                        <span class="text-primary font-semibold">Đặt phòng &amp; Thanh toán</span>
+                    </nav>
+
+                </div>
+                <!-- Booking Progress Steps -->
+
+                <form action="/Portal/BookRoom" method="POST" id="bookingForm">
+                    <!-- Hidden Data from Previous Page -->
+                    <input type="hidden" name="RoomId" value="@Model.RoomId" />
+                    <input type="hidden" name="RentalType" value="@Model.RentalType" />
+                    <input type="hidden" name="CheckIn" value="@Model.CheckIn.ToString("yyyy-MM-ddTHH:mm")" />
+                    <input type="hidden" name="CheckOut" value="@Model.CheckOut.ToString("yyyy-MM-ddTHH:mm")" />
+                    <input type="hidden" name="Guests" value="@Model.Guests" />
+                    <input type="hidden" name="ExtraBed" value="@(Model.ExtraBed ? "true" : "false")" />
+                    <input type="hidden" name="PromoCode" value="@Model.PromoCode" />
+
+                <!-- 2-Column Responsive Layout -->
+                <div class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-start">
+                    <!-- LEFT COLUMN: Main Form (~65%) -->
+                    <div class="lg:col-span-8 flex flex-col gap-space-lg">
+                        <!-- 1. Guest Information Card -->
+                        <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+                            <div class="flex items-center justify-between gap-space-sm mb-space-md">
+                                <div class="flex items-center gap-space-sm">
+                                    <span class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+                                        <span class="material-symbols-outlined text-[20px]">person</span>
+                                    </span>
+                                    <h2 class="font-headline-md text-headline-sm text-primary">Thông tin người đặt &amp; Liên hệ</h2>
+                                </div>
+                                <span class="font-label-sm text-label-sm text-secondary bg-surface-container-low px-space-sm py-space-xs rounded font-medium">Bắt buộc</span>
+                            </div>
+                            <!-- Self or Others Toggle -->
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                                <!-- Full Name -->
+                                <div class="flex flex-col gap-space-xs">
+                                    <label class="font-label-lg text-label-md text-on-surface font-medium">Họ và tên quý khách <span class="text-error">*</span></label>
+                                    <div class="relative">
+                                        <input name="FullName" required class="w-full h-11 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary shadow-inner" placeholder="Ví dụ: Nguyễn Văn A" type="text" value="">
+                                    </div>
+                                </div>
+                                <!-- Phone Number -->
+                                <div class="flex flex-col gap-space-xs">
+                                    <label class="font-label-lg text-label-md text-on-surface font-medium">Số điện thoại liên lạc <span class="text-error">*</span></label>
+                                    <div class="flex gap-space-xs">
+                                        <div class="h-11 px-space-sm rounded-lg bg-surface-container flex items-center gap-1 font-numeric-table text-numeric-table text-on-surface">
+                                            <span class="">🇻🇳</span>
+                                            <span class="">+84</span>
+                                        </div>
+                                        <input name="PhoneNumber" required class="flex-1 h-11 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary shadow-inner" placeholder="9 chữ số tiếp theo" type="tel" value="">
+                                    </div>
+                                </div>
+                                <!-- Email Address -->
+                                <div class="flex flex-col gap-space-xs">
+                                    <label class="font-label-lg text-label-md text-on-surface font-medium">Email</label>
+                                    <div class="relative">
+                                        <input name="Email" required class="w-full h-11 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary shadow-inner" placeholder="email@domain.com" type="email" value="">
+                                    </div>
+
+                                </div>
+                                <!-- Country & City -->
+                                <div class="flex flex-col gap-space-xs">
+                                    <label class="font-label-lg text-label-md text-on-surface font-medium">Quốc tịch / Tỉnh thành cư trú</label>
+                                    <select name="Nationality" class="w-full h-11 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary">
+                                        <option selected="">Việt Nam (TP. Hồ Chí Minh)</option>
+                                        <option>Việt Nam (Hà Nội)</option>
+                                        <option>Việt Nam (Đà Nẵng)</option>
+                                        <option>Việt Nam (Khác)</option>
+                                        <option>Quốc tế (International Guest)</option>
+                                    </select>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 2. Arrival & Check-in Schedule -->
+                        <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+                            <div class="flex items-center gap-space-sm mb-space-md">
+                                <span class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+                                    <span class="material-symbols-outlined text-[20px]">schedule</span>
+                                </span>
+                                <h2 class="font-headline-md text-headline-sm text-primary">Thời gian nhận phòng &amp; Khách lưu trú</h2>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-space-md">
+                                <!-- Expected Arrival Window -->
+                                <div class="flex flex-col gap-space-xs">
+                                    <label class="font-label-lg text-label-md text-on-surface font-medium">Giờ nhận phòng dự kiến</label>
+                                    <select name="ArrivalTime" class="w-full h-11 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary">
+                                        <option>14:00 - 16:00 (Tiêu chuẩn resort)</option>
+                                        <option selected="">16:00 - 18:00 (Buổi chiều muộn)</option>
+                                        <option>18:00 - 21:00 (Nhận phòng buổi tối)</option>
+                                        <option>Sau 21:00 (Nhận phòng đêm muộn)</option>
+                                        <option>Chưa xác định thời gian chính xác</option>
+                                    </select>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Lễ tân hỗ trợ chuẩn bị phòng và đồ uống đón tiếp chu đáo theo khung giờ này.</span>
+                                </div>
+                                <!-- Verified Guest Capacity -->
+                                <div class="flex flex-col gap-space-xs">
+                                    <label class="font-label-lg text-label-md text-on-surface font-medium">Số lượng khách thực tế</label>
+                                    <div class="h-11 px-space-md rounded-lg bg-surface-container flex items-center justify-between text-on-surface font-body-md text-body-md">
+                                        <span class="flex items-center gap-space-xs">
+                                            <span class="material-symbols-outlined text-[18px] text-secondary">group</span>
+                                            <strong>@Model.Guests Người</strong></span>
+
+                                    </div>
+                                    <span class="font-label-sm text-label-sm text-on-surface-variant">Phòng đã bao gồm tiêu chuẩn ăn sáng cho 02 khách lớn.</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- 3. Add-on Services & Curated Experiences -->
+
+                        <!-- 4. Special Requests -->
+
+                        <!-- 5. Payment Methods & Guarantee -->
+                        <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm">
+                            <div class="flex items-center gap-space-sm mb-space-md">
+                                <span class="w-8 h-8 rounded-lg bg-surface-container flex items-center justify-center text-primary">
+                                    <span class="material-symbols-outlined text-[20px]">credit_card</span>
+                                </span>
+                                <div>
+                                    <h2 class="font-headline-md text-headline-sm text-primary">Phương thức giữ chỗ &amp; Thanh toán</h2>
+                                    <p class="font-body-sm text-body-sm text-on-surface-variant">Lựa chọn hình thức an toàn, được bảo mật bởi cổng thanh toán quốc tế</p>
+                                </div>
+                            </div>
+                            <!-- Radio Options -->
+                            <div class="flex flex-col gap-space-md">
+                                <!-- Option 1: Credit / Debit Card -->
+
+                                <!-- Option 2: VietQR / E-Wallet -->
+                                <label class="relative flex items-center justify-between p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer border border-transparent has-[:checked]:bg-surface-container">
+                                    <div class="flex items-center gap-space-sm">
+                                        <input class="w-5 h-5 text-primary accent-primary cursor-pointer" name="PaymentMethod" required type="radio" value="qr">
+                                        <div>
+                                            <span class="font-headline-sm text-body-lg text-primary font-semibold">Quét mã Ngân Hàng</span>
+                                            <p class="font-body-sm text-body-sm text-on-surface-variant">Tạo mã QR chuyển khoản tức thì, xác nhận tự động trong 30 giây</p>
+                                        </div>
+                                    </div>
+                                    <span class="font-label-sm text-label-sm text-secondary bg-surface-container-lowest px-2 py-1 rounded font-medium">Tiện lợi</span>
+                                </label>
+                                <!-- Option 3: Pay at Reception -->
+                                <label class="relative flex items-center justify-between p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer border border-transparent has-[:checked]:bg-surface-container">
+                                    <div class="flex items-center gap-space-sm">
+                                        <input class="w-5 h-5 text-primary accent-primary cursor-pointer" name="PaymentMethod" required type="radio" value="pay_later">
+                                        <div>
+                                            <span class="font-headline-sm text-body-lg text-primary font-semibold">Giữ phòng đảm bảo &amp; Thanh toán tại Quầy Lễ tân</span>
+                                            <p class="font-body-sm text-body-sm text-on-surface-variant">Thanh toán khi làm thủ tục Check-in (Yêu cầu giữ thẻ tín dụng bảo lãnh 0đ)</p>
+                                        </div>
+                                    </div>
+                                    <span class="material-symbols-outlined text-secondary">hotel</span>
+                                </label>
+                            </div>
+                        </div>
+                        <!-- 6. Agreement & Final Action -->
+                        <div class="bg-surface-container-lowest p-space-lg rounded-xl shadow-sm flex flex-col gap-space-md">
+                            <label class="flex items-start gap-space-sm cursor-pointer">
+                                <input checked="" class="mt-1 w-5 h-5 text-primary accent-primary rounded cursor-pointer" id="policy-agree" type="checkbox">
+                                <span class="font-body-sm text-body-sm text-on-surface leading-relaxed">
+                                    Tôi xác nhận đã đọc, hiểu rõ và đồng thuận với các
+                                    <a class="text-secondary font-semibold hover:underline" href="#">Chính sách đặt phòng</a>,
+                                    <a class="text-secondary font-semibold hover:underline" href="#">Quy định hủy phòng miễn phí trước 48 giờ</a>,
+                                    và điều khoản bảo mật của Aura Resort.
+                                </span>
+                            </label>
+                            <div class="flex flex-col sm:flex-row items-center justify-between gap-space-md pt-space-xs">
+                                <div class="flex items-center gap-space-xs text-on-surface-variant font-label-sm text-label-sm">
+
+
+                                </div>
+                                <button class="w-full sm:w-auto h-12 px-space-xl bg-primary text-on-primary rounded-xl font-label-lg text-label-lg font-semibold flex items-center justify-center gap-space-sm hover:bg-primary-container active:scale-[0.99] transition-all shadow-md" onclick="handleBookingSubmit(event)" type="button">
+                                    <span class="material-symbols-outlined text-[20px]">lock</span>
+                                    <span class="">Hoàn tất Đặt phòng &amp; Nhận xác nhận</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- RIGHT COLUMN: Sticky Booking Summary Sidebar (~35%) -->
+                    <div class="lg:col-span-4 flex flex-col gap-space-lg lg:sticky lg:top-24">
+                        <!-- Summary Card -->
+                        <div class="bg-surface-container-lowest rounded-xl shadow-sm overflow-hidden">
+                            <!-- Room Preview Imagery -->
+                            <div class="relative w-full h-48 bg-surface-container">
+                                <img class="w-full h-full object-cover" src="@(string.IsNullOrEmpty(Model.ImageUrl) ? "/images/services/s1.jpg" : Model.ImageUrl)">
+                                <div class="absolute inset-0 bg-gradient-to-t from-primary/70 via-transparent to-transparent"></div>
+
+                            </div>
+                            <div class="p-space-lg flex flex-col gap-space-md">
+                                <!-- Dates & Schedule Info -->
+                                <div class="grid grid-cols-2 gap-space-xs bg-surface-container-low p-space-sm rounded-lg">
+                                    <div class="flex flex-col">
+                                        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Nhận phòng</span>
+                                        <span class="font-headline-sm text-body-md font-semibold text-primary">@Model.CheckIn.ToString("ddd, dd MMM")</span>
+                                        <span class="font-label-sm text-label-sm text-secondary">Từ 14:00</span>
+                                    </div>
+                                    <div class="flex flex-col pl-space-sm border-l border-surface-dim">
+                                        <span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Trả phòng</span>
+                                        <span class="font-headline-sm text-body-md font-semibold text-primary">@Model.CheckOut.ToString("ddd, dd MMM")</span>
+                                        <span class="font-label-sm text-label-sm text-secondary">Trước 12:00</span>
+                                    </div>
+                                </div>
+                                <!-- Stay Specs -->
+                                <div class="flex items-center justify-between font-label-md text-label-md text-on-surface-variant py-space-xs border-b border-surface-container-high">
+                                    <span class="flex items-center gap-space-xs">
+                                        <span class="material-symbols-outlined text-[16px] text-secondary">calendar_today</span>
+                                        <span class="">Thời gian: <strong>@Model.NightsOrHours @(Model.RentalType == "Daily" ? "đêm" : "lượt")</strong></span>
+                                    </span>
+                                    <span class="flex items-center gap-space-xs">
+                                        <span class="material-symbols-outlined text-[16px] text-secondary">person</span>
+                                        <span class="">Số khách: <strong>@Model.Guests người</strong></span>
+                                    </span>
+                                </div>
+                                <!-- Price Breakdown Ledger -->
+                                <div class="flex flex-col gap-space-xs text-body-sm font-body-sm">
+                                    <div class="flex items-center justify-between text-on-surface">
+                                        <span class="">Giá phòng (@Model.BasePrice.ToString("N0")đ × @Model.NightsOrHours)</span>
+                                        <span class="font-numeric-table text-numeric-table font-medium">@Model.TotalRoomPrice.ToString("N0")đ</span>
+                                    </div>
+                                    @if(Model.DiscountAmount > 0)
+                                    {
+                                        <div class="flex items-center justify-between text-secondary">
+                                            <span class="flex items-center gap-1">
+                                                <span class="">Ưu đãi mã (@Model.PromoCode)</span>
+                                                <span class="material-symbols-outlined text-[14px]">sell</span>
+                                            </span>
+                                            <span class="font-numeric-table text-numeric-table font-medium">-@Model.DiscountAmount.ToString("N0")đ</span>
+                                        </div>
+                                    }
+                                    @if(Model.ExtraGuestFee > 0 || Model.ExtraBedFee > 0)
+                                    {
+                                        <div class="flex items-center justify-between text-on-surface pt-1 border-t border-dashed border-surface-dim">
+                                            <span class="">Phụ thu (Thêm khách / Giường phụ):</span>
+                                            <span class="font-numeric-table text-numeric-table font-medium">+@((Model.ExtraGuestFee + Model.ExtraBedFee).ToString("N0"))đ</span>
+                                        </div>
+                                    }
+                                    <div class="flex items-center justify-between text-on-surface-variant text-label-sm">
+                                        <span class="">Thuế GTGT &amp; Phí dịch vụ (10% &amp; 5%)</span>
+                                        <span class="">Đã bao gồm</span>
+                                    </div>
+                                </div>
+                                <!-- Voucher Code Box -->
+                                <div class="flex items-center gap-space-xs pt-space-xs">
+
+                                    <button class="h-10 px-space-md rounded-lg bg-surface-container-high text-primary hover:bg-surface-dim font-label-md text-label-md font-semibold transition-colors" onclick="applyVoucher()" type="button">
+                                        Áp dụng
+                                    </button>
+                                </div>
+                                <div class="hidden font-label-sm text-label-sm text-on-tertiary-container bg-surface-container-low p-2 rounded" id="voucher-notice">
+                                    Đã kích hoạt ưu đãi thẻ thành viên Aura Privé: Giảm thêm 300.000đ!
+                                </div>
+                                <!-- Grand Total -->
+                                <div class="bg-surface-container p-space-md rounded-xl mt-space-xs flex flex-col gap-1">
+                                    <div class="flex items-center justify-between">
+                                        <span class="font-label-lg text-label-lg font-semibold text-primary">Tổng tiền thanh toán</span>
+                                        <div class="flex items-center gap-space-xs">
+                                            <span class="font-label-sm text-label-sm bg-secondary-container text-on-secondary-container px-2 py-0.5 rounded font-semibold uppercase">Giá tốt nhất</span>
+                                        </div>
+                                    </div>
+                                    <div class="flex items-baseline justify-between">
+                                        <span class="font-label-sm text-label-sm text-on-surface-variant">Bao gồm tất cả phí &amp; tiện ích</span>
+                                        <span class="font-numeric-table text-headline-lg font-bold text-primary tracking-tight" id="grand-total-display">@Model.GrandTotal.ToString("N0")đ</span>
+                                    </div>
+                                </div>
+                                <!-- Cancellation Policy Pill -->
+                                <div class="flex items-center gap-space-xs p-space-xs bg-surface-container-low rounded-lg text-on-surface-variant font-label-sm text-label-sm">
+                                    <span class="material-symbols-outlined text-[16px] text-tertiary">check_circle</span>
+                                    <span class="">Miễn phí hủy phòng trước 14:00 ngày 22 Th04, 2025</span>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Trust Badges & Direct Concierge -->
+
+                    </div>
+                </div>
+                </form>
+            </div>
+            <!-- Interactive JavaScript -->
+            <script>
+                const baseRoomTotal = 6075000;
+                let voucherDiscount = 0;
+
+                function formatVND(amount) {
+                    return amount.toLocaleString('vi-VN') + '₫';
+                }
+
+                function updateAddons() {
+                    let addonTotal = 0;
+                    const checkboxes = document.querySelectorAll('#addon-container input[type="checkbox"]');
+                    checkboxes.forEach(cb => {
+                        if (cb.checked) {
+                            addonTotal += parseInt(cb.getAttribute('data-price') || '0', 10);
+                        }
+                    });
+
+                    const addonSumEl = document.getElementById('addon-sum-display');
+                    if (addonSumEl) {
+                        addonSumEl.textContent = '+' + formatVND(addonTotal);
+                    }
+
+                    const grandTotalEl = document.getElementById('grand-total-display');
+                    if (grandTotalEl) {
+                        const finalPrice = Math.max(0, baseRoomTotal + addonTotal - voucherDiscount);
+                        grandTotalEl.textContent = formatVND(finalPrice);
+                    }
+                }
+
+                function applyVoucher() {
+                    const input = document.getElementById('voucher-input');
+                    const notice = document.getElementById('voucher-notice');
+                    if (!input) return;
+
+                    const code = input.value.trim().toUpperCase();
+                    if (code === 'AURA' || code === 'AURAPRIVE' || code === 'DISCOUNT') {
+                        voucherDiscount = 300000;
+                        if (notice) notice.classList.remove('hidden');
+                        input.disabled = true;
+                    } else {
+                        alert('Mã ưu đãi không hợp lệ hoặc đã hết lượt sử dụng.');
+                    }
+                    updateAddons();
+                }
+
+                function handleBookingSubmit(e) {
+                    const agree = document.getElementById('policy-agree');
+                    if (!agree || !agree.checked) {
+                        alert('Vui lòng đánh dấu đồng ý với chính sách và quy định đặt phòng trước khi tiếp tục.');
+                        return;
+                    }
+                    // Validate basic required
+                    const form = document.getElementById('bookingForm');
+                    if(!form.checkValidity()) {
+                        form.reportValidity();
+                        return;
+                    }
+
+                    const btn = e.currentTarget;
+                    btn.innerHTML = '<span class="material-symbols-outlined animate-spin">sync</span> Đang xử lý...';
+                    btn.disabled = true;
+                    
+                    form.submit();
+                }
+
+                // Reservation 15-minute countdown simulation
+                (function initTimer() {
+                    let remaining = 15 * 60;
+                    const timerEl = document.getElementById('reservation-timer');
+                    if (!timerEl) return;
+
+                    setInterval(() => {
+                        if (remaining > 0) {
+                            remaining--;
+                            const m = String(Math.floor(remaining / 60)).padStart(2, '0');
+                            const s = String(remaining % 60).padStart(2, '0');
+                            timerEl.textContent = `${m}:${s}`;
+                        }
+                    }, 1000);
+                })();
+            </script>
+        </div>
