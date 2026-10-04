@@ -1,4 +1,5 @@
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using HotelManagement.Web.Data;
@@ -219,9 +220,10 @@ public class PortalController : Controller
         string guestPhone = string.Empty;
         string guestEmail = string.Empty;
 
-        if (User.Identity?.IsAuthenticated == true && User.Identity.AuthenticationType == Security.AppSchemes.Client)
+        var authResult = await HttpContext.AuthenticateAsync(Security.AppSchemes.Client);
+        if (authResult.Succeeded && authResult.Principal != null)
         {
-            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            var userIdClaim = authResult.Principal.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
             if (int.TryParse(userIdClaim, out int guestId))
             {
                 var currentGuest = await _context.Guests.FindAsync(guestId);

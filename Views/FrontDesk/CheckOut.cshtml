@@ -143,7 +143,7 @@
                                             <tbody>
                                                 @foreach (var line in s.SurchargeLines)
                                                 {
-                                                    <tr class="text-muted small">
+                                                    <tr class="text-muted small @(line.IsPending ? "surcharge-pending-row" : "")" data-amount="@(line.IsPending ? line.Amount : 0)" data-tax="@(line.IsPending ? Math.Round(line.Amount * s.TaxRate, 2) : 0)">
                                                         <td class="ps-3">
                                                             <i class="bi bi-arrow-return-right me-1"></i>@line.Description
                                                             @if (line.IsPending)
@@ -162,9 +162,9 @@
                         }
 
                         <tr><td>Giảm giá</td><td class="text-end">-@s.DiscountAmount.ToString("N0") ₫</td></tr>
-                        <tr><td>VAT</td><td class="text-end">@s.TaxAmount.ToString("N0") ₫</td></tr>
-                        <tr class="fw-semibold"><td>Tổng</td><td class="text-end">@s.Total.ToString("N0") ₫</td></tr>
-                        <tr class="table-light fw-semibold"><td>Số dư phải thu</td><td class="text-end">@s.BalanceDue.ToString("N0") ₫</td></tr>
+                        <tr><td>VAT</td><td class="text-end" id="summaryTax" data-value="@s.TaxAmount">@s.TaxAmount.ToString("N0") ₫</td></tr>
+                        <tr class="fw-semibold"><td>Tổng</td><td class="text-end" id="summaryTotal" data-value="@s.Total">@s.Total.ToString("N0") ₫</td></tr>
+                        <tr class="table-light fw-semibold"><td>Số dư phải thu</td><td class="text-end" id="summaryBalanceDue" data-value="@s.BalanceDue">@s.BalanceDue.ToString("N0") ₫</td></tr>
                     </tbody>
                 </table>
                 </div>
@@ -174,3 +174,49 @@
         </div>
     </div>
 </div>
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const waiveCb = document.getElementById('WaiveLateSurcharge');
+            if (waiveCb) {
+                const totalEl = document.getElementById('summaryTotal');
+                const balanceEl = document.getElementById('summaryBalanceDue');
+                const taxEl = document.getElementById('summaryTax');
+                const originalTotal = parseFloat(totalEl.getAttribute('data-value'));
+                const originalBalance = parseFloat(balanceEl.getAttribute('data-value'));
+                const originalTax = parseFloat(taxEl.getAttribute('data-value'));
+
+                waiveCb.addEventListener('change', function(e) {
+                    const isChecked = e.target.checked;
+                    const rows = document.querySelectorAll('.surcharge-pending-row');
+                    
+                    let totalSurchargeToSubtract = 0;
+                    let totalTaxToSubtract = 0;
+
+                    rows.forEach(r => {
+                        if (isChecked) {
+                            r.style.textDecoration = 'line-through';
+                            r.style.opacity = '0.4';
+                            totalSurchargeToSubtract += parseFloat(r.getAttribute('data-amount') || 0);
+                            totalTaxToSubtract += parseFloat(r.getAttribute('data-tax') || 0);
+                        } else {
+                            r.style.textDecoration = 'none';
+                            r.style.opacity = '1';
+                        }
+                    });
+
+                    const newTotal = originalTotal - totalSurchargeToSubtract - totalTaxToSubtract;
+                    const newBalance = originalBalance - totalSurchargeToSubtract - totalTaxToSubtract;
+                    const newTax = originalTax - totalTaxToSubtract;
+
+                    totalEl.innerText = new Intl.NumberFormat('vi-VN').format(newTotal) + ' ₫';
+                    balanceEl.innerText = new Intl.NumberFormat('vi-VN').format(newBalance) + ' ₫';
+                    taxEl.innerText = new Intl.NumberFormat('vi-VN').format(newTax) + ' ₫';
+                });
+                
+                // Trigger once in case it's checked by default (e.g. going back)
+                waiveCb.dispatchEvent(new Event('change'));
+            }
+        });
+    </script>
+}

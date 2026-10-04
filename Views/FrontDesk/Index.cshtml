@@ -119,23 +119,40 @@
         <div class="table-responsive">
             <table class="table table-hover align-middle mb-0">
                 <thead class="table-light">
-                    <tr><th>Phòng</th><th>Khách</th><th>Vào</th><th>Đi dự kiến</th><th class="text-end">Thao tác</th></tr>
+                    <tr>
+                        <th>Phòng</th>
+                        <th>Khách</th>
+                        <th>Hình thức thuê</th>
+                        <th>Vào</th>
+                        <th>Đi dự kiến</th>
+                        <th class="text-end">Thao tác</th>
+                    </tr>
                 </thead>
                 <tbody>
                 @foreach (var h in Model.InHouse)
                 {
                     <tr>
-                        <td><strong>@h.RoomNumber</strong></td>
-                        <td>@h.GuestName</td>
+                        <td>
+                            <strong>@h.RoomNumber</strong><br/>
+                            <small class="text-muted">@h.RoomTypeName</small>
+                        </td>
+                        <td>
+                            @h.GuestName<br/>
+                            <small class="text-muted"><i class="bi bi-people-fill"></i> @h.GuestsCount người</small>
+                        </td>
+                        <td>
+                            <span class="badge bg-info text-dark">@h.RentalType.DisplayName()</span><br/>
+                            <small class="text-danger fw-semibold">Tổng: @h.TotalAmount.ToString("N0") ₫</small>
+                        </td>
                         <td>@h.ActualCheckIn.ToString("dd/MM HH:mm")</td>
-                        <td>@h.ExpectedCheckOut.ToString("dd/MM/yyyy")</td>
+                        <td>@h.ExpectedCheckOut.ToString("dd/MM/yyyy HH:mm")</td>
                         <td class="text-end">
                             <a class="btn btn-sm btn-outline-secondary" asp-action="Stay" asp-route-id="@h.StayId">Chi tiết</a>
                             <a class="btn btn-sm btn-outline-primary" asp-controller="Billing" asp-action="AddCharge" asp-route-stayId="@h.StayId">Ghi dịch vụ</a>
                         </td>
                     </tr>
                 }
-                @if (Model.InHouse.Count == 0) { <tr><td colspan="5" class="text-center text-muted py-4">Chưa có khách lưu trú.</td></tr> }
+                @if (Model.InHouse.Count == 0) { <tr><td colspan="6" class="text-center text-muted py-4">Chưa có khách lưu trú.</td></tr> }
                 </tbody>
             </table>
         </div>

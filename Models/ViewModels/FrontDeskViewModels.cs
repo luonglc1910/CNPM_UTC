@@ -35,7 +35,11 @@ public class InHouseItem
 {
     public int StayId { get; set; }
     public string RoomNumber { get; set; } = string.Empty;
+    public string RoomTypeName { get; set; } = string.Empty;
     public string GuestName { get; set; } = string.Empty;
+    public int GuestsCount { get; set; }
+    public RentalType RentalType { get; set; }
+    public decimal TotalAmount { get; set; }
     public DateTime ActualCheckIn { get; set; }
     public DateTime ExpectedCheckOut { get; set; }
 }

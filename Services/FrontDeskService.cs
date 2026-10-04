@@ -105,26 +105,32 @@ public class FrontDeskService : IFrontDeskService
 
         var stays = await _db.Stays.AsNoTracking()
             .Where(s => s.Status == StayStatus.CheckedIn)
-            .Include(s => s.Room)
+            .Include(s => s.Room).ThenInclude(r => r.RoomType)
             .Include(s => s.PrimaryGuest)
+            .Include(s => s.Guests)
             .ToListAsync();
 
         var departures = new List<DepartureItem>();
         var inHouse = new List<InHouseItem>();
         foreach (var s in stays)
         {
+            var summary = await _billing.ComputeFolioSummaryAsync(s.Id);
+
             inHouse.Add(new InHouseItem
             {
                 StayId = s.Id,
                 RoomNumber = s.Room.RoomNumber,
+                RoomTypeName = s.Room.RoomType.Name,
                 GuestName = s.PrimaryGuest.FullName,
+                GuestsCount = s.Guests.Count,
+                RentalType = s.RentalType,
+                TotalAmount = summary?.Total ?? 0m,
                 ActualCheckIn = s.ActualCheckIn,
                 ExpectedCheckOut = s.ExpectedCheckOut
             });
 
             if (s.ExpectedCheckOut.Date <= today)
             {
-                var summary = await _billing.ComputeFolioSummaryAsync(s.Id);
                 departures.Add(new DepartureItem
                 {
                     StayId = s.Id,
@@ -187,7 +193,7 @@ public class FrontDeskService : IFrontDeskService
             CheckedInToday = checkedInToday,
             CheckedOutToday = checkedOutToday,
             AvailableCount = rooms.Count(s => s == RoomStatus.Available),
-            OccupiedCount = rooms.Count(s => s == RoomStatus.Occupied),
+            OccupiedCount = inHouse.Count,
             DirtyCount = rooms.Count(s => s == RoomStatus.Dirty),
             MaintenanceCount = rooms.Count(s => s == RoomStatus.Maintenance)
         };
@@ -757,7 +763,7 @@ public class FrontDeskService : IFrontDeskService
         // BR-01/BR-13: phụ thu trễ giờ chưa được ghi vào folio (chỉ ghi khi CheckOutAsync chạy),
         // nhưng tạm tính phải hiển thị đúng số tiền thật sự phải thu để lễ tân và khách không bị bất ngờ.
         // Cộng trực tiếp vào bản xem trước — không thay đổi DB ở bước này.
-        if (preview.Surcharge is not null)
+        if (preview.Surcharge is not null && !summary.IsLocked)
         {
             var surchargeAmt = preview.Surcharge.Amount;
             var extraTax = Math.Round(surchargeAmt * summary.TaxRate, 2);
