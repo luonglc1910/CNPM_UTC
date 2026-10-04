@@ -75,23 +75,56 @@
 
 <nav class="sidebar-nav">
     @{
-        string? renderedSection = null;
+        var groupedVisible = visible.GroupBy(x => x.Section).ToList();
+        int sectionIndex = 0;
     }
-    @foreach (var item in visible)
+    @foreach (var group in groupedVisible)
     {
-        @* Tiêu đề nhóm chỉ hiện khi nhóm đó thực sự còn mục nào đi qua được bộ lọc quyền. *@
-        if (item.Section != renderedSection)
+        if (group.Key == null)
         {
-            renderedSection = item.Section;
-            if (item.Section is not null)
+            foreach (var item in group)
             {
-                <div class="nav-section">@item.Section</div>
+                <a class="nav-link @Active(item.Controller, item.Action)"
+                   asp-controller="@item.Controller" asp-action="@item.Action">
+                    <i class="bi bi-@item.Icon"></i> @item.Label
+                </a>
             }
         }
-
-        <a class="nav-link @Active(item.Controller, item.Action)"
-           asp-controller="@item.Controller" asp-action="@item.Action">
-            <i class="bi bi-@item.Icon"></i> @item.Label
-        </a>
+        else
+        {
+            sectionIndex++;
+            var collapseId = $"collapseSection{sectionIndex}";
+            bool hasActive = group.Any(x => !string.IsNullOrEmpty(Active(x.Controller, x.Action)));
+            
+            <div class="nav-section d-flex align-items-center justify-content-between" 
+                 style="cursor: pointer; user-select: none;" 
+                 data-bs-toggle="collapse" 
+                 data-bs-target="#@collapseId" 
+                 aria-expanded="@(hasActive ? "true" : "false")">
+                <span>@group.Key</span>
+                <i class="bi bi-chevron-down section-caret" style="font-size: 0.75rem; transition: transform 0.2s;"></i>
+            </div>
+            
+            <div class="collapse @(hasActive ? "show" : "")" id="@collapseId">
+                <div class="d-flex flex-column" style="gap: 1px;">
+                    @foreach (var item in group)
+                    {
+                        <a class="nav-link @Active(item.Controller, item.Action)"
+                           asp-controller="@item.Controller" asp-action="@item.Action">
+                            <i class="bi bi-@item.Icon"></i> @item.Label
+                        </a>
+                    }
+                </div>
+            </div>
+        }
     }
 </nav>
+
+<style>
+    .sidebar-nav .nav-section[aria-expanded="true"] .section-caret {
+        transform: rotate(-180deg);
+    }
+    .sidebar-nav .nav-section:hover {
+        color: #d5e0dc; /* Mặc định là #a3b7b1, sáng lên khi di chuột */
+    }
+</style>

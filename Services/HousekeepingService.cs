@@ -173,9 +173,10 @@ public class HousekeepingService : IHousekeepingService
             return ServiceResult.Fail($"Chỉ bắt đầu dọn được phòng đang Chờ dọn (phòng {room.RoomNumber} đang {room.Status.ToDisplayName()}).");
         }
 
-        var hasOpen = await _db.HousekeepingTasks
-            .AnyAsync(t => t.RoomId == roomId && OpenTaskStatuses.Contains(t.Status));
-        if (hasOpen)
+        var openTask = await _db.HousekeepingTasks
+            .FirstOrDefaultAsync(t => t.RoomId == roomId && OpenTaskStatuses.Contains(t.Status));
+            
+        if (openTask is not null && openTask.Status == HousekeepingTaskStatus.InProgress)
         {
             return ServiceResult.Fail($"Phòng {room.RoomNumber} đang có người dọn.");
         }
@@ -184,13 +185,22 @@ public class HousekeepingService : IHousekeepingService
         {
             await _tx.ExecuteAsync(async () =>
             {
-                _db.HousekeepingTasks.Add(new HousekeepingTask
+                if (openTask is not null)
                 {
-                    RoomId = roomId,
-                    Status = HousekeepingTaskStatus.InProgress,
-                    AssignedTo = employeeId,
-                    StartedAt = DateTime.Now
-                });
+                    openTask.Status = HousekeepingTaskStatus.InProgress;
+                    openTask.AssignedTo = employeeId;
+                    openTask.StartedAt = DateTime.Now;
+                }
+                else
+                {
+                    _db.HousekeepingTasks.Add(new HousekeepingTask
+                    {
+                        RoomId = roomId,
+                        Status = HousekeepingTaskStatus.InProgress,
+                        AssignedTo = employeeId,
+                        StartedAt = DateTime.Now
+                    });
+                }
                 _audit.Log("StartCleaning", nameof(Room), roomId.ToString(), newValue: $"Bắt đầu dọn phòng {room.RoomNumber}");
                 await _db.SaveChangesAsync();
             });

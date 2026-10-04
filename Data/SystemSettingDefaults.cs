@@ -27,7 +27,7 @@ public static class SystemSettingDefaults
     public static readonly (string Key, string Value, string Group, string Description)[] All =
     {
         // 1. Thông tin khách sạn
-        (SystemSettingKeys.HotelName, "Khách sạn UTC", Groups.Hotel, "Tên khách sạn in trên hóa đơn"),
+        (SystemSettingKeys.HotelName, "AURA Boutique Hotel & Resort", Groups.Hotel, "Tên khách sạn in trên hóa đơn"),
         (SystemSettingKeys.HotelAddress, "54 Triều Khúc, Thanh Xuân, Hà Nội", Groups.Hotel, "Địa chỉ"),
         (SystemSettingKeys.HotelPhone, "0240 123 4567", Groups.Hotel, "Điện thoại"),
         (SystemSettingKeys.HotelTaxCode, "0100000000", Groups.Hotel, "Mã số thuế"),

@@ -9,11 +9,18 @@
 <div class="d-flex flex-wrap gap-2 mb-3">
     @if (Model.Stay.Status == StayStatus.CheckedIn)
     {
-        <a class="btn btn-outline-primary" asp-controller="Billing" asp-action="AddCharge" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-cup-straw"></i> Ghi dịch vụ</a>
-        <a class="btn btn-outline-secondary" asp-action="AddGuest" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-person-plus"></i> Thêm khách</a>
-        <a class="btn btn-outline-secondary" asp-action="ChangeRoom" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-arrow-left-right"></i> Đổi phòng</a>
-        <a class="btn btn-outline-secondary" asp-action="Extend" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-calendar-plus"></i> Gia hạn</a>
-        <a class="btn btn-outline-secondary" asp-controller="Billing" asp-action="Folio" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-receipt"></i> Folio</a>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-gear"></i> Thao tác
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" asp-controller="Billing" asp-action="AddCharge" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-cup-straw me-2"></i>Ghi dịch vụ</a></li>
+                <li><a class="dropdown-item" asp-action="AddGuest" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-person-plus me-2"></i>Thêm khách</a></li>
+                <li><a class="dropdown-item" asp-action="ChangeRoom" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-arrow-left-right me-2"></i>Đổi phòng</a></li>
+                <li><a class="dropdown-item" asp-action="Extend" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-calendar-plus me-2"></i>Gia hạn</a></li>
+                <li><a class="dropdown-item" asp-controller="Billing" asp-action="Folio" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-receipt me-2"></i>Folio</a></li>
+            </ul>
+        </div>
         <a class="btn btn-primary ms-auto" asp-action="CheckOut" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-box-arrow-left"></i> Check-out</a>
     }
     else

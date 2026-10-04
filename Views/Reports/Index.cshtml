@@ -69,3 +69,61 @@
         <partial name="_OccupancyTab" model="Model.Occupancy" />
     </div>
 </div>
+
+@section Scripts {
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            var ctx = document.getElementById('revenueChart');
+            if (ctx) {
+                var rawData = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Revenue.Rows.Select(r => new { label = r.Label, net = r.Net, room = r.Room, service = r.Service })));
+                
+                var labels = rawData.map(function(r) { return r.label; });
+                var netData = rawData.map(function(r) { return r.net; });
+                var roomData = rawData.map(function(r) { return r.room; });
+                var serviceData = rawData.map(function(r) { return r.service; });
+                
+                new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            {
+                                label: 'Doanh thu thuần',
+                                data: netData,
+                                backgroundColor: 'rgba(32, 201, 151, 0.7)',
+                                borderColor: 'rgba(32, 201, 151, 1)',
+                                borderWidth: 1
+                            },
+                            {
+                                label: 'Tiền phòng',
+                                data: roomData,
+                                backgroundColor: 'rgba(13, 110, 253, 0.7)',
+                                borderColor: 'rgba(13, 110, 253, 1)',
+                                borderWidth: 1,
+                                hidden: true
+                            },
+                            {
+                                label: 'Dịch vụ',
+                                data: serviceData,
+                                backgroundColor: 'rgba(255, 193, 7, 0.7)',
+                                borderColor: 'rgba(255, 193, 7, 1)',
+                                borderWidth: 1,
+                                hidden: true
+                            }
+                        ]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        scales: {
+                            y: {
+                                beginAtZero: true
+                            }
+                        }
+                    }
+                });
+            }
+        });
+    </script>
+}
