@@ -1,0 +1,35 @@
+{
+  "app": {
+    "[project]/src/app/contact/page": [
+      "static/media/eca1cc1e672884b5-s.p.28-lxb4pyxwvn.woff2",
+      "static/media/dc6d2a64e9dbf3bc-s.p.3mjzw95c0-_52.woff2"
+    ],
+    "[project]/src/app/experiences/page": [
+      "static/media/eca1cc1e672884b5-s.p.28-lxb4pyxwvn.woff2",
+      "static/media/dc6d2a64e9dbf3bc-s.p.3mjzw95c0-_52.woff2"
+    ],
+    "[project]/src/app/login/page": [
+      "static/media/eca1cc1e672884b5-s.p.28-lxb4pyxwvn.woff2",
+      "static/media/dc6d2a64e9dbf3bc-s.p.3mjzw95c0-_52.woff2"
+    ],
+    "[project]/src/app/offers/page": [
+      "static/media/eca1cc1e672884b5-s.p.28-lxb4pyxwvn.woff2",
+      "static/media/dc6d2a64e9dbf3bc-s.p.3mjzw95c0-_52.woff2"
+    ],
+    "[project]/src/app/page": [
+      "static/media/eca1cc1e672884b5-s.p.28-lxb4pyxwvn.woff2",
+      "static/media/dc6d2a64e9dbf3bc-s.p.3mjzw95c0-_52.woff2"
+    ],
+    "[project]/src/app/register/page": [
+      "static/media/eca1cc1e672884b5-s.p.28-lxb4pyxwvn.woff2",
+      "static/media/dc6d2a64e9dbf3bc-s.p.3mjzw95c0-_52.woff2"
+    ],
+    "[project]/src/app/search/page": [
+      "static/media/eca1cc1e672884b5-s.p.28-lxb4pyxwvn.woff2",
+      "static/media/dc6d2a64e9dbf3bc-s.p.3mjzw95c0-_52.woff2"
+    ]
+  },
+  "appUsingSizeAdjust": true,
+  "pages": {},
+  "pagesUsingSizeAdjust": false
+}
