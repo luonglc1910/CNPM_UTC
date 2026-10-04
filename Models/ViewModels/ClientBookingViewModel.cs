@@ -24,6 +24,11 @@ namespace HotelManagement.Web.Models.ViewModels
         public decimal ExtraBedFee { get; set; }
         public decimal DiscountAmount { get; set; }
         public decimal GrandTotal { get; set; }
+
+        // Prefilled logged-in guest details
+        public string FullName { get; set; } = string.Empty;
+        public string PhoneNumber { get; set; } = string.Empty;
+        public string Email { get; set; } = string.Empty;
     }
 
     public class ClientBookingPostModel

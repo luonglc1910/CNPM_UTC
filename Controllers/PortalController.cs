@@ -106,10 +106,30 @@ public class PortalController : Controller
                 rr.Reservation.CheckInDate < end && rr.Reservation.CheckOutDate > start)
         ).Select(r => r.Id).ToList();
             
-        ViewBag.Promotions = await _context.Promotions
-            .Where(p => p.IsActive)
-            .Select(p => new { p.PromoCode, p.DiscountDailyPercent, p.DiscountHourlyPercent, p.DiscountOvernightPercent, p.StartDate, p.EndDate, p.ApplicableRoomTypeIds })
+        var allActivePromos = await _context.Promotions
+            .Where(p => p.IsActive && p.StartDate <= DateTime.Now && p.EndDate >= DateTime.Now)
             .ToListAsync();
+
+        var suggestedPromos = allActivePromos
+            .Where(p => string.IsNullOrWhiteSpace(p.ApplicableRoomTypeIds) ||
+                        p.ApplicableRoomTypeIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                            .Contains(id.ToString()))
+            .ToList();
+            
+        ViewBag.Promotions = allActivePromos.Select(p => new { 
+            p.Id,
+            p.Title, 
+            p.Description, 
+            p.PromoCode, 
+            p.DiscountDailyPercent, 
+            p.DiscountHourlyPercent, 
+            p.DiscountOvernightPercent, 
+            p.StartDate, 
+            p.EndDate, 
+            p.ApplicableRoomTypeIds 
+        }).ToList();
+
+        ViewBag.SuggestedPromotions = suggestedPromos;
             
         return View(roomType);
     }
@@ -182,9 +202,35 @@ public class PortalController : Controller
                 .FirstOrDefaultAsync(p => p.PromoCode == promoCode && p.IsActive && p.StartDate <= DateTime.Now && p.EndDate >= DateTime.Now);
             if (promo != null)
             {
-                if (rentalType == "Daily") discountAmount = subTotal * (promo.DiscountDailyPercent / 100m);
-                else if (rentalType == "Hourly") discountAmount = subTotal * (promo.DiscountHourlyPercent / 100m);
-                else discountAmount = subTotal * (promo.DiscountOvernightPercent / 100m);
+                bool isApplicable = string.IsNullOrWhiteSpace(promo.ApplicableRoomTypeIds) ||
+                    promo.ApplicableRoomTypeIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .Contains(rt.Id.ToString());
+
+                if (isApplicable)
+                {
+                    if (rentalType == "Daily") discountAmount = subTotal * (promo.DiscountDailyPercent / 100m);
+                    else if (rentalType == "Hourly") discountAmount = subTotal * (promo.DiscountHourlyPercent / 100m);
+                    else discountAmount = subTotal * (promo.DiscountOvernightPercent / 100m);
+                }
+            }
+        }
+
+        string guestFullName = string.Empty;
+        string guestPhone = string.Empty;
+        string guestEmail = string.Empty;
+
+        if (User.Identity?.IsAuthenticated == true && User.Identity.AuthenticationType == Security.AppSchemes.Client)
+        {
+            var userIdClaim = User.FindFirst(System.Security.Claims.ClaimTypes.NameIdentifier)?.Value;
+            if (int.TryParse(userIdClaim, out int guestId))
+            {
+                var currentGuest = await _context.Guests.FindAsync(guestId);
+                if (currentGuest != null)
+                {
+                    guestFullName = currentGuest.FullName ?? string.Empty;
+                    guestPhone = currentGuest.PhoneNumber ?? string.Empty;
+                    guestEmail = currentGuest.Email ?? string.Empty;
+                }
             }
         }
 
@@ -206,7 +252,10 @@ public class PortalController : Controller
             ExtraGuestFee = extraGuestFee * (rentalType == "Daily" ? nightsOrHours : 1),
             ExtraBedFee = extraBedFee * (rentalType == "Daily" ? nightsOrHours : 1),
             DiscountAmount = discountAmount,
-            GrandTotal = subTotal - discountAmount
+            GrandTotal = subTotal - discountAmount,
+            FullName = guestFullName,
+            PhoneNumber = guestPhone,
+            Email = guestEmail
         };
         return View(vm);
     }
@@ -295,9 +344,16 @@ public class PortalController : Controller
                 .FirstOrDefaultAsync(p => p.PromoCode == model.PromoCode && p.IsActive && p.StartDate <= DateTime.Now && p.EndDate >= DateTime.Now);
             if (promo != null)
             {
-                if (model.RentalType == "Daily") discountAmount = subTotal * (promo.DiscountDailyPercent / 100m);
-                else if (model.RentalType == "Hourly") discountAmount = subTotal * (promo.DiscountHourlyPercent / 100m);
-                else discountAmount = subTotal * (promo.DiscountOvernightPercent / 100m);
+                bool isApplicable = string.IsNullOrWhiteSpace(promo.ApplicableRoomTypeIds) ||
+                    promo.ApplicableRoomTypeIds.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .Contains(rt.Id.ToString());
+
+                if (isApplicable)
+                {
+                    if (model.RentalType == "Daily") discountAmount = subTotal * (promo.DiscountDailyPercent / 100m);
+                    else if (model.RentalType == "Hourly") discountAmount = subTotal * (promo.DiscountHourlyPercent / 100m);
+                    else discountAmount = subTotal * (promo.DiscountOvernightPercent / 100m);
+                }
             }
         }
         

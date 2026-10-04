@@ -1,10 +1,21 @@
+@using Microsoft.AspNetCore.Authentication
 @model HotelManagement.Web.Models.Entities.RoomType
 @{
     Layout = "_PortalLayout";
     ViewData["Title"] = "Chi tiết phòng";
+    var clientAuth = await Context.AuthenticateAsync(AppSchemes.Client);
+    var staffAuth = await Context.AuthenticateAsync(AppSchemes.Staff);
+    var isUserLoggedIn = clientAuth.Succeeded || staffAuth.Succeeded || User.Identity?.IsAuthenticated == true;
+    var loggedInName = staffAuth.Succeeded 
+        ? (staffAuth.Principal?.Identity?.Name ?? "Nhân viên") 
+        : (clientAuth.Succeeded 
+            ? (clientAuth.Principal?.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? clientAuth.Principal?.Identity?.Name ?? "Khách") 
+            : (User.Identity?.Name ?? "Khách"));
     var occupiedRoomIds = ViewBag.OccupiedRoomIds as List<int> ?? new List<int>();
     var availableRoomList = Model.Rooms.Where(r => r.IsActive && r.Status == HotelManagement.Web.Models.RoomStatus.Available && !occupiedRoomIds.Contains(r.Id)).ToList();
     int availableRooms = availableRoomList.Count;
+    var suggestedPromos = ViewBag.SuggestedPromotions as List<HotelManagement.Web.Models.Entities.Promotion> ?? new List<HotelManagement.Web.Models.Entities.Promotion>();
+    var currentUrl = Context.Request.Path + Context.Request.QueryString;
 }
 <div class="flex flex-col w-full">
 <!-- BREADCRUMB SECTION -->
@@ -100,6 +111,39 @@ else
               Đã bao gồm bữa sáng buffet cao cấp, thuế GTGT &amp; phí phục vụ 5 sao.
             </p>
 </div>
+
+<!-- Customer Auth & Account Management CTA Banner -->
+@if (!isUserLoggedIn)
+{
+    <div class="bg-red-50 border border-red-200 rounded-[8px] p-3.5 flex flex-col gap-2.5 shadow-xs">
+        <div class="flex items-start gap-2.5">
+            <span class="material-symbols-outlined text-red-600 font-bold shrink-0 text-xl mt-0.5">account_circle</span>
+            <div class="flex flex-col gap-0.5">
+                <span class="font-bold text-red-700 text-sm tracking-wide uppercase">Đăng ký &amp; Đăng nhập ngay!</span>
+                <p class="text-red-600 text-xs leading-relaxed">
+                    Đăng ký tài khoản giúp bạn quản lý đơn phòng dễ dàng hơn, và giúp khách sạn phục vụ bạn chu đáo hơn. Đăng ký ngay !
+                </p>
+            </div>
+        </div>
+        <div class="flex items-center gap-2 pt-0.5">
+            <a href="/ClientAuth/Register?returnUrl=@System.Net.WebUtility.UrlEncode(currentUrl)" class="flex-1 text-center bg-red-600 hover:bg-red-700 text-white font-semibold text-xs py-2 px-3 rounded-[6px] transition-colors shadow-xs flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">person_add</span>
+                <span>Đăng ký tài khoản</span>
+            </a>
+            <a href="/ClientAuth/Login?returnUrl=@System.Net.WebUtility.UrlEncode(currentUrl)" class="flex-1 text-center bg-white border border-red-300 text-red-700 hover:bg-red-100 font-semibold text-xs py-2 px-3 rounded-[6px] transition-colors flex items-center justify-center gap-1">
+                <span class="material-symbols-outlined text-[16px]">login</span>
+                <span>Đăng nhập</span>
+            </a>
+        </div>
+    </div>
+}
+else
+{
+    <div class="bg-emerald-50 border border-emerald-200 rounded-[8px] p-2.5 flex items-center gap-2 text-xs text-emerald-800">
+        <span class="material-symbols-outlined text-emerald-600 shrink-0 text-lg">verified_user</span>
+        <span>Xin chào <strong>@loggedInName</strong>! Đơn đặt phòng này sẽ được liên kết trực tiếp vào tài khoản cá nhân của bạn.</span>
+    </div>
+}
 <!-- Interactive Booking Widget Inside Card -->
 <form class="flex flex-col gap-space-sm" action="/Portal/BookRoom" method="GET">
 <!-- Room Selector -->
@@ -161,12 +205,71 @@ else
 }
 </div>
 </div>
-<!-- Promo Code -->
-<div class="flex flex-col gap-1.5 mt-2">
-    <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" for="promoCode">Mã ưu đãi (Tùy chọn)</label>
-    <div class="flex gap-2">
-        <input type="text" id="promoCode" name="promoCode" class="flex-1 bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm text-on-surface font-body-md border-none outline-none focus:ring-2 focus:ring-primary uppercase" placeholder="Nhập mã..." onkeyup="this.value = this.value.toUpperCase()">
-        <button type="button" class="bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-on-secondary font-label-md px-4 rounded-[6px] transition-colors" onclick="applyPromo()">Áp dụng</button>
+<!-- Promo Code & Suggestions -->
+<div class="flex flex-col gap-2.5 mt-2 pt-2 border-t border-outline-variant/30">
+    <div class="flex items-center justify-between">
+        <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5" for="promoCode">
+            <span class="material-symbols-outlined text-[18px] text-secondary">local_offer</span>
+            Mã ưu đãi &amp; Voucher
+        </label>
+        @if (suggestedPromos.Any())
+        {
+            <span class="text-[12px] font-medium text-secondary bg-secondary-container/40 px-2 py-0.5 rounded-full">
+                @suggestedPromos.Count ưu đãi gợi ý
+            </span>
+        }
+    </div>
+
+    <!-- Suggested Vouchers for this Room Type -->
+    @if (suggestedPromos.Any())
+    {
+        <div class="flex flex-col gap-2 max-h-[190px] overflow-y-auto pr-1 custom-scrollbar">
+            @foreach (var promo in suggestedPromos)
+            {
+                var maxDiscount = Math.Min(100, Math.Max(promo.DiscountDailyPercent, Math.Max(promo.DiscountHourlyPercent, promo.DiscountOvernightPercent)));
+                <div class="suggested-promo-card bg-surface-container-low/70 hover:bg-surface-container border border-outline-variant/40 hover:border-secondary/50 rounded-lg p-2.5 transition-all cursor-pointer flex items-center justify-between gap-2 group"
+                     onclick="selectSuggestedPromo('@promo.PromoCode')" id="promo-card-@promo.PromoCode" data-code="@promo.PromoCode">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-9 h-9 rounded-md bg-secondary/10 text-secondary flex items-center justify-center font-bold text-[13px] flex-shrink-0 group-hover:bg-secondary group-hover:text-surface-container-lowest transition-colors">
+                            -@maxDiscount.ToString("0")%
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-semibold text-primary font-mono text-sm tracking-wide bg-surface-container-lowest px-1.5 py-0.5 rounded border border-outline-variant/40">@promo.PromoCode</span>
+                                <span class="text-[12px] font-medium text-on-surface truncate">@promo.Title</span>
+                            </div>
+                            <span class="text-[11px] text-on-surface-variant/80 truncate mt-0.5">
+                                Hạn dùng: @promo.EndDate.ToString("dd/MM/yyyy")
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" class="promo-apply-btn text-[12px] font-semibold px-2.5 py-1 rounded bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-on-secondary transition-colors flex-shrink-0"
+                            onclick="event.stopPropagation(); selectSuggestedPromo('@promo.PromoCode')">
+                        Dùng mã
+                    </button>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-[12px] text-on-surface-variant bg-surface-container-low/50 p-2.5 rounded-md flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px] text-outline">info</span>
+            <span>Không có mã ưu đãi gợi ý cho loại phòng này. Bạn có thể nhập mã cá nhân nếu có.</span>
+        </div>
+    }
+
+    <!-- Manual Code Input -->
+    <div class="flex gap-2 mt-0.5">
+        <div class="relative flex-1">
+            <input type="text" id="promoCode" name="promoCode" class="w-full bg-surface-container-lowest p-2.5 pr-8 rounded-[6px] shadow-sm text-on-surface font-body-md border border-outline-variant/40 focus:border-primary outline-none focus:ring-1 focus:ring-primary uppercase tracking-wider font-mono" placeholder="Nhập mã ưu đãi khác..." onkeyup="this.value = this.value.toUpperCase()">
+            <button type="button" id="clearPromoBtn" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors" onclick="clearPromoCode()">
+                <span class="material-symbols-outlined text-[18px]">cancel</span>
+            </button>
+        </div>
+        <button type="button" class="bg-primary hover:bg-primary-container text-surface-container-lowest font-label-md px-4 rounded-[6px] transition-colors flex items-center gap-1" onclick="applyPromo()">
+            <span>Áp dụng</span>
+        </button>
     </div>
     <span id="promoMessage" class="text-sm font-medium"></span>
 </div>
@@ -444,6 +547,57 @@ else
         if (totalPriceEl) totalPriceEl.innerText = total.toLocaleString('vi-VN') + ' ₫';
     }
 
+    function selectSuggestedPromo(code) {
+        const input = document.getElementById('promoCode');
+        if (!input) return;
+        input.value = code;
+        updateSuggestedPromoCardUI(code);
+        applyPromo();
+    }
+
+    function clearPromoCode() {
+        const input = document.getElementById('promoCode');
+        if (input) input.value = '';
+        updateSuggestedPromoCardUI('');
+        applyPromo();
+    }
+
+    function updateSuggestedPromoCardUI(selectedCode) {
+        const clearBtn = document.getElementById('clearPromoBtn');
+        if (clearBtn) {
+            if (selectedCode) clearBtn.classList.remove('hidden');
+            else clearBtn.classList.add('hidden');
+        }
+
+        document.querySelectorAll('.suggested-promo-card').forEach(card => {
+            const cardCode = card.getAttribute('data-code');
+            const btn = card.querySelector('.promo-apply-btn');
+            if (cardCode === selectedCode) {
+                card.classList.add('border-secondary', 'bg-secondary/10', 'ring-1', 'ring-secondary');
+                if (btn) {
+                    btn.innerText = 'Đã chọn';
+                    btn.className = 'promo-apply-btn text-[12px] font-semibold px-2.5 py-1 rounded bg-secondary text-surface-container-lowest transition-colors flex-shrink-0';
+                }
+            } else {
+                card.classList.remove('border-secondary', 'bg-secondary/10', 'ring-1', 'ring-secondary');
+                if (btn) {
+                    btn.innerText = 'Dùng mã';
+                    btn.className = 'promo-apply-btn text-[12px] font-semibold px-2.5 py-1 rounded bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-on-secondary transition-colors flex-shrink-0';
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const promoInput = document.getElementById('promoCode');
+        if (promoInput) {
+            promoInput.addEventListener('input', function() {
+                const val = this.value.trim().toUpperCase();
+                updateSuggestedPromoCardUI(val);
+            });
+        }
+    });
+
     function applyPromo(updatePrice = true) {
         const codeInput = document.getElementById('promoCode');
         const messageEl = document.getElementById('promoMessage');
@@ -452,6 +606,8 @@ else
         
         const code = codeInput.value.trim().toUpperCase();
         const checkIn = new Date(checkInEl.value);
+        if (isNaN(checkIn.getTime())) return;
+        checkIn.setHours(0, 0, 0, 0);
         
         if (!code) {
             appliedDiscount = 0;
@@ -462,15 +618,16 @@ else
         
         const promo = promotions ? promotions.find(p => p.PromoCode && p.PromoCode.toUpperCase() === code) : null;
         if (promo) {
-            // Kiểm tra ngày bắt đầu và ngày kết thúc
             const startDate = new Date(promo.StartDate);
+            startDate.setHours(0, 0, 0, 0);
             const endDate = new Date(promo.EndDate);
+            endDate.setHours(23, 59, 59, 999);
             
             if (checkIn < startDate || checkIn > endDate) {
                 appliedDiscount = 0;
                 messageEl.innerText = `Mã này chỉ áp dụng từ ${startDate.toLocaleDateString('vi-VN')} đến ${endDate.toLocaleDateString('vi-VN')}!`;
                 messageEl.className = "text-sm font-medium mt-1 text-red-500";
-            } else if (promo.ApplicableRoomTypeIds && !promo.ApplicableRoomTypeIds.split(',').includes('@Model.Id')) {
+            } else if (promo.ApplicableRoomTypeIds && !promo.ApplicableRoomTypeIds.split(',').map(x => x.trim()).includes('@Model.Id.ToString()')) {
                 appliedDiscount = 0;
                 messageEl.innerText = "Mã này không áp dụng cho loại phòng này!";
                 messageEl.className = "text-sm font-medium mt-1 text-red-500";

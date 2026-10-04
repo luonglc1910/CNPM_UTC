@@ -35,19 +35,26 @@ public class ClientAuthController : Controller
 
     [HttpGet]
     [AllowAnonymous]
-    public IActionResult Register()
+    public IActionResult Register(string? returnUrl = null)
     {
         if (IsClientAuthenticated())
+        {
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
             return RedirectToAction("Index", "Portal");
+        }
 
+        ViewData["ReturnUrl"] = returnUrl;
         return View(new ClientRegisterViewModel());
     }
 
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Register(ClientRegisterViewModel model)
+    public async Task<IActionResult> Register(ClientRegisterViewModel model, string? returnUrl = null)
     {
+        ViewData["ReturnUrl"] = returnUrl;
+
         if (!ModelState.IsValid)
             return View(model);
 
@@ -71,8 +78,15 @@ public class ClientAuthController : Controller
         _db.Guests.Add(guest);
         await _db.SaveChangesAsync();
 
-        TempData["Success"] = "Đăng ký thành công! Vui lòng đăng nhập.";
-        return RedirectToAction(nameof(Login));
+        // Tự động đăng nhập cho khách hàng vừa đăng ký thành công
+        await SignInClientAsync(guest, isPersistent: true);
+
+        TempData["Success"] = "Đăng ký tài khoản thành công!";
+
+        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+            return Redirect(returnUrl);
+
+        return RedirectToAction("Index", "Portal");
     }
 
     // ─────────────────────────── ĐĂNG NHẬP ───────────────────────────
@@ -84,7 +98,11 @@ public class ClientAuthController : Controller
         if (IsStaffAuthenticated())
             return RedirectToAction("Index", "Home");
         if (IsClientAuthenticated())
+        {
+            if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
+                return Redirect(returnUrl);
             return RedirectToAction("Index", "Portal");
+        }
 
         ViewData["ReturnUrl"] = returnUrl;
         return View(new ClientLoginViewModel());

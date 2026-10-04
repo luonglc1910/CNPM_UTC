@@ -119,6 +119,7 @@
 
                 <form asp-action="Register" asp-controller="ClientAuth" method="post" id="register-form" novalidate>
                     @Html.AntiForgeryToken()
+                    <input type="hidden" name="returnUrl" value="@ViewData["ReturnUrl"]" />
 
                     <!-- Họ tên -->
                     <div class="mb-3">
@@ -233,8 +234,7 @@
 
             <!-- Footer links -->
             <div class="mt-8 text-center text-sm text-white/80 space-y-3 relative z-10">
-                <p>Đã có tài khoản? <a href="/ClientAuth/Login" class="text-white font-semibold hover:underline">Đăng
-                        nhập</a></p>
+                <p>Đã có tài khoản? <a href="/ClientAuth/Login?returnUrl=@System.Net.WebUtility.UrlEncode(ViewData["ReturnUrl"]?.ToString())" class="text-white font-semibold hover:underline">Đăng nhập</a></p>
                 <div class="flex items-center justify-center gap-3 mt-4 text-xs">
                     <a href="/Portal/Index" class="hover:text-white transition-colors">Về trang chủ</a>
                 </div>

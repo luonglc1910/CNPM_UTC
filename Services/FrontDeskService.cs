@@ -88,7 +88,7 @@ public class FrontDeskService : IFrontDeskService
             .Include(r => r.PrimaryGuest)
             .Include(r => r.Rooms).ThenInclude(rr => rr.RoomType)
             .Include(r => r.Deposits)
-            .OrderBy(r => r.CheckInDate)
+            .OrderByDescending(r => r.CreatedAt)
             .Select(r => new ArrivalItem
             {
                 ReservationId = r.Id,
@@ -98,7 +98,8 @@ public class FrontDeskService : IFrontDeskService
                 RoomTypeSummary = string.Join(", ", r.Rooms.Select(rr => rr.RoomType.Code)),
                 Guests = r.Rooms.Sum(rr => rr.Adults + rr.Children),
                 DepositPaid = r.Deposits.Where(d => d.Status == DepositStatus.Held).Sum(d => (decimal?)d.Amount) ?? 0m,
-                CanCheckIn = true
+                CanCheckIn = true,
+                CreatedAt = r.CreatedAt
             })
             .ToListAsync();
 

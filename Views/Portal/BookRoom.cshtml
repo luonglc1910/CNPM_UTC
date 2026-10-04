@@ -57,7 +57,7 @@
                                 <div class="flex flex-col gap-space-xs">
                                     <label class="font-label-lg text-label-md text-on-surface font-medium">Họ và tên quý khách <span class="text-error">*</span></label>
                                     <div class="relative">
-                                        <input name="FullName" required class="w-full h-11 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary shadow-inner" placeholder="Ví dụ: Nguyễn Văn A" type="text" value="">
+                                        <input name="FullName" required class="w-full h-11 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary shadow-inner" placeholder="Ví dụ: Nguyễn Văn A" type="text" value="@Model.FullName">
                                     </div>
                                 </div>
                                 <!-- Phone Number -->
@@ -68,14 +68,14 @@
                                             <span class="">🇻🇳</span>
                                             <span class="">+84</span>
                                         </div>
-                                        <input name="PhoneNumber" required class="flex-1 h-11 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary shadow-inner" placeholder="9 chữ số tiếp theo" type="tel" value="">
+                                        <input name="PhoneNumber" required class="flex-1 h-11 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary shadow-inner" placeholder="9 chữ số tiếp theo" type="tel" value="@Model.PhoneNumber">
                                     </div>
                                 </div>
                                 <!-- Email Address -->
                                 <div class="flex flex-col gap-space-xs">
                                     <label class="font-label-lg text-label-md text-on-surface font-medium">Email</label>
                                     <div class="relative">
-                                        <input name="Email" required class="w-full h-11 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary shadow-inner" placeholder="email@domain.com" type="email" value="">
+                                        <input name="Email" required class="w-full h-11 px-space-md rounded-lg bg-surface-container-low text-on-surface font-body-md text-body-md focus:bg-surface-container-lowest focus:outline-none focus:ring-1 focus:ring-primary shadow-inner" placeholder="email@domain.com" type="email" value="@Model.Email">
                                     </div>
 
                                 </div>

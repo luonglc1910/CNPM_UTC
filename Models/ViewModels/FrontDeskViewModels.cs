@@ -16,6 +16,7 @@ public class ArrivalItem
     public int Guests { get; set; }
     public decimal DepositPaid { get; set; }
     public bool CanCheckIn { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class DepartureItem
