@@ -21,9 +21,8 @@
     <header class="fixed top-0 left-0 right-0 z-50 bg-surface/90 backdrop-blur-md shadow-[0_1px_8px_rgba(20,49,44,0.05)] transition-all duration-300">
         <div class="h-20 max-w-[1280px] mx-auto px-margin-sm md:px-margin flex items-center justify-between gap-space-md">
             <div class="flex items-center gap-space-lg">
-                <a class="flex flex-col group" data-path="trang-chu" href="/Portal/Index">
-                    <span class="font-headline-sm text-headline-sm tracking-wider uppercase text-primary-container font-semibold group-hover:text-primary transition-colors">AURA</span>
-                    <span class="font-label-sm text-[10px] tracking-[0.2em] uppercase text-secondary font-medium -mt-1">Boutique Hotel &amp; Resort</span>
+                <a class="flex items-center" data-path="trang-chu" href="/Portal/Index">
+                    <img src="~/images/logo.png" alt="AURA Logo" class="h-[76px] w-auto object-contain scale-125 origin-left" />
                 </a>
             </div>
             <nav class="hidden xl:flex items-center gap-space-lg" data-active-classes="text-primary font-semibold relative after:absolute after:bottom-[-4px] after:left-0 after:right-0 after:h-[2px] after:bg-secondary">
@@ -32,9 +31,9 @@
                 <a class="font-label-lg text-label-lg text-on-surface-variant hover:text-on-surface transition-colors py-1" data-path="lien-he" href="/Portal/Contact">Liên hệ</a>
             </nav>
             <div class="flex items-center gap-space-md">
-                <a class="hidden lg:flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors pr-2" href="tel:+842439887766">
+                <a class="hidden lg:flex items-center gap-1.5 text-on-surface-variant hover:text-primary transition-colors pr-2" href="tel:0332112302">
                     <i class="fa-solid fa-phone text-[20px] text-secondary"></i>
-                    <span class="font-label-sm text-label-sm tracking-wide font-medium">(+84) 24 3988 7766</span>
+                    <span class="font-label-sm text-label-sm tracking-wide font-medium">033 2112 302</span>
                 </a>
 @{
     var clientAuth = await Context.AuthenticateAsync(HotelManagement.Web.Security.AppSchemes.Client);
@@ -85,9 +84,8 @@
         <div class="max-w-[1280px] mx-auto px-margin-sm md:px-margin pt-space-xl pb-space-lg">
             <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-gutter-lg pb-space-xl">
                 <div class="lg:col-span-4 flex flex-col gap-space-md">
-                    <div class="flex flex-col">
-                        <span class="font-headline-md text-headline-md text-surface-container-lowest tracking-wider uppercase font-semibold">AURA</span>
-                        <span class="font-label-sm text-label-sm tracking-[0.25em] uppercase text-secondary-fixed font-medium -mt-1">Boutique Hotel &amp; Resort</span>
+                    <div class="flex">
+                        <img src="~/images/logo.png" alt="AURA Logo" class="h-[80px] w-auto object-contain brightness-0 invert opacity-90 scale-110 origin-left" />
                     </div>
                     <p class="font-body-sm text-body-sm text-on-primary-container max-w-sm leading-relaxed">Không gian nghỉ dưỡng kiến trúc tĩnh tại, giao hòa tinh hoa văn hóa bản địa cùng chuẩn mực khách sạn 5 sao cao cấp.</p>
                     <div class="flex flex-col gap-space-sm mt-space-xs">

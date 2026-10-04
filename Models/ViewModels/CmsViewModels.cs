@@ -22,14 +22,17 @@ public class PromotionFormViewModel
     [Display(Name = "Ảnh Banner (URL)")]
     public string? ImageUrl { get; set; }
 
-    [Display(Name = "Giá hiển thị (nếu có)")]
-    public decimal DisplayPrice { get; set; }
-    
     [Display(Name = "Mã giảm giá (Promo Code)")]
     public string PromoCode { get; set; } = string.Empty;
 
-    [Display(Name = "Phần trăm giảm giá (%)")]
-    public decimal DiscountPercentage { get; set; }
+    [Display(Name = "Giảm giá thuê theo ngày (%)")]
+    public decimal DiscountDailyPercent { get; set; }
+    
+    [Display(Name = "Giảm giá thuê theo giờ (%)")]
+    public decimal DiscountHourlyPercent { get; set; }
+    
+    [Display(Name = "Giảm giá thuê qua đêm (%)")]
+    public decimal DiscountOvernightPercent { get; set; }
 
     [Display(Name = "Ngày bắt đầu")]
     [DataType(DataType.Date)]
@@ -41,6 +44,9 @@ public class PromotionFormViewModel
 
     [Display(Name = "Đẩy lên làm Banner nổi bật nhất?")]
     public bool IsHeroOffer { get; set; }
+
+    [Display(Name = "Áp dụng cho các loại phòng")]
+    public List<int> SelectedRoomTypeIds { get; set; } = new();
 }
 
 public class TestimonialIndexViewModel

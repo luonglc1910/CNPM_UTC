@@ -4,6 +4,7 @@ using HotelManagement.Web.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace HotelManagement.Web.Migrations
 {
     [DbContext(typeof(HotelDbContext))]
-    partial class HotelDbContextModelSnapshot : ModelSnapshot
+    [Migration("20261003174217_UpdatePromotionDiscounts")]
+    partial class UpdatePromotionDiscounts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1036,10 +1039,6 @@ namespace HotelManagement.Web.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("ApplicableRoomTypeIds")
-                        .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2");
 
@@ -1081,7 +1080,7 @@ namespace HotelManagement.Web.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)");
 
-                    b.Property<int?>("RoomTypeId")
+                    b.Property<int?>("RelatedRoomTypeId")
                         .HasColumnType("int");
 
                     b.Property<DateTime>("StartDate")
@@ -1100,7 +1099,7 @@ namespace HotelManagement.Web.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("RoomTypeId");
+                    b.HasIndex("RelatedRoomTypeId");
 
                     b.ToTable("Promotions");
                 });
@@ -1960,9 +1959,11 @@ namespace HotelManagement.Web.Migrations
 
             modelBuilder.Entity("HotelManagement.Web.Models.Entities.Promotion", b =>
                 {
-                    b.HasOne("HotelManagement.Web.Models.Entities.RoomType", null)
+                    b.HasOne("HotelManagement.Web.Models.Entities.RoomType", "RelatedRoomType")
                         .WithMany("Promotions")
-                        .HasForeignKey("RoomTypeId");
+                        .HasForeignKey("RelatedRoomTypeId");
+
+                    b.Navigation("RelatedRoomType");
                 });
 
             modelBuilder.Entity("HotelManagement.Web.Models.Entities.Reservation", b =>

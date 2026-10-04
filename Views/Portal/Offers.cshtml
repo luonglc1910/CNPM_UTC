@@ -72,8 +72,8 @@
 } else {
 <span class="font-label-sm text-label-sm font-semibold tracking-wider uppercase text-secondary">ƯU ĐÃI LỚN</span>
 }
-@if(heroOffer.DiscountPercentage > 0) {
-<span class="font-label-sm text-label-sm text-[#2e7d57] bg-[#2e7d57]/10 px-2 py-0.5 rounded font-semibold">Giảm @heroOffer.DiscountPercentage.ToString("0.##")%</span>
+@if(heroOffer.DiscountDailyPercent > 0) {
+<span class="font-label-sm text-label-sm text-[#2e7d57] bg-[#2e7d57]/10 px-2 py-0.5 rounded font-semibold">Giảm đến @heroOffer.DiscountDailyPercent.ToString("0.##")%</span>
 }
 </div>
 <h2 class="font-headline-lg text-headline-lg text-primary font-semibold leading-snug">
@@ -87,26 +87,16 @@
 <span>Áp dụng đến: @heroOffer.EndDate.ToString("dd/MM/yyyy")</span>
 </div>
 <!-- Price Box -->
-@if(heroOffer.DisplayPrice > 0) {
+@if(heroOffer.DiscountHourlyPercent > 0 || heroOffer.DiscountOvernightPercent > 0) {
 <div class="p-4 rounded-lg bg-surface-container-low mt-2 flex items-baseline justify-between">
-<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Giá ưu đãi từ</span>
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Lưu ý:</span>
 <div class="flex items-baseline gap-2">
-<span class="font-headline-md text-headline-md text-secondary font-bold">@heroOffer.DisplayPrice.ToString("N0")đ</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">/ đêm</span>
+<span class="font-label-sm text-label-sm text-secondary font-bold">Cũng áp dụng cho thuê giờ & qua đêm</span>
 </div>
 </div>
 }
 </div>
-<!-- Action Buttons -->
-<div class="flex flex-wrap items-center gap-3 pt-6 mt-4">
-<button class="flex-1 px-5 py-2.5 bg-primary-container hover:bg-[#1c4039] active:bg-[#27544a] text-surface-container-lowest rounded-lg font-label-lg text-label-lg font-medium transition-colors flex items-center justify-center gap-2" type="button">
-<span>Khám phá gói ưu đãi</span>
-<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
-</button>
-<a href="/Portal/Search" class="px-5 py-2.5 bg-transparent hover:bg-secondary/10 text-secondary rounded-lg font-label-lg text-label-lg font-medium transition-colors">
-                Xem phòng áp dụng
-</a>
-</div>
+
 </div>
 </div>
 </div>
@@ -116,35 +106,13 @@
 <!-- FILTER & SORT CONTROLS -->
 <section class="w-full bg-[#f2f4f3] pt-10 pb-4">
 <div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
-<div class="flex flex-col md:flex-row md:items-center justify-between gap-4">
-<!-- Filter Tabs -->
-<div class="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0" id="filter-tabs">
-<button class="tab-btn px-4 py-2 rounded-lg font-label-md text-label-md font-semibold bg-primary-container text-surface-container-lowest transition-colors whitespace-nowrap active-tab shadow-sm" data-filter="all" type="button">
-            Tất cả (6)
-          </button>
-<button class="tab-btn px-4 py-2 rounded-lg font-label-md text-label-md font-medium bg-surface-container-lowest text-[#5e6b68] hover:text-primary transition-colors whitespace-nowrap shadow-sm" data-filter="room" type="button">
-            Ưu đãi phòng
-          </button>
-<button class="tab-btn px-4 py-2 rounded-lg font-label-md text-label-md font-medium bg-surface-container-lowest text-[#5e6b68] hover:text-primary transition-colors whitespace-nowrap shadow-sm" data-filter="dining" type="button">
-            Ẩm thực &amp; Trà chiều
-          </button>
-<button class="tab-btn px-4 py-2 rounded-lg font-label-md text-label-md font-medium bg-surface-container-lowest text-[#5e6b68] hover:text-primary transition-colors whitespace-nowrap shadow-sm" data-filter="spa" type="button">
-            Spa &amp; Trị liệu
-          </button>
-<button class="tab-btn px-4 py-2 rounded-lg font-label-md text-label-md font-medium bg-surface-container-lowest text-[#5e6b68] hover:text-primary transition-colors whitespace-nowrap shadow-sm" data-filter="family" type="button">
-            Kỳ nghỉ gia đình
-          </button>
-<button class="tab-btn px-4 py-2 rounded-lg font-label-md text-label-md font-medium bg-surface-container-lowest text-[#5e6b68] hover:text-primary transition-colors whitespace-nowrap shadow-sm" data-filter="romance" type="button">
-            Cuối tuần lãng mạn
-          </button>
-</div>
+<div class="flex justify-end">
 <!-- Sort Select -->
-<div class="flex items-center gap-2 self-end md:self-auto">
+<div class="flex items-center gap-2">
 <span class="font-label-sm text-label-sm text-on-surface-variant">Sắp xếp:</span>
 <div class="relative">
-<select class="appearance-none bg-surface-container-lowest text-primary font-label-md text-label-md pl-3 pr-8 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer">
+<select id="sortOffers" class="appearance-none bg-surface-container-lowest text-primary font-label-md text-label-md pl-3 pr-8 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer" onchange="sortOffersGrid()">
 <option value="newest">Mới nhất</option>
-<option value="popular">Phổ biến nhất</option>
 <option value="expiring">Sắp kết thúc</option>
 </select>
 <span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">expand_more</span>
@@ -156,10 +124,11 @@
 <!-- ALL OFFERS GRID -->
 <section class="w-full bg-[#f2f4f3] py-6">
 <div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
-<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-@foreach (var offer in Model)
+<div id="offers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+@foreach (var offer in Model.OrderByDescending(o => o.Id))
 {
-    <div class="bg-surface-container-lowest rounded-[10px] overflow-hidden shadow-[0_1px_3px_rgba(20,49,44,0.04)] hover:shadow-[0_4px_12px_rgba(20,49,44,0.06)] transition-all flex flex-col justify-between group">
+    var daysToExpiry = (offer.EndDate - DateTime.Now).TotalDays;
+    <div class="offer-item bg-surface-container-lowest rounded-[10px] overflow-hidden shadow-[0_1px_3px_rgba(20,49,44,0.04)] hover:shadow-[0_4px_12px_rgba(20,49,44,0.06)] transition-all flex flex-col justify-between group" data-newest="@offer.Id" data-expiring="@daysToExpiry">
         <div>
             <div class="relative h-56 w-full overflow-hidden">
                 <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="@(string.IsNullOrEmpty(offer.ImageUrl) ? "https://placehold.co/600x400/eaf6f3/001c18?text=Offer" : offer.ImageUrl)" />
@@ -190,23 +159,18 @@
             </div>
         </div>
         <div class="p-6 pt-0 flex flex-col gap-4">
-            <div class="flex items-baseline justify-between pt-3 bg-surface-container-low px-3.5 py-2.5 rounded-lg min-h-[56px]">
-                @if(offer.DiscountPercentage > 0) {
-                    <span class="font-label-lg text-label-lg text-secondary font-bold">Giảm @offer.DiscountPercentage.ToString("0.##")%</span>
-                } else {
-                    <span></span>
+            <div class="flex flex-col pt-3 bg-surface-container-low px-3.5 py-2.5 rounded-lg min-h-[56px] justify-center">
+                @if(offer.DiscountDailyPercent > 0) {
+                    <span class="font-label-md text-label-md text-secondary font-bold">Giảm ngày: @offer.DiscountDailyPercent.ToString("0.##")%</span>
                 }
-                <div class="text-right">
-                    @if (offer.DisplayPrice > 0) {
-                        <span class="font-headline-sm text-headline-sm text-secondary font-bold">@offer.DisplayPrice.ToString("N0")đ</span>
-                        <span class="font-label-sm text-label-sm text-on-surface-variant">/ đêm</span>
-                    }
-                </div>
+                @if(offer.DiscountHourlyPercent > 0) {
+                    <span class="font-label-md text-label-md text-secondary font-bold">Giảm giờ: @offer.DiscountHourlyPercent.ToString("0.##")%</span>
+                }
+                @if(offer.DiscountOvernightPercent > 0) {
+                    <span class="font-label-md text-label-md text-secondary font-bold">Giảm qua đêm: @offer.DiscountOvernightPercent.ToString("0.##")%</span>
+                }
             </div>
-            <button class="w-full py-2.5 bg-primary-container hover:bg-[#1c4039] text-surface-container-lowest rounded-lg font-label-md text-label-md font-medium transition-colors flex items-center justify-center gap-1.5" type="button">
-                <span>Xem chi tiết &amp; Đặt</span>
-                <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
-            </button>
+
         </div>
     </div>
 }
@@ -288,18 +252,23 @@
       underline.className = 'absolute bottom-[-4px] left-0 right-0 h-[2px] bg-secondary';
       link.appendChild(underline);
     });
-
-    // Client-side category tab filtering interaction
-    const tabButtons = document.querySelectorAll('#filter-tabs .tab-btn');
-    tabButtons.forEach((btn) => {
-      btn.addEventListener('click', function () {
-        tabButtons.forEach((b) => {
-          b.classList.remove('bg-primary-container', 'text-surface-container-lowest', 'font-semibold');
-          b.classList.add('bg-surface-container-lowest', 'text-[#5e6b68]', 'font-medium');
-        });
-        this.classList.remove('bg-surface-container-lowest', 'text-[#5e6b68]', 'font-medium');
-        this.classList.add('bg-primary-container', 'text-surface-container-lowest', 'font-semibold');
-      });
-    });
   })();
+
+  function sortOffersGrid() {
+      const grid = document.getElementById('offers-grid');
+      const sortType = document.getElementById('sortOffers').value;
+      if(!grid) return;
+      
+      const items = Array.from(grid.getElementsByClassName('offer-item'));
+      items.sort((a, b) => {
+          if(sortType === 'newest') {
+              return parseInt(b.dataset.newest) - parseInt(a.dataset.newest);
+          } else if (sortType === 'expiring') {
+              return parseFloat(a.dataset.expiring) - parseFloat(b.dataset.expiring);
+          }
+          return 0;
+      });
+      
+      items.forEach(item => grid.appendChild(item));
+  }
 </script>

@@ -25,7 +25,7 @@ else
                     <tr>
                         <th style="width: 80px">Ảnh</th>
                         <th>Tên gói</th>
-                        <th class="text-end">Giá hiển thị</th>
+                        <th class="text-center">% Giảm giá</th>
                         <th class="text-center">Thời gian áp dụng</th>
                         <th class="text-center">Nổi bật</th>
                         <th class="text-end">Thao tác</th>
@@ -45,7 +45,11 @@ else
                             @item.Title
                             <div class="small text-muted text-truncate" style="max-width: 300px" title="@item.Description">@item.Description</div>
                         </td>
-                        <td class="text-end">@item.DisplayPrice.ToString("N0") ₫</td>
+                        <td class="text-center small">
+                            Ngày: @item.DiscountDailyPercent%<br/>
+                            Giờ: @item.DiscountHourlyPercent%<br/>
+                            Qua đêm: @item.DiscountOvernightPercent%
+                        </td>
                         <td class="text-center small">
                             @item.StartDate.ToString("dd/MM/yyyy") - @item.EndDate.ToString("dd/MM/yyyy")
                             @if (item.EndDate < DateTime.Today)

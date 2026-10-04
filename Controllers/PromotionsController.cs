@@ -29,25 +29,35 @@ public class PromotionsController : AdminControllerBase
     }
 
     [HttpGet]
-    public IActionResult Create() => View("Form", new PromotionFormViewModel());
+    public async Task<IActionResult> Create()
+    {
+        ViewBag.RoomTypes = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(await _db.RoomTypes.Where(rt => rt.IsActive).ToListAsync(), "Id", "Name");
+        return View("Form", new PromotionFormViewModel());
+    }
 
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Create(PromotionFormViewModel form)
     {
-        if (!ModelState.IsValid) return View("Form", form);
+        if (!ModelState.IsValid)
+        {
+            ViewBag.RoomTypes = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(await _db.RoomTypes.Where(rt => rt.IsActive).ToListAsync(), "Id", "Name");
+            return View("Form", form);
+        }
 
         var promo = new Promotion
         {
             Title = form.Title,
             Description = form.Description,
             ImageUrl = form.ImageUrl,
-            DisplayPrice = form.DisplayPrice,
             PromoCode = form.PromoCode,
-            DiscountPercentage = form.DiscountPercentage,
+            DiscountDailyPercent = form.DiscountDailyPercent,
+            DiscountHourlyPercent = form.DiscountHourlyPercent,
+            DiscountOvernightPercent = form.DiscountOvernightPercent,
             StartDate = form.StartDate,
             EndDate = form.EndDate,
-            IsHeroOffer = form.IsHeroOffer
+            IsHeroOffer = form.IsHeroOffer,
+            ApplicableRoomTypeIds = form.SelectedRoomTypeIds != null && form.SelectedRoomTypeIds.Any() ? string.Join(",", form.SelectedRoomTypeIds) : null
         };
 
         _db.Promotions.Add(promo);
@@ -63,18 +73,28 @@ public class PromotionsController : AdminControllerBase
         var promo = await _db.Promotions.FindAsync(id);
         if (promo == null) return NotFound();
 
+        ViewBag.RoomTypes = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(await _db.RoomTypes.Where(rt => rt.IsActive).ToListAsync(), "Id", "Name");
+
+        var selectedIds = new List<int>();
+        if (!string.IsNullOrEmpty(promo.ApplicableRoomTypeIds))
+        {
+            selectedIds = promo.ApplicableRoomTypeIds.Split(',').Select(int.Parse).ToList();
+        }
+
         return View("Form", new PromotionFormViewModel
         {
             Id = promo.Id,
             Title = promo.Title,
             Description = promo.Description,
             ImageUrl = promo.ImageUrl,
-            DisplayPrice = promo.DisplayPrice,
             PromoCode = promo.PromoCode,
-            DiscountPercentage = promo.DiscountPercentage,
+            DiscountDailyPercent = promo.DiscountDailyPercent,
+            DiscountHourlyPercent = promo.DiscountHourlyPercent,
+            DiscountOvernightPercent = promo.DiscountOvernightPercent,
             StartDate = promo.StartDate,
             EndDate = promo.EndDate,
-            IsHeroOffer = promo.IsHeroOffer
+            IsHeroOffer = promo.IsHeroOffer,
+            SelectedRoomTypeIds = selectedIds
         });
     }
 
@@ -82,7 +102,11 @@ public class PromotionsController : AdminControllerBase
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> Edit(int id, PromotionFormViewModel form)
     {
-        if (!ModelState.IsValid) return View("Form", form);
+        if (!ModelState.IsValid)
+        {
+            ViewBag.RoomTypes = new Microsoft.AspNetCore.Mvc.Rendering.SelectList(await _db.RoomTypes.Where(rt => rt.IsActive).ToListAsync(), "Id", "Name");
+            return View("Form", form);
+        }
 
         var promo = await _db.Promotions.FindAsync(id);
         if (promo == null) return NotFound();
@@ -90,12 +114,14 @@ public class PromotionsController : AdminControllerBase
         promo.Title = form.Title;
         promo.Description = form.Description;
         promo.ImageUrl = form.ImageUrl;
-        promo.DisplayPrice = form.DisplayPrice;
         promo.PromoCode = form.PromoCode;
-        promo.DiscountPercentage = form.DiscountPercentage;
+        promo.DiscountDailyPercent = form.DiscountDailyPercent;
+        promo.DiscountHourlyPercent = form.DiscountHourlyPercent;
+        promo.DiscountOvernightPercent = form.DiscountOvernightPercent;
         promo.StartDate = form.StartDate;
         promo.EndDate = form.EndDate;
         promo.IsHeroOffer = form.IsHeroOffer;
+        promo.ApplicableRoomTypeIds = form.SelectedRoomTypeIds != null && form.SelectedRoomTypeIds.Any() ? string.Join(",", form.SelectedRoomTypeIds) : null;
 
         await _db.SaveChangesAsync();
 

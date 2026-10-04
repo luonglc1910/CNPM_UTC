@@ -81,6 +81,8 @@ public class ClientAuthController : Controller
     [AllowAnonymous]
     public IActionResult Login(string? returnUrl = null)
     {
+        if (IsStaffAuthenticated())
+            return RedirectToAction("Index", "Home");
         if (IsClientAuthenticated())
             return RedirectToAction("Index", "Portal");
 
@@ -128,7 +130,7 @@ public class ClientAuthController : Controller
                 if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
                     return Redirect(returnUrl);
                 
-                return RedirectToAction("Index", "Portal");
+                return RedirectToAction("Index", "Home");
             }
         }
 
@@ -176,6 +178,10 @@ public class ClientAuthController : Controller
     }
 
     // ─────────────────────────── TIỆN ÍCH ───────────────────────────
+
+    private bool IsStaffAuthenticated()
+        => User.Identity?.IsAuthenticated == true
+           && User.Identity.AuthenticationType == AppSchemes.Staff;
 
     private bool IsClientAuthenticated()
         => User.Identity?.IsAuthenticated == true

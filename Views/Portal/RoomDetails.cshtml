@@ -2,6 +2,8 @@
 @{
     Layout = "_PortalLayout";
     ViewData["Title"] = "Chi tiết phòng";
+    var availableRoomList = Model.Rooms.Where(r => r.IsActive && r.Status == HotelManagement.Web.Models.RoomStatus.Available).ToList();
+    int availableRooms = availableRoomList.Count;
 }
 <div class="flex flex-col w-full">
 <!-- BREADCRUMB SECTION -->
@@ -59,14 +61,6 @@
 <div class="bg-surface-container-lowest p-space-lg rounded-[10px] shadow-sm flex flex-col gap-space-md">
 <!-- Eyebrow & Badges -->
 <div class="flex items-center justify-between gap-space-sm flex-wrap">
-<span class="font-label-sm text-label-sm tracking-[0.2em] uppercase text-secondary font-semibold">
-              Deluxe Collection
-            </span>
-<div class="flex items-center gap-1.5 bg-surface-container-low px-2.5 py-1 rounded-[4px] text-on-surface">
-<span class="material-symbols-outlined text-[15px] text-secondary" style="font-variation-settings: 'FILL' 1;">star</span>
-<span class="font-label-md text-label-md font-semibold">4.9</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">(38 đánh giá)</span>
-</div>
 </div>
 <!-- Title & PMS Inventory Badge -->
 <div class="flex flex-col gap-1.5">
@@ -75,10 +69,19 @@
             </h1>
 <p class="font-body-sm text-body-sm text-on-surface-variant">Phòng @Model.Name đẳng cấp</p>
 <div class="pt-1 flex items-center gap-2">
-<span class="inline-flex items-center gap-1.5 bg-[#2e7d57]/10 text-[#2e7d57] px-2.5 py-0.5 rounded-[4px] font-label-sm text-label-sm font-medium">
-<span class="w-1.5 h-1.5 rounded-full bg-[#2e7d57] animate-pulse"></span>
-                Hệ thống còn 3 phòng trống
-              </span>
+@if(availableRooms > 0)
+{
+    <span class="inline-flex items-center gap-1.5 bg-[#2e7d57]/10 text-[#2e7d57] px-2.5 py-0.5 rounded-[4px] font-label-sm text-label-sm font-medium">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#2e7d57] animate-pulse"></span>
+        Hệ thống còn @availableRooms phòng trống
+    </span>
+}
+else
+{
+    <span class="inline-flex items-center gap-1.5 bg-red-500/10 text-red-600 px-2.5 py-0.5 rounded-[4px] font-label-sm text-label-sm font-medium">
+        Hết phòng trống
+    </span>
+}
 <span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-0.5">
 <span class="material-symbols-outlined text-[14px] text-secondary">bolt</span>
                 Đặt nhanh giữ phòng
@@ -88,8 +91,8 @@
 <!-- Pricing Display -->
 <div class="bg-surface-container-low p-space-md rounded-[8px] flex flex-col gap-1">
 <div class="flex items-baseline gap-2">
-<span class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">@Model.BasePricePerNight.ToString("N0") ₫</span>
-<span class="font-label-md text-label-md text-on-surface-variant">/ đêm</span>
+<span id="displayMainPrice" class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">@Model.BasePricePerNight.ToString("N0") ₫</span>
+<span id="displayMainSuffix" class="font-label-md text-label-md text-on-surface-variant">/ đêm</span>
 </div>
 <p class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
 <span class="material-symbols-outlined text-[14px] text-secondary">check_circle</span>
@@ -97,34 +100,79 @@
             </p>
 </div>
 <!-- Interactive Booking Widget Inside Card -->
-<form class="flex flex-col gap-space-sm" onsubmit="event.preventDefault(); alert('Cảm ơn Quý khách! Chuyển tiếp tới bước xác thực đặt phòng an toàn.');">
+<form class="flex flex-col gap-space-sm" onsubmit="event.preventDefault(); alert('Chức năng đặt phòng đang được hoàn thiện.');">
+<!-- Room Selector -->
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary relative cursor-pointer" onclick="try{ document.getElementById('selectedRoom').showPicker(); } catch(e){}">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="selectedRoom">Chọn phòng trống</label>
+<select id="selectedRoom" class="mt-0.5 w-full text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer appearance-none pr-8" onclick="event.stopPropagation()">
+    @if(availableRoomList.Any())
+    {
+        foreach(var room in availableRoomList)
+        {
+            <option value="@room.Id">Phòng @room.RoomNumber</option>
+        }
+    }
+    else
+    {
+        <option value="" disabled selected>Hết phòng trống</option>
+    }
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none transition-transform group-focus-within:text-primary">expand_more</span>
+</div>
+<!-- Rental Type Selector -->
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary relative cursor-pointer" onclick="try{ document.getElementById('rentalType').showPicker(); } catch(e){}">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="rentalType">Hình thức thuê</label>
+<select id="rentalType" class="mt-0.5 w-full text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer appearance-none pr-8" onchange="calculatePrice()" onclick="event.stopPropagation()">
+    <option value="Daily">Theo ngày (@Model.BasePricePerNight.ToString("N0") ₫)</option>
+    <option value="Hourly">Theo giờ (Giờ đầu: @Model.PriceFirstHour.ToString("N0") ₫)</option>
+    <option value="Overnight">Qua đêm (@Model.PriceOvernight.ToString("N0") ₫)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none transition-transform group-focus-within:text-primary">expand_more</span>
+</div>
 <div class="grid grid-cols-2 gap-2">
-<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col">
-<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Nhận phòng</label>
-<div class="flex items-center gap-1.5 mt-0.5 text-on-surface font-label-lg text-label-lg font-medium">
-<span class="material-symbols-outlined text-[18px] text-secondary">calendar_today</span>
-<span class="">24 Th04, 2025</span>
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary cursor-pointer" onclick="try{ document.getElementById('checkInDate').showPicker(); } catch(e){}">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="checkInDate">Nhận phòng</label>
+<input type="date" id="checkInDate" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer w-full" onchange="calculatePrice()" onclick="event.stopPropagation()" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary cursor-pointer" onclick="try{ document.getElementById('checkOutDate').showPicker(); } catch(e){}">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="checkOutDate">Trả phòng</label>
+<input type="date" id="checkOutDate" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer w-full" onchange="calculatePrice()" onclick="event.stopPropagation()" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")">
 </div>
 </div>
-<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col">
-<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Trả phòng (3 đêm)</label>
-<div class="flex items-center gap-1.5 mt-0.5 text-on-surface font-label-lg text-label-lg font-medium">
-<span class="material-symbols-outlined text-[18px] text-secondary">event_available</span>
-<span class="">27 Th04, 2025</span>
+<!-- Khách & Giường phụ -->
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" for="guestCount">Số khách</label>
+<input type="number" id="guestCount" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none w-full" value="@Model.StandardCapacity" min="1" max="@Model.MaxCapacity" onchange="calculatePrice()">
+@if(Model.ExtraGuestFeePerNight > 0)
+{
+    <span class="text-[11px] text-on-surface-variant mt-1">Phụ thu > @Model.StandardCapacity người: +@Model.ExtraGuestFeePerNight.ToString("N0") ₫/đêm</span>
+}
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col justify-center items-start group hover:bg-surface-container transition-colors cursor-pointer" onclick="document.getElementById('extraBed').click()">
+<label class="flex items-center gap-2 cursor-pointer w-full">
+<input type="checkbox" id="extraBed" class="w-4 h-4 text-primary rounded border-outline focus:ring-primary" onchange="calculatePrice(); event.stopPropagation()" onclick="event.stopPropagation()">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Thêm giường phụ</span>
+</label>
+@if(Model.ExtraBedFeePerNight > 0)
+{
+    <span class="text-[11px] text-on-surface-variant mt-1 ml-6">Phí: +@Model.ExtraBedFeePerNight.ToString("N0") ₫/đêm</span>
+}
 </div>
 </div>
-</div>
-<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex items-center justify-between">
-<div class="flex flex-col">
-<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Số lượng khách</span>
-<span class="font-label-lg text-label-lg font-medium text-on-surface">2 Người lớn · 1 Trẻ em (&lt;6t)</span>
-</div>
-<span class="material-symbols-outlined text-outline text-[20px]">group</span>
+<!-- Promo Code -->
+<div class="flex flex-col gap-1.5 mt-2">
+    <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" for="promoCode">Mã ưu đãi (Tùy chọn)</label>
+    <div class="flex gap-2">
+        <input type="text" id="promoCode" class="flex-1 bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm text-on-surface font-body-md border-none outline-none focus:ring-2 focus:ring-primary uppercase" placeholder="Nhập mã..." onkeyup="this.value = this.value.toUpperCase()">
+        <button type="button" class="bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-on-secondary font-label-md px-4 rounded-[6px] transition-colors" onclick="applyPromo()">Áp dụng</button>
+    </div>
+    <span id="promoMessage" class="text-sm font-medium"></span>
 </div>
 <!-- Price Breakdown Summary -->
 <div class="py-2 flex items-center justify-between font-label-md text-label-md">
-<span class="text-on-surface-variant">Tổng dự kiến (3 đêm lưu trú):</span>
-<span class="font-headline-sm text-headline-sm font-bold text-primary">@((Model.BasePricePerNight * 3).ToString("N0")) ₫</span>
+<span class="text-on-surface-variant">Tổng dự kiến (<span id="nightsCount">1</span> đêm lưu trú):</span>
+<span class="font-headline-sm text-headline-sm font-bold text-primary" id="totalPrice">@Model.BasePricePerNight.ToString("N0") ₫</span>
 </div>
 <!-- Primary CTA -->
 <button class="w-full h-11 bg-primary-container hover:bg-primary text-surface-container-lowest rounded-[6px] font-label-lg text-label-lg font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2" type="submit">
@@ -194,40 +242,17 @@
 </div>
 </section>
 <!-- ROOM OVERVIEW & ARCHITECTURAL PHILOSOPHY -->
-<section class="bg-surface-container-lowest p-space-lg md:p-space-xl rounded-[10px] shadow-sm flex flex-col md:flex-row gap-space-xl items-center">
-<div class="md:w-7/12 flex flex-col gap-space-sm">
+<section class="bg-surface-container-lowest p-space-lg md:p-space-xl rounded-[10px] shadow-sm flex flex-col gap-space-xl">
+<div class="flex flex-col gap-space-sm">
 <span class="font-label-sm text-label-sm uppercase tracking-[0.2em] text-secondary font-semibold">
           Kiến trúc &amp; Không gian
         </span>
 <h2 class="font-headline-lg text-headline-lg text-primary font-semibold">
           Tổng quan phòng nghỉ
         </h2>
-<p class="font-body-lg text-body-lg text-on-surface leading-relaxed mt-1">
-          @Model.Description
-        </p>
-<div class="pt-2 flex items-center gap-6 text-on-surface-variant font-label-md text-label-md">
-<div class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px] text-secondary">deck</span>
-<span class="">Ban công mở 8 m²</span>
-</div>
-<div class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px] text-secondary">volume_off</span>
-<span class="">Cách âm đa lớp</span>
-</div>
-<div class="flex items-center gap-1.5">
-<span class="material-symbols-outlined text-[18px] text-secondary">eco</span>
-<span class="">Vật liệu hữu cơ</span>
-</div>
-</div>
-</div>
-<div class="md:w-5/12 w-full relative">
-<div class="w-full aspect-[4/3] rounded-[10px] overflow-hidden bg-surface-container shadow-md">
-<img class="w-full h-full object-cover" data-alt="Editorial close up of resort suite interior featuring natural stone tea set, woven bamboo light fixtures, coastal sea breeze moving linen curtains gently, warm serene morning mood" src="https://lh3.googleusercontent.com/aida-public/AB6AXuARRWT8Lu3TggeFJ-8TN11_L0dNhbnBBfqXbycuqFpvSppf2yhtVUf3IG-eg7Fmq3oo3mJLadnSNQfjitfw2EwfWW6ydmtOo06QUqDqK-mJJkZA_iub26b3gM7v9a5uTlX4pHtRbrK1mnaipa7N-eg7miljz49Fki-wI-fPRA2QIHty3sK5213qWNRnf2w5jLh3t6pxVwdBusoJKF0ZGuO7dl2f_To7j6ogjXeXwQ7GK1IJB5sN1g">
-</div>
-<div class="absolute -bottom-4 -left-4 bg-primary-container text-surface-container-lowest p-3.5 rounded-[8px] shadow-lg max-w-[200px] hidden sm:block">
-<p class="font-label-sm text-label-sm font-normal text-on-primary-container">Thiết kế bởi</p>
-<p class="font-label-lg text-label-lg font-semibold text-secondary-fixed">Aura Studio &amp; Co.</p>
-</div>
+<div class="font-body-lg text-body-lg text-on-surface leading-relaxed mt-1 prose prose-stone max-w-none">
+          @Html.Raw(Model.DetailDescription ?? Model.Description)
+        </div>
 </div>
 </section>
 <!-- DETAILED ROOM AMENITIES (4 CATEGORIES) -->
@@ -316,236 +341,6 @@
 </div>
 </div>
 </section>
-<!-- EXCLUSIVE HOTEL RESORT SERVICES -->
-<section class="flex flex-col gap-space-md">
-<div class="flex flex-col">
-<span class="font-label-sm text-label-sm uppercase tracking-[0.2em] text-secondary font-semibold">Đặc quyền nghỉ dưỡng</span>
-<h2 class="font-headline-lg text-headline-lg text-primary font-semibold">Dịch vụ đi kèm dành cho khách lưu trú</h2>
-</div>
-<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-gutter-sm md:gap-gutter">
-<div class="bg-surface-container-lowest rounded-[10px] overflow-hidden shadow-sm flex flex-col group">
-<div class="h-44 w-full overflow-hidden bg-surface-container">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Fine dining restaurant at beach resort with candlelit ambient tables, culinary seafood dishes, sea view background at dusk, dark emerald ink and gold decor" src="https://lh3.googleusercontent.com/aida-public/AB6AXuANKiV8DE57wnVk5ixx8vjBcrO47ZMnbaFD493UZ5uKdlKcKT7L9_LoIyr3IZBxSRyLhi8tHbE8oQC8TJcQ5oQQ8OKVzevowKQjVYW_64WrHqXzXeKqVDgAL4uBsC8Pw_CwZIm9b6BDp6wYmQUNDs2ASCEoViifMKv1p4eDMVKgnbK-zinjOMn_9PusPcdZ9SGKQ2Y8gg5Gy3tfFWEBmW0scm_9A0Z8KDqAe3sRqbrz9l98e3LxMg">
-</div>
-<div class="p-space-md flex flex-col flex-1 justify-between gap-space-sm">
-<div class="flex flex-col gap-1">
-<h4 class="font-headline-sm text-headline-sm text-primary font-semibold">Ẩm thực Aura Fine Dining</h4>
-<p class="font-body-sm text-body-sm text-on-surface-variant">Thưởng thức buffet sáng phong vị quốc tế và thực đơn hải sản tươi sống đánh bắt trong ngày.</p>
-</div>
-<span class="font-label-md text-label-md text-secondary font-semibold flex items-center gap-1">
-<span class="">Bao gồm trong giá phòng</span>
-<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-</span>
-</div>
-</div>
-<div class="bg-surface-container-lowest rounded-[10px] overflow-hidden shadow-sm flex flex-col group">
-<div class="h-44 w-full overflow-hidden bg-surface-container">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Luxury wellness spa pavilion with Japanese onsen hot soaking pool, warm steam, natural bamboo dividers, serene aromatic lighting, holistic rejuvenation" src="https://lh3.googleusercontent.com/aida-public/AB6AXuDg0NVnAGIdirWSkFk84XaHJgrcctLvoXPXSxz-F6P1fOGkS6nqLGsemDjSl7xQcU7YC2Cdpm2AlHt18FytCeqDiLq5dnuboIaE1Qkk00djgWTSV8fJuNEs3Yn8iHyvsU9uLzzJhpgaDx4D6KW1snrO6BwL4LdKbi53a84wNuxTcbvCBjXg0IDLQ6F8lA-ZGClcLdEZHYimqJFT4PCxXvJxTZm9c9ZrOOehfWRuAbIkneezd7HHAQ">
-</div>
-<div class="p-space-md flex flex-col flex-1 justify-between gap-space-sm">
-<div class="flex flex-col gap-1">
-<h4 class="font-headline-sm text-headline-sm text-primary font-semibold">Aura Spa &amp; Onsen</h4>
-<p class="font-body-sm text-body-sm text-on-surface-variant">Liệu pháp massage thảo mộc Việt kết hợp bồn ngâm Onsen khoáng nóng thải độc cơ thể.</p>
-</div>
-<span class="font-label-md text-label-md text-secondary font-semibold flex items-center gap-1">
-<span class="">Ưu đãi 20% cho khách đặt phòng</span>
-<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-</span>
-</div>
-</div>
-<div class="bg-surface-container-lowest rounded-[10px] overflow-hidden shadow-sm flex flex-col group">
-<div class="h-44 w-full overflow-hidden bg-surface-container">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Stunning infinity swimming pool extending toward sunset ocean horizon, sunken water loungers, cocktail bar with ambient lights, tropical luxury vibes" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB4WTb3J3NjIo2J6wFbtMO3ZK3e7cHpn7ecJ-ICEUPMvq52BI7reIJ24GsLOU1jONUlukPkzYRgQ5rULtk9VcBPyn7DiJlUtdKq0NIjSPwwwcFryOB6dmH1Ndnl5HA5MDNxpGmmBj5KkwZanvdHt1md5T4Q-6U-thZMDUEDdx5hFviIvKxJb60y0RUVVujYStYO3IfqJNOphsv62sB-up2DBq7q1vhISr1yTlzEWBg0OVHGJtlZ7g">
-</div>
-<div class="p-space-md flex flex-col flex-1 justify-between gap-space-sm">
-<div class="flex flex-col gap-1">
-<h4 class="font-headline-sm text-headline-sm text-primary font-semibold">Infinity Ocean Pool</h4>
-<p class="font-body-sm text-body-sm text-on-surface-variant">Bể bơi vô cực tràn bờ nối liền đại dương, quầy pool bar phục vụ cocktail và nhạc acoustic chiều tà.</p>
-</div>
-<span class="font-label-md text-label-md text-secondary font-semibold flex items-center gap-1">
-<span class="">Mở cửa 06:00 - 21:00</span>
-<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-</span>
-</div>
-</div>
-<div class="bg-surface-container-lowest rounded-[10px] overflow-hidden shadow-sm flex flex-col group">
-<div class="h-44 w-full overflow-hidden bg-surface-container">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Luxury black VIP Mercedes Maybach transfer car awaiting passengers outside five star resort portico with friendly concierge holding luggage" src="https://lh3.googleusercontent.com/aida-public/AB6AXuALbzTO0o760OHE4w2KpJWUdGFwW76hbOCGPU4f0lI_9E2a534wttEiiINuiETHuwQ2fc01Km43162UQszdNrW-uCmbO_MU4ZgqNCvC9zh4C1HCG5MwpS3eDx6Hev6F6XeNJAZ9Fn7IrEE0mDTn7Ogyh00e88aau_VCIbPzZWwwILwz6Dx9AQEmmSCCz2ppJzH1Cg_WJGYwUTl5Um6Fce5-pDJY54GWe-MgdKdzAdYbpmroY1xG-A">
-</div>
-<div class="p-space-md flex flex-col flex-1 justify-between gap-space-sm">
-<div class="flex flex-col gap-1">
-<h4 class="font-headline-sm text-headline-sm text-primary font-semibold">Đưa đón sân bay VIP 24/7</h4>
-<p class="font-body-sm text-body-sm text-on-surface-variant">Đội xe sang chuyên dụng cùng tài xế nhiệt tình phục vụ hành trình di chuyển riêng tư và thoải mái.</p>
-</div>
-<span class="font-label-md text-label-md text-secondary font-semibold flex items-center gap-1">
-<span class="">Đón tiễn theo lịch trình</span>
-<span class="material-symbols-outlined text-[14px]">arrow_forward</span>
-</span>
-</div>
-</div>
-</div>
-</section>
-<!-- LOCATION & CONNECTIVITY -->
-<section class="bg-surface-container-lowest p-space-lg md:p-space-xl rounded-[10px] shadow-sm grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-center">
-<div class="lg:col-span-6 flex flex-col gap-space-sm">
-<span class="font-label-sm text-label-sm uppercase tracking-[0.2em] text-secondary font-semibold">
-          Vị trí &amp; Kết nối thuận tiện
-        </span>
-<h2 class="font-headline-lg text-headline-lg text-primary font-semibold">
-          Bán đảo Sơn Trà &amp; Bờ biển Mỹ Khê
-        </h2>
-<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
-          Tọa lạc tại vị trí biệt lập nhưng chỉ cách vài phút di chuyển đến các địa danh biểu tượng của Đà Nẵng. Quý khách vừa tận hưởng trọn vẹn sự tĩnh tại của biển trời, vừa dễ dàng khám phá nhịp sống văn hóa sôi động.
-        </p>
-<div class="grid grid-cols-1 sm:grid-cols-3 gap-space-sm pt-2">
-<div class="p-3 bg-surface-container-low rounded-[8px] flex flex-col">
-<span class="font-headline-sm text-headline-sm text-primary font-bold">15 phút</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Đến Sân bay Quốc tế Đà Nẵng</span>
-</div>
-<div class="p-3 bg-surface-container-low rounded-[8px] flex flex-col">
-<span class="font-headline-sm text-headline-sm text-primary font-bold">10 phút</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Đến Cầu Rồng &amp; Phố đi bộ sông Hàn</span>
-</div>
-<div class="p-3 bg-surface-container-low rounded-[8px] flex flex-col">
-<span class="font-headline-sm text-headline-sm text-primary font-bold">25 phút</span>
-<span class="font-body-sm text-body-sm text-on-surface-variant mt-0.5">Đến Di sản Phố cổ Hội An</span>
-</div>
-</div>
-</div>
-<div class="lg:col-span-6 w-full">
-<div class="w-full h-64 md:h-72 bg-cover bg-center rounded-[10px] shadow-inner relative overflow-hidden" data-location="Son Tra Peninsula, Da Nang, Vietnam" style="background-image: url('https://lh3.googleusercontent.com/aida-public/AB6AXuChAmDPkaBsa5WZnmEQmn7qZNDUBg7kckkH6T0bC6fnj7hh1_OFrRTkIeNLXKPeuXvEBmIxweeuy3z3NMnzu0GYGisPAYMrp8TWM2DcLaITIC43ahmuxeVoUOQzw6wM2ul_nMw5JyslbyE_-yUot0lcffQACUQaKUHfknhrtgL1AQrGNkBe0AyzPrciOVEmFLR97wBFYn5lRQMVPhwGgI85M3mmyPnbTOtWQHqBuqzemWilMXiLyw')">
-<div class="absolute bottom-3 left-3 bg-surface-container-lowest/90 backdrop-blur-md px-3 py-1.5 rounded-[6px] shadow-sm flex items-center gap-1.5 text-primary">
-<span class="material-symbols-outlined text-[18px] text-secondary">pin_drop</span>
-<span class="font-label-sm text-label-sm font-semibold">108 Võ Nguyên Giáp, Sơn Trà, Đà Nẵng</span>
-</div>
-</div>
-</div>
-</section>
-<!-- RELATED ROOMS ("Có thể bạn cũng quan tâm") -->
-<section class="flex flex-col gap-space-md">
-<div class="flex items-end justify-between flex-wrap gap-2">
-<div class="flex flex-col">
-<span class="font-label-sm text-label-sm uppercase tracking-[0.2em] text-secondary font-semibold">Khám phá các hạng phòng khác</span>
-<h2 class="font-headline-lg text-headline-lg text-primary font-semibold">Có thể bạn cũng quan tâm</h2>
-</div>
-<a class="font-label-md text-label-md text-primary font-semibold hover:text-secondary flex items-center gap-1 transition-colors" href="#">
-<span class="">Xem tất cả phòng &amp; Suites</span>
-<span class="material-symbols-outlined text-[16px]">east</span>
-</a>
-</div>
-<div class="grid grid-cols-1 md:grid-cols-3 gap-gutter-sm md:gap-gutter">
-<!-- Related Card 1 -->
-<div class="bg-surface-container-lowest rounded-[10px] overflow-hidden shadow-sm flex flex-col group">
-<div class="aspect-[16/10] w-full overflow-hidden bg-surface-container relative">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Executive Heritage Suite bedroom in luxury resort with private study room, teak wood flooring, huge balcony looking out over misty mountains and sea" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAEPdRInTQKZTWc_7IBQnvAGXkrlssSRBQdB1DpMIWHyZqbBqq2C46dc1NiTMjMjt35fx5x1i0ahhq-CmnUQOmUoRw4vncCiOE44uBamkdG_LctxMi6vhcjEIRErF6ec7QXKW2_1sxQ16tcbotW03Cc9yeXCiqB_uM-rq0REAVZ-INoiGAId8iVNFiLYxRqFWe1MWUYbUTzoVKh0eHbCd1Y2H8rQzprUSBuwn5FUj20pKYPwIwhFw">
-<span class="absolute top-3 right-3 bg-primary-container/80 backdrop-blur-sm text-secondary-fixed font-label-sm text-label-sm px-2.5 py-0.5 rounded-[4px]">
-              Suite Cao Cấp
-            </span>
-</div>
-<div class="p-space-md flex flex-col flex-1 justify-between gap-space-sm">
-<div class="flex flex-col gap-1">
-<h3 class="font-headline-sm text-headline-sm text-primary font-semibold group-hover:text-secondary transition-colors">
-                Executive Heritage Suite
-              </h3>
-<p class="font-label-sm text-label-sm text-on-surface-variant">58 m² · 2-3 khách · 1 King Bed · Ban công ngắm hoàng hôn</p>
-</div>
-<div class="pt-2 flex items-center justify-between border-t border-transparent">
-<div>
-<span class="font-label-sm text-label-sm text-on-surface-variant block">Giá từ</span>
-<span class="font-headline-sm text-headline-sm font-bold text-primary">3.800.000 ₫</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">/ đêm</span>
-</div>
-<a class="h-9 px-3.5 bg-surface-container-low hover:bg-primary hover:text-surface-container-lowest text-primary font-label-md text-label-md rounded-[6px] flex items-center justify-center transition-colors" href="#">
-                Chi tiết
-              </a>
-</div>
-</div>
-</div>
-<!-- Related Card 2 -->
-<div class="bg-surface-container-lowest rounded-[10px] overflow-hidden shadow-sm flex flex-col group">
-<div class="aspect-[16/10] w-full overflow-hidden bg-surface-container relative">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Grand Ocean Front Villa with its own private infinity pool directly connected to sand beach, outdoor open living sala, modern coastal architectural splendor" src="https://lh3.googleusercontent.com/aida-public/AB6AXuB2VqwfD_HQZ21qHJgsA_2jqGxaakeNq7W_EUvrlly5liTAT_kDglIdKzufhvvS7lZUVH3nql_GxqvFpJ2zV44rpRx9-oWmOosxrZR61Fv17e875aRbpm1RUE0gqFTm4x9ZsUeIodBqNi3YQRDVxky6HOWtRF_O8arB7ZksiXGJ9pW3PbrsWWasrlcJs9B7MXfTS60Faf16SH3jLbonc1ACOTdtDxl3zVY8f3xPozeVckcD3IciqA">
-<span class="absolute top-3 right-3 bg-secondary text-surface-container-lowest font-label-sm text-label-sm px-2.5 py-0.5 rounded-[4px] font-medium">
-              Biệt Thự VIP
-            </span>
-</div>
-<div class="p-space-md flex flex-col flex-1 justify-between gap-space-sm">
-<div class="flex flex-col gap-1">
-<h3 class="font-headline-sm text-headline-sm text-primary font-semibold group-hover:text-secondary transition-colors">
-                Grand Ocean Front Villa
-              </h3>
-<p class="font-label-sm text-label-sm text-on-surface-variant">120 m² · Hồ bơi riêng · 4 khách · Lối riêng xuống biển</p>
-</div>
-<div class="pt-2 flex items-center justify-between border-t border-transparent">
-<div>
-<span class="font-label-sm text-label-sm text-on-surface-variant block">Giá từ</span>
-<span class="font-headline-sm text-headline-sm font-bold text-primary">8.500.000 ₫</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">/ đêm</span>
-</div>
-<a class="h-9 px-3.5 bg-surface-container-low hover:bg-primary hover:text-surface-container-lowest text-primary font-label-md text-label-md rounded-[6px] flex items-center justify-center transition-colors" href="#">
-                Chi tiết
-              </a>
-</div>
-</div>
-</div>
-<!-- Related Card 3 -->
-<div class="bg-surface-container-lowest rounded-[10px] overflow-hidden shadow-sm flex flex-col group">
-<div class="aspect-[16/10] w-full overflow-hidden bg-surface-container relative">
-<img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="Classic Heritage King room overlooking city skyline with cozy tropical wood textures, warm mood lighting, minimalist comfortable ambiance" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCO4hpKPTuK1IyLtSRGMO1wGlFf9NVg0aykwODkI_uNbMnWSCH0gOQqMQcErciVLMfdGmMC2hLz8yPiVUBU5lnR7tR4HqTGtS4sID03eJL5ChBZc5TjCA-kzcHw2ccDUEzn7428S1QkoUH-eFz0Uf5n3pnLctbDrug7mubS5imp_HAgDqWcdy8Y9J7YZkCB-qIVFZvY7L8RSStWX23Ku4vv4ub3vGBUQ7_10PT9ItDkQrchSoK55w">
-<span class="absolute top-3 right-3 bg-primary-container/80 backdrop-blur-sm text-secondary-fixed font-label-sm text-label-sm px-2.5 py-0.5 rounded-[4px]">
-              Tiêu Chuẩn
-            </span>
-</div>
-<div class="p-space-md flex flex-col flex-1 justify-between gap-space-sm">
-<div class="flex flex-col gap-1">
-<h3 class="font-headline-sm text-headline-sm text-primary font-semibold group-hover:text-secondary transition-colors">
-                Classic Heritage King
-              </h3>
-<p class="font-label-sm text-label-sm text-on-surface-variant">30 m² · 2 khách · Hướng thành phố &amp; vườn nhiệt đới</p>
-</div>
-<div class="pt-2 flex items-center justify-between border-t border-transparent">
-<div>
-<span class="font-label-sm text-label-sm text-on-surface-variant block">Giá từ</span>
-<span class="font-headline-sm text-headline-sm font-bold text-primary">1.850.000 ₫</span>
-<span class="font-label-sm text-label-sm text-on-surface-variant">/ đêm</span>
-</div>
-<a class="h-9 px-3.5 bg-surface-container-low hover:bg-primary hover:text-surface-container-lowest text-primary font-label-md text-label-md rounded-[6px] flex items-center justify-center transition-colors" href="#">
-                Chi tiết
-              </a>
-</div>
-</div>
-</div>
-</div>
-</section>
-<!-- FINAL CTA BANNER (DARK TEAL LUXURY) -->
-<section class="bg-primary-container rounded-[10px] p-space-lg md:p-space-xl text-surface-container-lowest flex flex-col md:flex-row items-center justify-between gap-space-lg shadow-md relative overflow-hidden">
-<!-- Decorative faint SVG ambient line ring -->
-<svg class="absolute -right-16 -bottom-16 w-80 h-80 opacity-10 pointer-events-none text-secondary-fixed" fill="none" viewBox="0 0 200 200">
-<circle cx="100" cy="100" r="90" stroke="currentColor" stroke-dasharray="6 6" stroke-width="2"></circle>
-<circle cx="100" cy="100" r="60" stroke="currentColor" stroke-width="1"></circle>
-</svg>
-<div class="flex flex-col gap-2 relative z-10 max-w-xl">
-<span class="font-label-sm text-label-sm uppercase tracking-[0.25em] text-secondary-fixed font-semibold">
-          Ưu đãi độc quyền đặt phòng trực tiếp
-        </span>
-<h2 class="font-headline-lg text-headline-lg font-bold text-surface-container-lowest">
-          Sẵn sàng cho kỳ nghỉ đáng nhớ tại Aura?
-        </h2>
-<p class="font-body-md text-body-md text-on-primary-container">
-          Đặt phòng trực tiếp hôm nay để nhận đặc quyền nâng hạng phòng miễn phí (tùy tình trạng phòng) cùng dịch vụ đưa đón sân bay Đà Nẵng chu đáo.
-        </p>
-</div>
-<div class="flex flex-col sm:flex-row items-center gap-space-sm relative z-10 flex-shrink-0 w-full sm:w-auto">
-<a class="w-full sm:w-auto h-11 px-5 rounded-[6px] bg-surface-container-lowest/10 hover:bg-surface-container-lowest/20 text-surface-container-lowest font-label-lg text-label-lg flex items-center justify-center gap-2 transition-colors" href="tel:+842439887766">
-<span class="material-symbols-outlined text-[18px]">call</span>
-<span class="">Gọi tư vấn</span>
-</a>
-<button class="w-full sm:w-auto h-11 px-6 rounded-[6px] bg-secondary-fixed hover:bg-secondary-fixed-dim text-primary-container font-label-lg text-label-lg font-bold transition-all shadow-sm flex items-center justify-center gap-2" onclick="window.scrollTo({top: 0, behavior: 'smooth'})">
-<span class="">Đặt phòng Deluxe ngay</span>
-<span class="material-symbols-outlined text-[18px]">north_east</span>
-</button>
-</div>
-</section>
 </div>
 <!-- Micro-interaction JS Script -->
 <script>
@@ -567,15 +362,22 @@
     }
 
     // Dynamic Pricing Logic
-    const basePrice = @Model.BasePricePerNight;
+    const dailyPrice = @Model.BasePricePerNight;
+    const hourlyFirstPrice = @Model.PriceFirstHour;
+    const overnightPrice = @Model.PriceOvernight;
     const promotions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Promotions ?? new List<object>()));
     let appliedDiscount = 0; // percentage
-    let appliedPromoPrice = 0; // absolute price
 
-    function calculatePrice() {
+    function calculatePrice(updatePromo = true) {
+        if (updatePromo) {
+            applyPromo(false);
+        }
         const checkInEl = document.getElementById('checkInDate');
         const checkOutEl = document.getElementById('checkOutDate');
-        if (!checkInEl || !checkOutEl) return;
+        const rentalTypeEl = document.getElementById('rentalType');
+        if (!checkInEl || !checkOutEl || !rentalTypeEl) return;
+        
+        const rentalType = rentalTypeEl.value;
         const checkIn = new Date(checkInEl.value);
         const checkOut = new Date(checkOutEl.value);
         
@@ -588,14 +390,42 @@
         }
         
         const nightsCountEl = document.getElementById('nightsCount');
-        if (nightsCountEl) nightsCountEl.innerText = nights;
+        if (nightsCountEl) {
+            if (rentalType === 'Daily') nightsCountEl.innerText = nights;
+            else if (rentalType === 'Hourly') nightsCountEl.innerText = '1 (Giờ đầu)';
+            else nightsCountEl.innerText = '1 (Qua đêm)';
+        }
         
-        let total = basePrice * nights;
+        let basePrice = dailyPrice;
+        if (rentalType === 'Hourly') basePrice = hourlyFirstPrice;
+        else if (rentalType === 'Overnight') basePrice = overnightPrice;
+
+        const displayMainPriceEl = document.getElementById('displayMainPrice');
+        const displayMainSuffixEl = document.getElementById('displayMainSuffix');
+        if (displayMainPriceEl && displayMainSuffixEl) {
+            displayMainPriceEl.innerText = basePrice.toLocaleString('vi-VN') + ' ₫';
+            if (rentalType === 'Daily') displayMainSuffixEl.innerText = '/ đêm';
+            else if (rentalType === 'Hourly') displayMainSuffixEl.innerText = '/ giờ đầu';
+            else displayMainSuffixEl.innerText = '/ đêm (Qua đêm)';
+        }
+        
+        const guestCountEl = document.getElementById('guestCount');
+        const extraBedEl = document.getElementById('extraBed');
+        const guests = guestCountEl ? parseInt(guestCountEl.value) || @Model.StandardCapacity : @Model.StandardCapacity;
+        const hasExtraBed = extraBedEl ? extraBedEl.checked : false;
+        
+        let extraGuestFee = 0;
+        if (guests > @Model.StandardCapacity) {
+            extraGuestFee = (guests - @Model.StandardCapacity) * @Model.ExtraGuestFeePerNight;
+        }
+        let extraBedFee = hasExtraBed ? @Model.ExtraBedFeePerNight : 0;
+        
+        let multiplier = rentalType === 'Daily' ? nights : 1;
+        
+        let total = (basePrice + extraGuestFee + extraBedFee) * multiplier;
         let originalTotal = total;
         
-        if (appliedPromoPrice > 0) {
-            total = appliedPromoPrice * nights;
-        } else if (appliedDiscount > 0) {
+        if (appliedDiscount > 0) {
             total = total - (total * (appliedDiscount / 100));
         }
 
@@ -613,33 +443,61 @@
         if (totalPriceEl) totalPriceEl.innerText = total.toLocaleString('vi-VN') + ' ₫';
     }
 
-    function applyPromo() {
+    function applyPromo(updatePrice = true) {
         const codeInput = document.getElementById('promoCode');
         const messageEl = document.getElementById('promoMessage');
-        if (!codeInput || !messageEl) return;
+        const checkInEl = document.getElementById('checkInDate');
+        if (!codeInput || !messageEl || !checkInEl) return;
+        
         const code = codeInput.value.trim().toUpperCase();
+        const checkIn = new Date(checkInEl.value);
         
         if (!code) {
             appliedDiscount = 0;
-            appliedPromoPrice = 0;
             messageEl.innerText = "";
-            calculatePrice();
+            if (updatePrice) calculatePrice(false);
             return;
         }
         
         const promo = promotions ? promotions.find(p => p.PromoCode && p.PromoCode.toUpperCase() === code) : null;
         if (promo) {
-            appliedDiscount = promo.DiscountPercentage || 0;
-            appliedPromoPrice = promo.DisplayPrice || 0;
-            messageEl.innerText = "Áp dụng thành công!";
-            messageEl.className = "text-sm font-medium mt-1 text-[#2e7d57]";
+            // Kiểm tra ngày bắt đầu và ngày kết thúc
+            const startDate = new Date(promo.StartDate);
+            const endDate = new Date(promo.EndDate);
+            
+            if (checkIn < startDate || checkIn > endDate) {
+                appliedDiscount = 0;
+                messageEl.innerText = `Mã này chỉ áp dụng từ ${startDate.toLocaleDateString('vi-VN')} đến ${endDate.toLocaleDateString('vi-VN')}!`;
+                messageEl.className = "text-sm font-medium mt-1 text-red-500";
+            } else if (promo.ApplicableRoomTypeIds && !promo.ApplicableRoomTypeIds.split(',').includes('@Model.Id')) {
+                appliedDiscount = 0;
+                messageEl.innerText = "Mã này không áp dụng cho loại phòng này!";
+                messageEl.className = "text-sm font-medium mt-1 text-red-500";
+            } else {
+                const rentalType = document.getElementById('rentalType').value;
+                if (rentalType === 'Daily') {
+                    appliedDiscount = promo.DiscountDailyPercent || 0;
+                } else if (rentalType === 'Hourly') {
+                    appliedDiscount = promo.DiscountHourlyPercent || 0;
+                } else {
+                    appliedDiscount = promo.DiscountOvernightPercent || 0;
+                }
+                
+                if (appliedDiscount > 0) {
+                    messageEl.innerText = `Áp dụng thành công (Giảm ${appliedDiscount}%)!`;
+                    messageEl.className = "text-sm font-medium mt-1 text-[#2e7d57]";
+                } else {
+                    appliedDiscount = 0;
+                    messageEl.innerText = "Mã này không có ưu đãi cho hình thức thuê đã chọn!";
+                    messageEl.className = "text-sm font-medium mt-1 text-red-500";
+                }
+            }
         } else {
             appliedDiscount = 0;
-            appliedPromoPrice = 0;
-            messageEl.innerText = "Mã không hợp lệ hoặc đã hết hạn!";
-            messageEl.className = "text-sm font-medium mt-1 text-danger";
+            messageEl.innerText = "Mã không hợp lệ hoặc không tồn tại!";
+            messageEl.className = "text-sm font-medium mt-1 text-red-500";
         }
-        calculatePrice();
+        if (updatePrice) calculatePrice(false);
     }
   </script>
 </div>

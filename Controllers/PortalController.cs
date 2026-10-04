@@ -17,7 +17,7 @@ public class PortalController : Controller
     public async Task<IActionResult> Index()
     {
         ViewBag.RoomTypes = await _context.RoomTypes.Where(rt => rt.IsActive).ToListAsync();
-        ViewBag.Services = await _context.HotelServices.Where(s => s.IsActive && !string.IsNullOrEmpty(s.ImageUrl)).Take(3).ToListAsync();
+        ViewBag.Services = await _context.HotelServices.Where(s => s.IsActive).Take(6).ToListAsync();
         ViewBag.GalleryImages = await _context.HotelGalleryImages
             .Where(g => g.IsActive)
             .OrderBy(g => g.SortOrder)
@@ -92,7 +92,7 @@ public class PortalController : Controller
             
         ViewBag.Promotions = await _context.Promotions
             .Where(p => p.IsActive)
-            .Select(p => new { p.PromoCode, p.DiscountPercentage, p.DisplayPrice })
+            .Select(p => new { p.PromoCode, p.DiscountDailyPercent, p.DiscountHourlyPercent, p.DiscountOvernightPercent, p.StartDate, p.EndDate, p.ApplicableRoomTypeIds })
             .ToListAsync();
             
         return View(roomType);
