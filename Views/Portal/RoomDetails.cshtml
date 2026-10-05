@@ -1,4 +1,5 @@
 @using Microsoft.AspNetCore.Authentication
+@using HotelManagement.Web.Security
 @model HotelManagement.Web.Models.Entities.RoomType
 @{
     Layout = "_PortalLayout";
@@ -113,31 +114,7 @@ else
 </div>
 
 <!-- Customer Auth & Account Management CTA Banner -->
-@if (!isUserLoggedIn)
-{
-    <div class="bg-red-50 border border-red-200 rounded-[8px] p-3.5 flex flex-col gap-2.5 shadow-xs">
-        <div class="flex items-start gap-2.5">
-            <span class="material-symbols-outlined text-red-600 font-bold shrink-0 text-xl mt-0.5">account_circle</span>
-            <div class="flex flex-col gap-0.5">
-                <span class="font-bold text-red-700 text-sm tracking-wide uppercase">Đăng ký &amp; Đăng nhập ngay!</span>
-                <p class="text-red-600 text-xs leading-relaxed">
-                    Đăng ký tài khoản giúp bạn quản lý đơn phòng dễ dàng hơn, và giúp khách sạn phục vụ bạn chu đáo hơn. Đăng ký ngay !
-                </p>
-            </div>
-        </div>
-        <div class="flex items-center gap-2 pt-0.5">
-            <a href="/ClientAuth/Register?returnUrl=@System.Net.WebUtility.UrlEncode(currentUrl)" class="flex-1 text-center bg-red-600 hover:bg-red-700 text-white font-semibold text-xs py-2 px-3 rounded-[6px] transition-colors shadow-xs flex items-center justify-center gap-1">
-                <span class="material-symbols-outlined text-[16px]">person_add</span>
-                <span>Đăng ký tài khoản</span>
-            </a>
-            <a href="/ClientAuth/Login?returnUrl=@System.Net.WebUtility.UrlEncode(currentUrl)" class="flex-1 text-center bg-white border border-red-300 text-red-700 hover:bg-red-100 font-semibold text-xs py-2 px-3 rounded-[6px] transition-colors flex items-center justify-center gap-1">
-                <span class="material-symbols-outlined text-[16px]">login</span>
-                <span>Đăng nhập</span>
-            </a>
-        </div>
-    </div>
-}
-else
+@if (isUserLoggedIn)
 {
     <div class="bg-emerald-50 border border-emerald-200 rounded-[8px] p-2.5 flex items-center gap-2 text-xs text-emerald-800">
         <span class="material-symbols-outlined text-emerald-600 shrink-0 text-lg">verified_user</span>
@@ -272,6 +249,31 @@ else
         </button>
     </div>
     <span id="promoMessage" class="text-sm font-medium"></span>
+    
+    @if (!isUserLoggedIn)
+    {
+        <div id="loginBannerContainer" style="display: none;" class="bg-red-50 border border-red-200 rounded-[8px] p-3.5 flex-col gap-2.5 shadow-xs mt-2">
+            <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-red-600 font-bold shrink-0 text-xl mt-0.5">account_circle</span>
+                <div class="flex flex-col gap-0.5">
+                    <span class="font-bold text-red-700 text-sm tracking-wide uppercase">Đăng ký &amp; Đăng nhập ngay!</span>
+                    <p class="text-red-600 text-xs leading-relaxed">
+                        Ưu đãi chỉ sử dụng được khi khách hàng đã đăng nhập. Vui lòng đăng nhập để áp dụng mã hoặc nhấn dấu X để hủy ưu đãi và tiếp tục.
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 pt-0.5 mt-2">
+                <a href="/ClientAuth/Register?returnUrl=@System.Net.WebUtility.UrlEncode(currentUrl)" class="flex-1 text-center bg-red-600 hover:bg-red-700 text-white font-semibold text-xs py-2 px-3 rounded-[6px] transition-colors shadow-xs flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">person_add</span>
+                    <span>Đăng ký</span>
+                </a>
+                <a href="/ClientAuth/Login?returnUrl=@System.Net.WebUtility.UrlEncode(currentUrl)" class="flex-1 text-center bg-white border border-red-300 text-red-700 hover:bg-red-100 font-semibold text-xs py-2 px-3 rounded-[6px] transition-colors flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">login</span>
+                    <span>Đăng nhập</span>
+                </a>
+            </div>
+        </div>
+    }
 </div>
 <!-- Price Breakdown Summary -->
 <div class="py-2 flex items-center justify-between font-label-md text-label-md">
@@ -279,7 +281,7 @@ else
 <span class="font-headline-sm text-headline-sm font-bold text-primary" id="totalPrice">@Model.BasePricePerNight.ToString("N0") ₫</span>
 </div>
 <!-- Primary CTA -->
-<button class="w-full h-11 bg-primary-container hover:bg-primary text-surface-container-lowest rounded-[6px] font-label-lg text-label-lg font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2" type="submit">
+<button id="submitBookingBtn" class="w-full h-11 bg-primary-container hover:bg-primary text-surface-container-lowest rounded-[6px] font-label-lg text-label-lg font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2" type="submit">
 <span class="">Đặt phòng ngay</span>
 <span class="material-symbols-outlined text-[18px]">arrow_forward</span>
 </button>
@@ -466,9 +468,9 @@ else
     }
 
     // Dynamic Pricing Logic
-    const dailyPrice = @Model.BasePricePerNight;
-    const hourlyFirstPrice = @Model.PriceFirstHour;
-    const overnightPrice = @Model.PriceOvernight;
+    const dailyPrice = @Model.BasePricePerNight.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    const hourlyFirstPrice = @Model.PriceFirstHour.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    const overnightPrice = @Model.PriceOvernight.ToString(System.Globalization.CultureInfo.InvariantCulture);
     const promotions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Promotions ?? new List<object>()));
     let appliedDiscount = 0; // percentage
 
@@ -520,9 +522,9 @@ else
         
         let extraGuestFee = 0;
         if (guests > @Model.StandardCapacity) {
-            extraGuestFee = (guests - @Model.StandardCapacity) * @Model.ExtraGuestFeePerNight;
+            extraGuestFee = (guests - @Model.StandardCapacity) * @Model.ExtraGuestFeePerNight.ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
-        let extraBedFee = hasExtraBed ? @Model.ExtraBedFeePerNight : 0;
+        let extraBedFee = hasExtraBed ? @Model.ExtraBedFeePerNight.ToString(System.Globalization.CultureInfo.InvariantCulture) : 0;
         
         let multiplier = rentalType === 'Daily' ? nights : 1;
         
@@ -612,50 +614,68 @@ else
         if (!code) {
             appliedDiscount = 0;
             messageEl.innerText = "";
-            if (updatePrice) calculatePrice(false);
-            return;
+        } else {
+            const promo = promotions ? promotions.find(p => p.PromoCode && p.PromoCode.toUpperCase() === code) : null;
+            if (promo) {
+                const startDate = new Date(promo.StartDate);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(promo.EndDate);
+                endDate.setHours(23, 59, 59, 999);
+                
+                if (checkIn < startDate || checkIn > endDate) {
+                    appliedDiscount = 0;
+                    messageEl.innerText = `Mã này chỉ áp dụng từ ${startDate.toLocaleDateString('vi-VN')} đến ${endDate.toLocaleDateString('vi-VN')}!`;
+                    messageEl.className = "text-sm font-medium mt-1 text-red-500";
+                } else if (promo.ApplicableRoomTypeIds && !promo.ApplicableRoomTypeIds.split(',').map(x => x.trim()).includes('@Model.Id.ToString()')) {
+                    appliedDiscount = 0;
+                    messageEl.innerText = "Mã này không áp dụng cho loại phòng này!";
+                    messageEl.className = "text-sm font-medium mt-1 text-red-500";
+                } else {
+                    const rentalType = document.getElementById('rentalType').value;
+                    if (rentalType === 'Daily') {
+                        appliedDiscount = promo.DiscountDailyPercent || 0;
+                    } else if (rentalType === 'Hourly') {
+                        appliedDiscount = promo.DiscountHourlyPercent || 0;
+                    } else {
+                        appliedDiscount = promo.DiscountOvernightPercent || 0;
+                    }
+                    
+                    if (appliedDiscount > 0) {
+                        messageEl.innerText = `Áp dụng thành công (Giảm ${appliedDiscount}%)!`;
+                        messageEl.className = "text-sm font-medium mt-1 text-[#2e7d57]";
+                    } else {
+                        appliedDiscount = 0;
+                        messageEl.innerText = "Mã này không có ưu đãi cho hình thức thuê đã chọn!";
+                        messageEl.className = "text-sm font-medium mt-1 text-red-500";
+                    }
+                }
+            } else {
+                appliedDiscount = 0;
+                messageEl.innerText = "Mã không hợp lệ hoặc không tồn tại!";
+                messageEl.className = "text-sm font-medium mt-1 text-red-500";
+            }
         }
         
-        const promo = promotions ? promotions.find(p => p.PromoCode && p.PromoCode.toUpperCase() === code) : null;
-        if (promo) {
-            const startDate = new Date(promo.StartDate);
-            startDate.setHours(0, 0, 0, 0);
-            const endDate = new Date(promo.EndDate);
-            endDate.setHours(23, 59, 59, 999);
-            
-            if (checkIn < startDate || checkIn > endDate) {
-                appliedDiscount = 0;
-                messageEl.innerText = `Mã này chỉ áp dụng từ ${startDate.toLocaleDateString('vi-VN')} đến ${endDate.toLocaleDateString('vi-VN')}!`;
-                messageEl.className = "text-sm font-medium mt-1 text-red-500";
-            } else if (promo.ApplicableRoomTypeIds && !promo.ApplicableRoomTypeIds.split(',').map(x => x.trim()).includes('@Model.Id.ToString()')) {
-                appliedDiscount = 0;
-                messageEl.innerText = "Mã này không áp dụng cho loại phòng này!";
-                messageEl.className = "text-sm font-medium mt-1 text-red-500";
-            } else {
-                const rentalType = document.getElementById('rentalType').value;
-                if (rentalType === 'Daily') {
-                    appliedDiscount = promo.DiscountDailyPercent || 0;
-                } else if (rentalType === 'Hourly') {
-                    appliedDiscount = promo.DiscountHourlyPercent || 0;
-                } else {
-                    appliedDiscount = promo.DiscountOvernightPercent || 0;
-                }
-                
-                if (appliedDiscount > 0) {
-                    messageEl.innerText = `Áp dụng thành công (Giảm ${appliedDiscount}%)!`;
-                    messageEl.className = "text-sm font-medium mt-1 text-[#2e7d57]";
-                } else {
-                    appliedDiscount = 0;
-                    messageEl.innerText = "Mã này không có ưu đãi cho hình thức thuê đã chọn!";
-                    messageEl.className = "text-sm font-medium mt-1 text-red-500";
-                }
+        if (updatePrice) calculatePrice(false);
+
+        // Update login banner and submit button state
+        const isUserLoggedIn = @(isUserLoggedIn ? "true" : "false");
+        const loginBanner = document.getElementById('loginBannerContainer');
+        const submitBtn = document.getElementById('submitBookingBtn');
+        
+        if (!isUserLoggedIn && appliedDiscount > 0) {
+            if (loginBanner) loginBanner.style.display = 'flex';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
             }
         } else {
-            appliedDiscount = 0;
-            messageEl.innerText = "Mã không hợp lệ hoặc không tồn tại!";
-            messageEl.className = "text-sm font-medium mt-1 text-red-500";
+            if (loginBanner) loginBanner.style.display = 'none';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
         }
-        if (updatePrice) calculatePrice(false);
     }
   </script>
 </div>
