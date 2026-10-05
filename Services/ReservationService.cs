@@ -85,7 +85,7 @@ public class ReservationService : IReservationService
         {
             // Mặc định: việc lễ tân cần xử lý — đơn Confirmed có ngày đến từ hôm nay trở đi (SCR-C01).
             var today = DateTime.Now.Date;
-            query = query.Where(r => r.Status == ReservationStatus.Confirmed && r.CheckInDate >= today);
+            query = query.Where(r => (r.Status == ReservationStatus.Confirmed || r.Status == ReservationStatus.Draft) && r.CheckOutDate >= today);
         }
         else
         {
