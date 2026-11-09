@@ -929,10 +929,14 @@ public class ReservationService : IReservationService
             })
             .ToListAsync();
 
-        // Khách đang ở. Chưa trả phòng thì lấy ngày đi dự kiến làm mốc kết thúc.
+        var now = DateTime.Now;
+        var endOfToday = now.Date.AddDays(1);
+
+        // Khách đang ở. Chưa trả phòng thì lấy ngày đi dự kiến làm mốc kết thúc, 
+        // nhưng nếu đã quá hạn trả phòng (overstay) thì coi như ít nhất chiếm dụng đến hết hôm nay.
         var stays = await _db.Stays.AsNoTracking()
             .Where(s => s.ActualCheckIn < endExclusive
-                && (s.ActualCheckOut ?? s.ExpectedCheckOut) > start)
+                && (s.ActualCheckOut == null || s.ActualCheckOut > start))
             .Select(s => new
             {
                 s.RoomId,
@@ -940,7 +944,7 @@ public class ReservationService : IReservationService
                 Code = s.Reservation != null ? s.Reservation.Code : null,
                 GuestName = s.PrimaryGuest.FullName,
                 Start = s.ActualCheckIn,
-                End = s.ActualCheckOut ?? s.ExpectedCheckOut,
+                End = s.ActualCheckOut ?? (s.ExpectedCheckOut > now ? s.ExpectedCheckOut : endOfToday),
                 Guests = s.Guests.Count,
                 s.RentalType
             })
