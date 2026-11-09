@@ -1,0 +1,591 @@
+@model ChangeRoomFormViewModel
+@{
+    ViewData["Title"] = "Đổi phòng cho khách hàng";
+    var isAdmin = User.IsInRole(Roles.Admin);
+    var groupedTargets = Model.TargetOptions.GroupBy(x => x.GroupLabel).ToList();
+}
+
+<div class="alert alert-secondary small d-flex align-items-center gap-2">
+    <i class="bi bi-arrow-left-right fs-5 text-primary"></i>
+    <div>
+        Chức năng <strong>Đổi phòng</strong> áp dụng cho cả <strong>khách đang lưu trú (đã Check-in)</strong> và <strong>đơn đặt phòng chờ Check-in</strong>.
+        Lễ tân có thể chọn hình thức thuê mới, phòng mới và tùy chọn <strong>có tính thêm tiền giờ của phòng cũ vào bill phòng mới hoặc không</strong> (ví dụ miễn tính giờ phòng cũ khi phòng gặp sự cố).
+    </div>
+</div>
+
+<form method="post" asp-action="ChangeRoom">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+    @* Card 1: Chọn khách / phòng cần đổi & Tùy chọn tính giờ phòng cũ *@
+    <div class="card mb-3 border-primary-subtle">
+        <div class="card-header bg-light fw-semibold d-flex justify-content-between align-items-center">
+            <span><i class="bi bi-door-open me-1"></i> 1. Chọn phòng / đơn cần đổi &amp; Tính giờ phòng cũ</span>
+            <span class="badge text-bg-primary" id="targetTypeBadge">Đổi phòng</span>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-lg-6">
+                    <label asp-for="TargetKey" class="form-label fw-semibold">
+                        Khách đang lưu trú / Đơn đặt phòng cần đổi <span class="text-danger">*</span>
+                    </label>
+                    <select asp-for="TargetKey" class="form-select" id="targetSelect">
+                        <option value="">— Chọn phòng đang ở hoặc đơn đặt phòng —</option>
+                        @foreach (var grp in groupedTargets)
+                        {
+                            <optgroup label="@grp.Key">
+                                @foreach (var item in grp)
+                                {
+                                    <option value="@item.Key" selected="@(Model.TargetKey == item.Key)">@item.DisplayLabel</option>
+                                }
+                            </optgroup>
+                        }
+                    </select>
+                    <span asp-validation-for="TargetKey" class="text-danger small"></span>
+
+                    @* Tóm tắt thông tin phòng cũ *@
+                    <div class="border rounded p-3 mt-3 bg-light small" id="oldRoomInfoBox">
+                        <div class="fw-semibold text-secondary mb-2">
+                            <i class="bi bi-info-circle me-1"></i> Thông tin phòng cũ hiện tại
+                        </div>
+                        <dl class="row mb-0 gy-1">
+                            <dt class="col-sm-5 text-muted">Khách hàng:</dt>
+                            <dd class="col-sm-7 fw-semibold mb-0" id="infoGuest">—</dd>
+
+                            <dt class="col-sm-5 text-muted">Phòng hiện tại:</dt>
+                            <dd class="col-sm-7 fw-semibold text-primary mb-0" id="infoOldRoom">—</dd>
+
+                            <dt class="col-sm-5 text-muted">Hình thức cũ:</dt>
+                            <dd class="col-sm-7 mb-0" id="infoOldRental">—</dd>
+
+                            <dt class="col-sm-5 text-muted">Thời điểm nhận:</dt>
+                            <dd class="col-sm-7 mb-0" id="infoCheckIn">—</dd>
+
+                            <dt class="col-sm-5 text-muted">Thời gian đã ở:</dt>
+                            <dd class="col-sm-7 mb-0" id="infoElapsed">—</dd>
+
+                            <dt class="col-sm-5 text-muted">Bảng giá giờ phòng cũ:</dt>
+                            <dd class="col-sm-7 mb-0" id="infoHourlyRate">—</dd>
+                        </dl>
+                    </div>
+                </div>
+
+                <div class="col-lg-6">
+                    <div class="border rounded p-3 h-100 d-flex flex-column justify-content-between" id="oldHourOptionBox">
+                        <div>
+                            <div class="form-check form-switch mb-2">
+                                <input class="form-check-input" type="checkbox" asp-for="ChargeOldRoomHours" id="chargeOldHoursCheck" />
+                                <label class="form-check-label fw-semibold" for="chargeOldHoursCheck">
+                                    Tính thêm tiền giờ của phòng cũ vào bill phòng mới
+                                </label>
+                            </div>
+                            <p class="text-muted small mb-3">
+                                Nếu phòng cũ có sự cố kỹ thuật hoặc đổi phòng miễn phí cho khách, <strong>bỏ tích</strong> ô này để hủy tiền phòng cũ và chỉ tính theo phòng mới.
+                                Nếu khách chủ động yêu cầu đổi sau khi đã sử dụng phòng cũ, <strong>tích chọn</strong> để cộng thêm tiền giờ phòng cũ vào hóa đơn phòng mới.
+                            </p>
+
+                            <div id="oldHoursDetailPanel" class="border-top pt-3 d-none">
+                                <div class="row g-2 align-items-center">
+                                    <div class="col-sm-5">
+                                        <label asp-for="OldRoomHours" class="form-label small fw-semibold mb-1">
+                                            Số giờ tính tiền phòng cũ
+                                        </label>
+                                        <div class="input-group input-group-sm">
+                                            <input asp-for="OldRoomHours" type="number" min="1" max="720" class="form-control" id="oldRoomHoursInput" />
+                                            <span class="input-group-text">giờ</span>
+                                        </div>
+                                        <span asp-validation-for="OldRoomHours" class="text-danger small"></span>
+                                    </div>
+                                    <div class="col-sm-7">
+                                        <div class="p-2 rounded bg-warning-subtle border border-warning-subtle small">
+                                            <div class="text-muted">Tiền giờ phòng cũ cộng vào bill:</div>
+                                            <div class="fs-6 fw-bold text-danger" id="oldRoomCalculatedAmount">0 ₫</div>
+                                            <div class="text-muted" style="font-size: 0.75rem;" id="oldRoomFormulaText"></div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div id="noOldHoursNotice" class="alert alert-success py-2 px-3 small mb-0">
+                                <i class="bi bi-check2-circle me-1"></i>
+                                <strong>Không tính thêm giờ phòng cũ:</strong> Tiền phòng cũ trên Folio sẽ được hủy, chỉ tính tiền theo phòng mới và hình thức thuê mới bên dưới.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Hàng 2: Khách đứng tên + Lý do đổi & Thời gian / Hình thức thuê mới (giống Đặt phòng) *@
+    <div class="row g-3">
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">Khách đứng tên &amp; Lý do đổi phòng</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label asp-for="PrimaryGuestId" class="form-label">Khách <span class="text-danger">*</span></label>
+                        <select asp-for="PrimaryGuestId" asp-items="Model.GuestOptions" class="form-select" id="primaryGuestSelect">
+                            <option value="">— Chọn khách —</option>
+                        </select>
+                        <span asp-validation-for="PrimaryGuestId" class="text-danger small"></span>
+                    </div>
+                    @if (Model.PrimaryGuestBlacklisted)
+                    {
+                        <div class="alert alert-danger py-2 small mb-2"><i class="bi bi-exclamation-octagon"></i> Khách này đang trong danh sách hạn chế.</div>
+                    }
+                    <div class="mb-2">
+                        <label asp-for="Reason" class="form-label">Lý do đổi phòng</label>
+                        <input asp-for="Reason" class="form-control" placeholder="VD: Phòng cũ hỏng điều hòa / Khách muốn nâng hạng phòng..." />
+                        <span asp-validation-for="Reason" class="text-danger small"></span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="card h-100">
+                <div class="card-header">Thời gian &amp; Hình thức thuê phòng mới</div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <label class="form-label d-block">Hình thức thuê <span class="text-danger">*</span></label>
+                        <div class="btn-group w-100" role="group">
+                            @foreach (var type in new[] { RentalType.Daily, RentalType.Hourly, RentalType.Overnight })
+                            {
+                                var id = $"rental{type}";
+                                <input type="radio" class="btn-check js-rental" name="RentalType" id="@id"
+                                       value="@((int)type)" autocomplete="off" checked="@(Model.RentalType == type)" />
+                                <label class="btn btn-outline-secondary" for="@id">
+                                    <i class="bi bi-@type.IconName()"></i> @type.DisplayName()
+                                </label>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-6" id="checkInCol">
+                            <label for="CheckInDate" class="form-label" id="checkInLabel">Ngày đến <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="CheckInDate" name="CheckInDate"
+                                   data-date="@Model.CheckInDate.ToString("yyyy-MM-dd")"
+                                   data-datetime="@Model.CheckInDate.ToString("yyyy-MM-ddTHH:mm")"
+                                   value="@Model.CheckInDate.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="CheckInDate" class="text-danger small"></span>
+                        </div>
+                        <div class="col-6" id="checkOutCol">
+                            <label for="CheckOutDate" class="form-label" id="checkOutLabel">Ngày đi <span class="text-danger">*</span></label>
+                            <input type="date" class="form-control" id="CheckOutDate" name="CheckOutDate"
+                                   data-date="@Model.CheckOutDate.ToString("yyyy-MM-dd")"
+                                   data-datetime="@Model.CheckOutDate.ToString("yyyy-MM-ddTHH:mm")"
+                                   value="@Model.CheckOutDate.ToString("yyyy-MM-dd")" />
+                            <span asp-validation-for="CheckOutDate" class="text-danger small"></span>
+                        </div>
+                    </div>
+
+                    <input type="hidden" id="CheckInDateHourlyHidden" />
+
+                    <div class="form-text mt-2" id="rentalHint"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    @* Card 3: Danh sách phòng mới (giống Đặt phòng) *@
+    <div class="card mt-3">
+        <div class="card-header d-flex justify-content-between align-items-center">
+            <span>Phòng mới chuyển đến</span>
+            <button type="button" id="addRoom" class="btn btn-sm btn-outline-primary"><i class="bi bi-plus-lg"></i> Thêm phòng</button>
+        </div>
+        <div class="table-responsive">
+            <table class="table align-middle mb-0" id="roomLines">
+                <thead class="table-light">
+                    <tr>
+                        <th style="min-width: 200px">Loại phòng mới</th>
+                        <th style="min-width: 180px">Phòng mới</th>
+                        <th style="width: 110px">Người lớn</th>
+                        <th style="width: 110px">Trẻ em</th>
+                        <th style="width: 160px">Giá / đêm</th>
+                        <th style="width: 48px"></th>
+                    </tr>
+                </thead>
+                <tbody>
+                @for (var i = 0; i < Model.Rooms.Count; i++)
+                {
+                    var line = Model.Rooms[i];
+                    <tr>
+                        <td>
+                            <select name="Rooms[@i].RoomTypeId" class="form-select form-select-sm js-roomtype">
+                                <option value="">— Chọn loại —</option>
+                                @foreach (var opt in Model.RoomTypeOptions)
+                                {
+                                    <option value="@opt.Value" selected="@(opt.Value == line.RoomTypeId.ToString())">@opt.Text</option>
+                                }
+                            </select>
+                        </td>
+                        <td>
+                            <select name="Rooms[@i].RoomId" class="form-select form-select-sm js-room">
+                                <option value="">— Chọn phòng —</option>
+                                @foreach (var room in Model.AllRooms.Where(r => r.RoomTypeId == line.RoomTypeId))
+                                {
+                                    var statusSuffix = room.IsAvailable ? "Trống" : (room.StatusText ?? "Đang bận");
+                                    <option value="@room.RoomId" selected="@(line.RoomId == room.RoomId)">@room.RoomNumber (tầng @room.Floor — @statusSuffix)</option>
+                                }
+                            </select>
+                        </td>
+                        <td><input name="Rooms[@i].Adults" value="@line.Adults" type="number" min="1" class="form-control form-control-sm" /></td>
+                        <td><input name="Rooms[@i].Children" value="@line.Children" type="number" min="0" class="form-control form-control-sm" /></td>
+                        <td><input name="Rooms[@i].PricePerNight" value="@line.PricePerNight" type="number" min="0" step="any" class="form-control form-control-sm js-price" readonly="@(!isAdmin)" /></td>
+                        <td><button type="button" class="btn btn-sm btn-outline-danger js-remove"><i class="bi bi-trash"></i></button></td>
+                    </tr>
+                }
+                </tbody>
+            </table>
+        </div>
+        <div class="card-footer small text-muted">
+            Chọn loại phòng và phòng mới muốn chuyển sang. Giá/đêm tự điền theo loại phòng mới. @(isAdmin ? "Admin có thể sửa giá tay." : "Chỉ Admin sửa được giá.")
+        </div>
+    </div>
+
+    @* Card 4: Thông tin đơn *@
+    <div class="card mt-3">
+        <div class="card-header">Thông tin bổ sung</div>
+        <div class="card-body row g-3">
+            <div class="col-md-4">
+                <label asp-for="Source" class="form-label">Nguồn đặt</label>
+                <select asp-for="Source" class="form-select" id="sourceSelect">
+                    @foreach (var s in Enum.GetValues<ReservationSource>())
+                    {
+                        <option value="@((int)s)" selected="@(Model.Source == s)">@s.ToDisplayName()</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-8">
+                <label asp-for="SpecialRequests" class="form-label">Yêu cầu đặc biệt</label>
+                <input asp-for="SpecialRequests" class="form-control" id="specialRequestsInput" placeholder="Phòng tầng cao, giường đôi, nôi em bé..." />
+            </div>
+            <div class="col-12">
+                <label asp-for="InternalNotes" class="form-label">Ghi chú nội bộ</label>
+                <textarea asp-for="InternalNotes" class="form-control" id="internalNotesInput" rows="2"></textarea>
+            </div>
+        </div>
+    </div>
+
+    <div class="d-flex gap-2 mt-3">
+        <button type="submit" class="btn btn-primary">
+            <i class="bi bi-arrow-left-right"></i> Xác nhận đổi phòng
+        </button>
+        <a class="btn btn-outline-secondary ms-auto" asp-action="Index">Hủy</a>
+    </div>
+</form>
+
+<template id="rowTemplate">
+    <tr>
+        <td>
+            <select name="Rooms[__INDEX__].RoomTypeId" class="form-select form-select-sm js-roomtype">
+                <option value="">— Chọn loại —</option>
+                @foreach (var opt in Model.RoomTypeOptions)
+                {
+                    <option value="@opt.Value">@opt.Text</option>
+                }
+            </select>
+        </td>
+        <td>
+            <select name="Rooms[__INDEX__].RoomId" class="form-select form-select-sm js-room">
+                <option value="">— Chọn phòng —</option>
+            </select>
+        </td>
+        <td><input name="Rooms[__INDEX__].Adults" value="1" type="number" min="1" class="form-control form-control-sm" /></td>
+        <td><input name="Rooms[__INDEX__].Children" value="0" type="number" min="0" class="form-control form-control-sm" /></td>
+        <td><input name="Rooms[__INDEX__].PricePerNight" value="0" type="number" min="0" step="any" class="form-control form-control-sm js-price" readonly="@(!isAdmin)" /></td>
+        <td><button type="button" class="btn btn-sm btn-outline-danger js-remove"><i class="bi bi-trash"></i></button></td>
+    </tr>
+</template>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            const allRooms = @Json.Serialize(Model.AllRooms);
+            const prices = @Json.Serialize(Model.RoomTypePrices);
+            const targets = @Json.Serialize(Model.TargetOptions);
+            const isAdmin = @(isAdmin ? "true" : "false");
+
+            const DAILY = 1, HOURLY = 2, OVERNIGHT = 3;
+            const overnightStart = @Model.OvernightStartHour;
+            const overnightEnd = @Model.OvernightEndHour;
+
+            const targetSelect = document.getElementById('targetSelect');
+            const targetTypeBadge = document.getElementById('targetTypeBadge');
+            const infoGuest = document.getElementById('infoGuest');
+            const infoOldRoom = document.getElementById('infoOldRoom');
+            const infoOldRental = document.getElementById('infoOldRental');
+            const infoCheckIn = document.getElementById('infoCheckIn');
+            const infoElapsed = document.getElementById('infoElapsed');
+            const infoHourlyRate = document.getElementById('infoHourlyRate');
+
+            const chargeCheck = document.getElementById('chargeOldHoursCheck');
+            const oldHoursPanel = document.getElementById('oldHoursDetailPanel');
+            const noOldHoursNotice = document.getElementById('noOldHoursNotice');
+            const oldHoursInput = document.getElementById('oldRoomHoursInput');
+            const oldAmountEl = document.getElementById('oldRoomCalculatedAmount');
+            const oldFormulaEl = document.getElementById('oldRoomFormulaText');
+
+            const primaryGuestSelect = document.getElementById('primaryGuestSelect');
+            const sourceSelect = document.getElementById('sourceSelect');
+            const specialRequestsInput = document.getElementById('specialRequestsInput');
+            const internalNotesInput = document.getElementById('internalNotesInput');
+            const addRoomBtn = document.getElementById('addRoom');
+
+            const checkIn = document.getElementById('CheckInDate');
+            const checkOut = document.getElementById('CheckOutDate');
+            const checkInCol = document.getElementById('checkInCol');
+            const checkOutCol = document.getElementById('checkOutCol');
+            const checkInLabel = document.getElementById('checkInLabel');
+            const checkOutLabel = document.getElementById('checkOutLabel');
+            const hint = document.getElementById('rentalHint');
+            const radios = document.querySelectorAll('.js-rental');
+            const hourlyHidden = document.getElementById('CheckInDateHourlyHidden');
+
+            let currentFirstHourPrice = 0;
+            let currentExtraHourPrice = 0;
+
+            const pad = n => String(n).padStart(2, '0');
+            const fmtMoney = n => Number(n || 0).toLocaleString('vi-VN') + ' ₫';
+
+            function todayIso() {
+                const d = new Date();
+                return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+            }
+
+            function datePart(value) {
+                return (value || '').slice(0, 10);
+            }
+
+            function addDays(isoDate, days) {
+                const d = new Date(isoDate + 'T00:00:00');
+                d.setDate(d.getDate() + days);
+                return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+            }
+
+            function formatNight(isoDate) {
+                if (!isoDate) return '';
+                const parts = isoDate.split('-');
+                const next = addDays(isoDate, 1).split('-');
+                return pad(overnightStart) + ':00 ngày ' + parts[2] + '/' + parts[1]
+                    + ' → ' + pad(overnightEnd) + ':00 ngày ' + next[2] + '/' + next[1];
+            }
+
+            function currentRentalType() {
+                const picked = document.querySelector('.js-rental:checked');
+                return picked ? parseInt(picked.value, 10) : DAILY;
+            }
+
+            function applyRentalType(type) {
+                if (!checkIn || !checkOut) return;
+                if (type === HOURLY) {
+                    checkInCol.classList.add('d-none');
+                    checkOutCol.classList.add('d-none');
+                    const dayVal = datePart(checkIn.value) || todayIso();
+                    checkIn.removeAttribute('name');
+                    hourlyHidden.name = 'CheckInDate';
+                    hourlyHidden.value = dayVal;
+                    hint.innerHTML = '<i class="bi bi-info-circle me-1"></i>'
+                        + 'Giờ bắt đầu = lúc nhận/đổi phòng • Giờ kết thúc = lúc trả phòng. Tiền tính sau khi check-out.';
+                    return;
+                }
+
+                checkIn.setAttribute('name', 'CheckInDate');
+                hourlyHidden.removeAttribute('name');
+                hourlyHidden.value = '';
+                checkInCol.classList.remove('d-none');
+
+                if (type === OVERNIGHT) {
+                    const nightValue = datePart(checkIn.value) || todayIso();
+                    checkIn.type = 'date';
+                    checkIn.value = nightValue;
+                    checkOutCol.classList.add('d-none');
+                    checkInLabel.innerHTML = 'Đêm ngày <span class="text-danger">*</span>';
+                    hint.textContent = 'Gói qua đêm: ' + (formatNight(nightValue) || 'chọn đêm để xem khung giờ') + '.';
+                    return;
+                }
+
+                const fromValue = datePart(checkIn.value) || todayIso();
+                const toValue = datePart(checkOut.value) || addDays(fromValue, 1);
+                checkIn.type = 'date';
+                checkOut.type = 'date';
+                checkIn.value = fromValue;
+                checkOut.value = toValue;
+                checkOutCol.classList.remove('d-none');
+                checkInLabel.innerHTML = 'Ngày đến <span class="text-danger">*</span>';
+                checkOutLabel.innerHTML = 'Ngày đi <span class="text-danger">*</span>';
+                hint.textContent = 'Ra sớm hơn ngày đã đặt thì vẫn tính đủ số đêm.';
+            }
+
+            function roomOptions(typeId, selectedId) {
+                let html = '<option value="">— Chọn phòng —</option>';
+                allRooms.filter(r => String(r.roomTypeId) === String(typeId)).forEach(r => {
+                    const sel = selectedId && String(r.roomId) === String(selectedId) ? ' selected' : '';
+                    const statusLabel = r.isAvailable ? 'Trống' : (r.statusText || 'Đang bận');
+                    html += '<option value="' + r.roomId + '"' + sel + '>' + r.roomNumber + ' (tầng ' + r.floor + ' — ' + statusLabel + ')</option>';
+                });
+                return html;
+            }
+
+            function reindex() {
+                document.querySelectorAll('#roomLines tbody tr').forEach(function (tr, i) {
+                    tr.querySelectorAll('[name]').forEach(function (el) {
+                        el.name = el.name.replace(/Rooms\[[^\]]*\]/, 'Rooms[' + i + ']');
+                    });
+                });
+            }
+
+            function wireRow(tr) {
+                const typeSel = tr.querySelector('.js-roomtype');
+                const roomSel = tr.querySelector('.js-room');
+                const priceInp = tr.querySelector('.js-price');
+                typeSel.addEventListener('change', function () {
+                    roomSel.innerHTML = roomOptions(typeSel.value, null);
+                    priceInp.value = prices[typeSel.value] || 0;
+                });
+                tr.querySelector('.js-remove').addEventListener('click', function () {
+                    if (document.querySelectorAll('#roomLines tbody tr').length > 1) {
+                        tr.remove();
+                        reindex();
+                    }
+                });
+            }
+
+            function updateOldHourlyCalculation() {
+                const checked = chargeCheck && chargeCheck.checked;
+                if (checked) {
+                    oldHoursPanel.classList.remove('d-none');
+                    noOldHoursNotice.classList.add('d-none');
+                } else {
+                    oldHoursPanel.classList.add('d-none');
+                    noOldHoursNotice.classList.remove('d-none');
+                }
+
+                const h = Math.max(1, parseInt(oldHoursInput.value, 10) || 1);
+                const total = currentFirstHourPrice + Math.max(0, h - 1) * currentExtraHourPrice;
+                oldAmountEl.textContent = '+' + fmtMoney(total);
+                oldFormulaEl.textContent = h <= 1
+                    ? ('1 giờ đầu: ' + fmtMoney(currentFirstHourPrice))
+                    : ('Giờ đầu ' + fmtMoney(currentFirstHourPrice) + ' + ' + (h - 1) + ' × ' + fmtMoney(currentExtraHourPrice));
+            }
+
+            function rebuildRoomsTable(roomsList) {
+                const tbody = document.querySelector('#roomLines tbody');
+                tbody.innerHTML = '';
+                const items = (roomsList && roomsList.length > 0) ? roomsList : [{ roomTypeId: '', roomId: '', adults: 1, children: 0, pricePerNight: 0 }];
+                items.forEach(function (item) {
+                    tbody.insertAdjacentHTML('beforeend', document.getElementById('rowTemplate').innerHTML);
+                    const tr = tbody.lastElementChild;
+                    const typeSel = tr.querySelector('.js-roomtype');
+                    const roomSel = tr.querySelector('.js-room');
+                    const adultsInp = tr.querySelector('input[name$=".Adults"]');
+                    const childrenInp = tr.querySelector('input[name$=".Children"]');
+                    const priceInp = tr.querySelector('.js-price');
+
+                    if (item.roomTypeId) {
+                        typeSel.value = String(item.roomTypeId);
+                        roomSel.innerHTML = roomOptions(item.roomTypeId, item.roomId);
+                    }
+                    if (adultsInp) adultsInp.value = item.adults || 1;
+                    if (childrenInp) childrenInp.value = item.children || 0;
+                    if (priceInp) priceInp.value = item.pricePerNight || prices[item.roomTypeId] || 0;
+
+                    wireRow(tr);
+                });
+                reindex();
+            }
+
+            function syncTargetDetails(populateFields) {
+                const key = targetSelect ? targetSelect.value : '';
+                const t = targets.find(x => x.key === key);
+                if (!t) {
+                    infoGuest.textContent = '—';
+                    infoOldRoom.textContent = '—';
+                    infoOldRental.textContent = '—';
+                    infoCheckIn.textContent = '—';
+                    infoElapsed.textContent = '—';
+                    infoHourlyRate.textContent = '—';
+                    currentFirstHourPrice = 0;
+                    currentExtraHourPrice = 0;
+                    updateOldHourlyCalculation();
+                    return;
+                }
+
+                targetTypeBadge.textContent = t.isStay ? 'Khách đang lưu trú' : 'Đơn chờ Check-in';
+                targetTypeBadge.className = t.isStay ? 'badge text-bg-warning' : 'badge text-bg-info';
+
+                infoGuest.textContent = t.guestName + (t.phoneNumber ? ' (' + t.phoneNumber + ')' : '');
+                infoOldRoom.textContent = t.oldRoomSummary;
+                infoOldRental.textContent = t.oldRentalTypeName + ' (' + fmtMoney(t.oldPricePerNight) + '/đêm)';
+                infoCheckIn.textContent = t.checkInDisplay;
+                infoElapsed.textContent = t.elapsedTimeText;
+                infoHourlyRate.textContent = 'Giờ đầu ' + fmtMoney(t.oldPriceFirstHour) + ' · mỗi giờ sau ' + fmtMoney(t.oldPriceExtraHour);
+
+                currentFirstHourPrice = t.oldPriceFirstHour || 0;
+                currentExtraHourPrice = t.oldPriceExtraHour || 0;
+
+                if (addRoomBtn) {
+                    addRoomBtn.style.display = t.isStay ? 'none' : '';
+                }
+
+                if (populateFields) {
+                    if (primaryGuestSelect) primaryGuestSelect.value = String(t.primaryGuestId);
+                    if (sourceSelect) sourceSelect.value = String(t.source);
+                    if (specialRequestsInput) specialRequestsInput.value = t.specialRequests || '';
+                    if (internalNotesInput) internalNotesInput.value = t.internalNotes || '';
+                    if (oldHoursInput) oldHoursInput.value = t.suggestedOldHours || 1;
+
+                    const radio = document.querySelector('.js-rental[value="' + t.oldRentalType + '"]');
+                    if (radio) radio.checked = true;
+
+                    if (checkIn && t.checkInDate) checkIn.value = datePart(t.checkInDate);
+                    if (checkOut && t.checkOutDate) checkOut.value = datePart(t.checkOutDate);
+
+                    applyRentalType(currentRentalType());
+                    rebuildRoomsTable(t.currentRooms);
+                }
+
+                updateOldHourlyCalculation();
+            }
+
+            document.querySelectorAll('#roomLines tbody tr').forEach(wireRow);
+
+            if (addRoomBtn) {
+                addRoomBtn.addEventListener('click', function () {
+                    const tbody = document.querySelector('#roomLines tbody');
+                    tbody.insertAdjacentHTML('beforeend', document.getElementById('rowTemplate').innerHTML);
+                    wireRow(tbody.lastElementChild);
+                    reindex();
+                });
+            }
+
+            if (targetSelect) {
+                targetSelect.addEventListener('change', function () {
+                    syncTargetDetails(true);
+                });
+            }
+
+            if (chargeCheck) {
+                chargeCheck.addEventListener('change', updateOldHourlyCalculation);
+            }
+
+            if (oldHoursInput) {
+                oldHoursInput.addEventListener('input', updateOldHourlyCalculation);
+            }
+
+            radios.forEach(r => r.addEventListener('change', () => applyRentalType(currentRentalType())));
+            if (checkIn) {
+                checkIn.addEventListener('change', () => {
+                    if (currentRentalType() === OVERNIGHT) applyRentalType(OVERNIGHT);
+                });
+            }
+
+            reindex();
+            applyRentalType(currentRentalType());
+            syncTargetDetails(false);
+        })();
+    </script>
+}
+

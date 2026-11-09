@@ -318,6 +318,21 @@ public class FrontDeskService : IFrontDeskService
             }
         }
 
+        // Kiểm tra nếu đơn có khoản tiền giờ phòng cũ cộng thêm từ lúc đổi phòng trên đơn
+        var standardEstimatedTotal = 0m;
+        foreach (var rr in reservation.Rooms)
+        {
+            var rc = _pricing.RoomChargeFor(period, rr.PricePerNight, rr.PriceFirstHour, rr.PriceExtraHour, rr.PriceOvernight);
+            var eg = period.Nights > 0
+                ? _pricing.ExtraGuestSurcharge(rr.Adults + rr.Children, rr.RoomType.StandardCapacity, rr.RoomType.ExtraGuestFeePerNight, period.Nights)
+                : null;
+            standardEstimatedTotal += rc + (eg?.Amount ?? 0m);
+        }
+        var oldRoomExtraFromReservation = reservation.EstimatedTotal > standardEstimatedTotal
+            ? reservation.EstimatedTotal - standardEstimatedTotal
+            : 0m;
+        var oldRoomExtraAdded = false;
+
         await _tx.ExecuteAsync(async () =>
         {
             foreach (var line in form.Rooms)
@@ -363,6 +378,21 @@ public class FrontDeskService : IFrontDeskService
                 };
                 _db.Folios.Add(folio);
                 await _db.SaveChangesAsync();
+
+                if (!oldRoomExtraAdded && oldRoomExtraFromReservation > 0)
+                {
+                    _db.FolioItems.Add(new FolioItem
+                    {
+                        FolioId = folio.Id,
+                        ItemType = FolioItemType.Room,
+                        Description = "Tiền giờ phòng cũ — cộng thêm khi đổi phòng",
+                        Quantity = 1,
+                        UnitPrice = oldRoomExtraFromReservation,
+                        Amount = oldRoomExtraFromReservation,
+                        ChargedAt = actualCheckIn
+                    });
+                    oldRoomExtraAdded = true;
+                }
 
                 AddRoomChargeLine(folio.Id, rr.RoomType.Name, rr, period, actualCheckIn);
 
@@ -884,11 +914,12 @@ public class FrontDeskService : IFrontDeskService
             var roomLines = stay.Folio!.Items.Where(i => i.ItemType == FolioItemType.Room && !i.IsVoided).ToList();
 
             // Thuê theo giờ: lúc nhận phòng mới chỉ tạm tính theo số giờ khách báo, giờ mới biết
-            // thật sự ở bao lâu — viết lại dòng tiền phòng thay vì cộng thêm một dòng chênh lệch,
-            // để khách đọc hóa đơn thấy đúng một dòng khớp với thời gian đã ở.
-            if (stay.RentalType == RentalType.Hourly && roomLines.Count == 1)
+            // thật sự ở bao lâu — viết lại dòng tiền phòng hiện tại thay vì cộng thêm một dòng chênh lệch,
+            // vẫn giữ nguyên dòng tiền giờ phòng cũ (nếu trước đó khách có đổi phòng và tính giờ phòng cũ).
+            if (stay.RentalType == RentalType.Hourly && roomLines.Count >= 1)
             {
-                var rl = roomLines[0];
+                var rl = roomLines.LastOrDefault(x => !x.Description.Contains("tiền giờ phòng cũ", StringComparison.OrdinalIgnoreCase))
+                    ?? roomLines[^1];
                 var roomTypeName = stay.Room.RoomType.Name;
 
                 rl.Description = $"{roomTypeName} — theo giờ, {charges.Hours} giờ "

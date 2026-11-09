@@ -48,6 +48,7 @@
 
     <div class="d-flex gap-2">
         <a class="btn btn-outline-primary" asp-action="Availability"><i class="bi bi-calendar-check"></i> Tra phòng trống</a>
+        <a class="btn btn-outline-secondary" asp-action="ChangeRoom"><i class="bi bi-arrow-left-right"></i> Đổi phòng</a>
         <a class="btn btn-primary" asp-action="Create"><i class="bi bi-plus-lg"></i> Tạo đơn</a>
     </div>
 </div>
@@ -134,6 +135,10 @@ else
                         <td><span class="badge @r.Status.ToBadgeClass()">@r.Status.ToDisplayName()</span></td>
                         <td class="text-end text-nowrap">
                             <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@r.Id" title="Xem"><i class="bi bi-eye"></i></a>
+                            @if (r.Status == ReservationStatus.Draft || r.Status == ReservationStatus.Confirmed || r.Status == ReservationStatus.CheckedIn)
+                            {
+                                <a class="btn btn-sm btn-outline-info" asp-action="ChangeRoom" asp-route-reservationId="@r.Id" title="Đổi phòng"><i class="bi bi-arrow-left-right"></i></a>
+                            }
                             @if (r.Status == ReservationStatus.Draft || r.Status == ReservationStatus.Confirmed)
                             {
                                 <a class="btn btn-sm btn-outline-primary" asp-action="Deposit" asp-route-id="@r.Id" title="Thu cọc"><i class="bi bi-cash-coin"></i></a>

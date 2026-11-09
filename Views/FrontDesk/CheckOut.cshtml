@@ -118,7 +118,40 @@
                 <div class="table-responsive">
                 <table class="table table-sm mb-0">
                     <tbody>
-                        <tr><td>Tiền phòng</td><td class="text-end">@s.RoomCharge.ToString("N0") ₫</td></tr>
+                        <tr>
+                            <td>
+                                @if (s.RoomLines.Count > 1)
+                                {
+                                    <a class="text-decoration-none d-flex align-items-center gap-1"
+                                       data-bs-toggle="collapse" href="#roomBreakdown" role="button">
+                                        Tiền phòng <i class="bi bi-chevron-down small"></i>
+                                    </a>
+                                }
+                                else
+                                {
+                                    @:Tiền phòng
+                                }
+                            </td>
+                            <td class="text-end">@s.RoomCharge.ToString("N0") ₫</td>
+                        </tr>
+                        @if (s.RoomLines.Count > 1)
+                        {
+                            <tr class="collapse show" id="roomBreakdown">
+                                <td colspan="2" class="py-0 ps-3">
+                                    <table class="table table-sm table-borderless mb-0 text-secondary small">
+                                        <tbody>
+                                            @foreach (var line in s.RoomLines)
+                                            {
+                                                <tr>
+                                                    <td>@line.Description</td>
+                                                    <td class="text-end text-nowrap">@line.Amount.ToString("N0") ₫</td>
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                </td>
+                            </tr>
+                        }
                         <tr><td>Dịch vụ</td><td class="text-end">@s.ServiceCharge.ToString("N0") ₫</td></tr>
                         <tr>
                             <td>

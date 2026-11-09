@@ -1,4 +1,4 @@
-﻿using HotelManagement.Web.Models;
+using HotelManagement.Web.Models;
 using HotelManagement.Web.Models.ViewModels;
 using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
@@ -136,6 +136,39 @@ public class ReservationsController : AdminControllerBase
 
         TempData["Success"] = result.Message;
         return RedirectToAction(nameof(Details), new { id });
+    }
+
+    // Đổi phòng cho khách hàng (menu Đặt phòng)
+    [HttpGet]
+    public async Task<IActionResult> ChangeRoom(int? stayId, int? reservationId, string? targetKey)
+        => View(await _service.BuildChangeRoomFormAsync(stayId, reservationId, targetKey));
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ActionName(nameof(ChangeRoom))]
+    public async Task<IActionResult> ChangeRoomPost(ChangeRoomFormViewModel form)
+    {
+        if (!ModelState.IsValid)
+        {
+            await _service.FillChangeRoomOptionsAsync(form);
+            return View(form);
+        }
+
+        var (result, isStay, targetId) = await _service.ChangeRoomAsync(form, CurrentEmployeeId, IsAdmin);
+        if (!result.Succeeded)
+        {
+            ModelState.AddModelError(result.ErrorField ?? string.Empty, result.Error!);
+            await _service.FillChangeRoomOptionsAsync(form);
+            return View(form);
+        }
+
+        TempData["Success"] = result.Message;
+        if (isStay)
+        {
+            return RedirectToAction(nameof(FrontDeskController.Stay), "FrontDesk", new { id = targetId });
+        }
+
+        return RedirectToAction(nameof(Details), new { id = targetId });
     }
 
     // SCR-C07

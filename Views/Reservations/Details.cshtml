@@ -14,6 +14,10 @@
         {
             <a class="btn btn-outline-secondary" asp-action="Edit" asp-route-id="@r.Id"><i class="bi bi-pencil"></i> Sửa</a>
         }
+        @if (Model.CanEdit || r.Status == ReservationStatus.CheckedIn)
+        {
+            <a class="btn btn-outline-primary" asp-action="ChangeRoom" asp-route-reservationId="@r.Id"><i class="bi bi-arrow-left-right"></i> Đổi phòng</a>
+        }
 
         @if (Model.CanCheckIn)
         {

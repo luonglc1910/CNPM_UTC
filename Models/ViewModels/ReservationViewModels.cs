@@ -199,6 +199,99 @@ public class RoomPickerItem
     public int RoomTypeId { get; set; }
     public string RoomNumber { get; set; } = string.Empty;
     public int Floor { get; set; }
+    public bool IsAvailable { get; set; } = true;
+    public string? StatusText { get; set; }
+}
+
+// ---------- Đổi phòng (trên menu Đặt phòng) ----------
+
+public class ChangeRoomTargetOption
+{
+    /// <summary>Khóa định danh: "stay:{id}" (khách đang lưu trú) hoặc "res:{id}" (đơn chưa check-in).</summary>
+    public string Key { get; set; } = string.Empty;
+    public bool IsStay { get; set; }
+    public int? StayId { get; set; }
+    public int? ReservationId { get; set; }
+    public string GroupLabel { get; set; } = string.Empty;
+    public string DisplayLabel { get; set; } = string.Empty;
+
+    public int PrimaryGuestId { get; set; }
+    public string GuestName { get; set; } = string.Empty;
+    public string PhoneNumber { get; set; } = string.Empty;
+    public string OldRoomSummary { get; set; } = string.Empty;
+    public RentalType OldRentalType { get; set; }
+    public string OldRentalTypeName { get; set; } = string.Empty;
+    public DateTime CheckInDate { get; set; }
+    public DateTime CheckOutDate { get; set; }
+    public string CheckInDisplay { get; set; } = string.Empty;
+    public string ElapsedTimeText { get; set; } = string.Empty;
+
+    public int SuggestedOldHours { get; set; } = 1;
+    public decimal OldPricePerNight { get; set; }
+    public decimal OldPriceFirstHour { get; set; }
+    public decimal OldPriceExtraHour { get; set; }
+    public decimal OldPriceOvernight { get; set; }
+    public decimal SuggestedOldHourlyCharge { get; set; }
+
+    public ReservationSource Source { get; set; } = ReservationSource.Phone;
+    public string? SpecialRequests { get; set; }
+    public string? InternalNotes { get; set; }
+    public List<ReservationRoomInput> CurrentRooms { get; set; } = new();
+}
+
+public class ChangeRoomFormViewModel
+{
+    [Display(Name = "Đơn / Phòng cần đổi")]
+    [Required(ErrorMessage = "Vui lòng chọn khách đang lưu trú hoặc đơn đặt phòng cần đổi.")]
+    public string TargetKey { get; set; } = string.Empty;
+
+    [Display(Name = "Khách đứng tên")]
+    [Range(1, int.MaxValue, ErrorMessage = "Vui lòng chọn khách đứng tên.")]
+    public int PrimaryGuestId { get; set; }
+
+    [Display(Name = "Hình thức thuê phòng mới")]
+    public RentalType RentalType { get; set; } = RentalType.Daily;
+
+    [Display(Name = "Thời điểm đến / nhận phòng mới")]
+    public DateTime CheckInDate { get; set; } = DateTime.Now.Date;
+
+    [Display(Name = "Thời điểm đi")]
+    public DateTime CheckOutDate { get; set; } = DateTime.Now.Date.AddDays(1);
+
+    [Display(Name = "Tính thêm tiền giờ của phòng cũ vào bill phòng mới")]
+    public bool ChargeOldRoomHours { get; set; }
+
+    [Display(Name = "Số giờ tính tiền phòng cũ")]
+    [Range(1, 720, ErrorMessage = "Số giờ phòng cũ phải từ 1 trở lên.")]
+    public int OldRoomHours { get; set; } = 1;
+
+    [Display(Name = "Lý do đổi phòng")]
+    [MaxLength(500)]
+    public string? Reason { get; set; }
+
+    [Display(Name = "Nguồn đặt")]
+    public ReservationSource Source { get; set; } = ReservationSource.Phone;
+
+    [Display(Name = "Yêu cầu đặc biệt")]
+    [MaxLength(500)]
+    public string? SpecialRequests { get; set; }
+
+    [Display(Name = "Ghi chú nội bộ")]
+    [MaxLength(500)]
+    public string? InternalNotes { get; set; }
+
+    public List<ReservationRoomInput> Rooms { get; set; } = new();
+
+    // Dữ liệu hiển thị trên form
+    public string? PrimaryGuestName { get; set; }
+    public bool PrimaryGuestBlacklisted { get; set; }
+    public IReadOnlyList<ChangeRoomTargetOption> TargetOptions { get; set; } = new List<ChangeRoomTargetOption>();
+    public IReadOnlyList<SelectListItem> GuestOptions { get; set; } = new List<SelectListItem>();
+    public IReadOnlyList<SelectListItem> RoomTypeOptions { get; set; } = new List<SelectListItem>();
+    public IReadOnlyList<RoomPickerItem> AllRooms { get; set; } = new List<RoomPickerItem>();
+    public IReadOnlyDictionary<int, decimal> RoomTypePrices { get; set; } = new Dictionary<int, decimal>();
+    public int OvernightStartHour { get; set; } = 22;
+    public int OvernightEndHour { get; set; } = 10;
 }
 
 // ---------- SCR-C05: chi tiết đơn ----------
