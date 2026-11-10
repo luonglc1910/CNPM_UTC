@@ -4,7 +4,17 @@
     var isAdmin = User.IsInRole(Roles.Admin);
 }
 
-
+<div class="ops-page">
+<section class="ops-hero">
+    <div><span class="ops-hero-kicker">Cấu hình phòng</span><h2>Loại phòng &amp; bảng giá</h2><p>Quản lý sức chứa, giá theo ngày, theo giờ, qua đêm và tiện nghi của từng hạng phòng.</p></div>
+    <div class="ops-hero-actions">
+        <a class="btn btn-outline-light" asp-controller="Rooms" asp-action="Index"><i class="bi bi-door-open"></i> Danh sách phòng</a>
+        @if (isAdmin)
+        {
+            <a class="btn btn-light" asp-action="Create"><i class="bi bi-plus-lg"></i> Thêm loại phòng</a>
+        }
+    </div>
+</section>
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
     <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
         <div>
@@ -148,3 +158,4 @@ else
 
     <partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" />
 }
+</div>

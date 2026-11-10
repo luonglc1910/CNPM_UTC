@@ -149,8 +149,21 @@ public class FrontDeskService : IFrontDeskService
         // (trùng SCR-E01 và không còn thao tác nào), nên không kéo về số phòng và tầng nữa.
         var rooms = await _db.Rooms.AsNoTracking()
             .Where(r => r.IsActive)
-            .Select(r => r.Status)
+            .Select(r => new { r.Id, r.Status })
             .ToListAsync();
+
+        var availableRoomIds = rooms
+            .Where(r => r.Status == RoomStatus.Available)
+            .Select(r => r.Id)
+            .ToList();
+        var pendingCheckInRoomIds = await _db.ReservationRooms.AsNoTracking()
+            .Where(rr => rr.RoomId != null
+                && availableRoomIds.Contains(rr.RoomId.Value)
+                && rr.Reservation.Status == ReservationStatus.Confirmed)
+            .Select(rr => rr.RoomId!.Value)
+            .Distinct()
+            .ToListAsync();
+        var pendingCheckInSet = pendingCheckInRoomIds.ToHashSet();
 
         // Đã check-in hôm nay
         var checkedInToday = await _db.Stays.AsNoTracking()
@@ -192,10 +205,10 @@ public class FrontDeskService : IFrontDeskService
             InHouse = inHouse.OrderBy(i => i.RoomNumber).ToList(),
             CheckedInToday = checkedInToday,
             CheckedOutToday = checkedOutToday,
-            AvailableCount = rooms.Count(s => s == RoomStatus.Available),
+            AvailableCount = availableRoomIds.Count(id => !pendingCheckInSet.Contains(id)),
             OccupiedCount = inHouse.Count,
-            DirtyCount = rooms.Count(s => s == RoomStatus.Dirty),
-            MaintenanceCount = rooms.Count(s => s == RoomStatus.Maintenance)
+            DirtyCount = rooms.Count(r => r.Status == RoomStatus.Dirty),
+            MaintenanceCount = rooms.Count(r => r.Status == RoomStatus.Maintenance)
         };
     }
 

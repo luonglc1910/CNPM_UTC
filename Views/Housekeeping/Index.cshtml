@@ -3,6 +3,8 @@
     ViewData["Title"] = "Trạng thái buồng phòng";
 }
 
+<div class="ops-page">
+<section class="ops-hero"><div><span class="ops-hero-kicker">Buồng phòng</span><h2>Bảng vận hành buồng phòng</h2><p>Ưu tiên phòng chờ dọn, khách sắp đến và các yêu cầu bảo trì đang mở.</p></div><div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Requests"><i class="bi bi-list-check"></i> Yêu cầu</a><a class="btn btn-light" asp-action="CreateRequest"><i class="bi bi-tools"></i> Báo hỏng</a></div></section>
 <partial name="_HousekeepingNav" />
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
@@ -120,3 +122,4 @@ else
         </div>
     }
 }
+</div>

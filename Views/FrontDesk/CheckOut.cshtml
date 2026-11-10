@@ -4,6 +4,8 @@
     var s = Model.Summary;
 }
 
+<div class="ops-page">
+    <section class="ops-hero"><div><span class="ops-hero-kicker">Lễ tân · Trả phòng</span><h2>Check-out phòng @Model.RoomNumber</h2><p>Kiểm tra minibar, công nợ và hoàn tất bàn giao phòng theo đúng quy trình.</p></div><div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Stay" asp-route-id="@Model.StayId"><i class="bi bi-arrow-left"></i> Lưu trú</a></div></section>
 <div class="row g-3">
     <div class="col-lg-7">
         <div class="card mb-3">
@@ -206,6 +208,7 @@
             </div>
         </div>
     </div>
+</div>
 </div>
 @section Scripts {
     <script>

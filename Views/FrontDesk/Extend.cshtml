@@ -3,7 +3,9 @@
     ViewData["Title"] = $"Gia hạn — Phòng {Model.RoomNumber}";
 }
 
-<div class="row"><div class="col-lg-6">
+<div class="ops-page">
+<section class="ops-hero"><div><span class="ops-hero-kicker">Lễ tân · Gia hạn</span><h2>Gia hạn phòng @Model.RoomNumber</h2><p>Kiểm tra xung đột phòng và chốt giá cho các đêm lưu trú bổ sung.</p></div><div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Stay" asp-route-id="@Model.StayId"><i class="bi bi-arrow-left"></i> Lưu trú</a></div></section>
+<div class="row"><div class="col-lg-7">
     <div class="card"><div class="card-body">
         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
         <form method="post" asp-action="Extend">
@@ -34,4 +36,5 @@
         </form>
     </div></div>
 </div></div>
+</div>
 @section Scripts { <partial name="_ValidationScriptsPartial" /> }

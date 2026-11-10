@@ -4,6 +4,8 @@
     var currentEmployeeId = User.GetEmployeeId();
 }
 
+<div class="ops-page">
+<section class="ops-hero"><div><span class="ops-hero-kicker">Buồng phòng · Theo dõi</span><h2>Danh sách yêu cầu</h2><p>Theo dõi báo hỏng, phân công và tiến độ xử lý theo từng phòng.</p></div><div class="ops-hero-actions"><a class="btn btn-light" asp-action="CreateRequest"><i class="bi bi-plus-lg"></i> Tạo yêu cầu</a></div></section>
 <partial name="_HousekeepingNav" />
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
@@ -55,6 +57,7 @@
         <p class="mb-0">Không có yêu cầu nào khớp bộ lọc.</p>
     </div></div>
 }
+</div>
 else
 {
     <div class="card">

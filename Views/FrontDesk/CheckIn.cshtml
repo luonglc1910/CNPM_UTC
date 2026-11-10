@@ -3,6 +3,8 @@
     ViewData["Title"] = $"Check-in đơn {Model.Code}";
 }
 
+<div class="ops-page">
+<section class="ops-hero"><div><span class="ops-hero-kicker">Lễ tân · Nhận phòng</span><h2>Check-in đơn @Model.Code</h2><p>Đối chiếu khách, gán phòng thực tế và xác nhận thời điểm bắt đầu lưu trú.</p></div><div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Index" asp-route-panel="pending"><i class="bi bi-arrow-left"></i> Khách chờ nhận</a></div></section>
 <form method="post" asp-action="CheckIn">
     <input type="hidden" asp-for="ReservationId" />
 
@@ -105,3 +107,4 @@
         <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
     </div>
 </form>
+</div>

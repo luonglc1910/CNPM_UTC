@@ -1449,6 +1449,53 @@ h1, h2, h3, h4, h5, h6 {
   .rooms-view-switch a { flex: 1; text-align: center; }
 }
 
+/* Shared operational shell for room-related workflows */
+.ops-page { display: grid; gap: 1.25rem; }
+.ops-hero {
+  position: relative; overflow: hidden; display: flex; align-items: center;
+  justify-content: space-between; gap: 1.5rem; padding: 1.35rem 1.55rem; color: #fff;
+  background: radial-gradient(circle at 88% 15%, rgba(216,184,120,.2), transparent 30%),
+    linear-gradient(125deg, var(--ink) 0%, var(--ink-2) 65%, var(--ink-3) 100%);
+  border-radius: 14px;
+}
+.ops-hero::after { content: ""; position: absolute; right: -3rem; bottom: -6rem; width: 16rem; height: 16rem; border: 1px solid rgba(255,255,255,.1); border-radius: 50%; }
+.ops-hero > * { position: relative; z-index: 1; }
+.ops-hero-kicker { display: block; margin-bottom: .22rem; color: var(--brass-bright); font-size: .66rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; }
+.ops-hero h2 { margin: 0; color: #fff; font-size: clamp(1.25rem,1.8vw,1.65rem); }
+.ops-hero p { max-width: 48rem; margin: .35rem 0 0; color: rgba(255,255,255,.72); font-size: .78rem; }
+.ops-hero-actions { display: flex; flex-wrap: wrap; gap: .55rem; flex-shrink: 0; }
+.ops-hero-actions .btn { padding: .5rem .8rem; font-size: .72rem; font-weight: 600; }
+.ops-page > .alert { margin: 0; border-radius: 10px; }
+.ops-page .card { border-color: var(--rule); border-radius: 12px; box-shadow: none; }
+.ops-page .card-header { padding: .78rem 1rem; color: var(--ink); background: #f7f9f8; border-color: var(--rule); font-size: .76rem; font-weight: 700; }
+.ops-page .card-body { padding: 1rem; }
+.ops-page .form-label { color: var(--fg-muted); font-size: .7rem; font-weight: 600; }
+.ops-page .form-control, .ops-page .form-select { min-height: 2.45rem; border-color: var(--rule); font-size: .75rem; }
+.ops-page .form-text { color: var(--fg-faint); font-size: .62rem; }
+.ops-page .table { font-size: .73rem; }
+.ops-page .table thead th { padding: .65rem .75rem; color: var(--fg-muted); background: #f7f9f8; border-color: var(--rule); font-size: .6rem; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; }
+.ops-page .table tbody td { padding: .68rem .75rem; border-color: #edf0ef; }
+.ops-form-shell { display: grid; grid-template-columns: minmax(0,1fr) 16rem; gap: 1rem; align-items: start; }
+.ops-form-main { min-width: 0; }
+.ops-help-card { position: sticky; top: 5rem; padding: 1rem; color: var(--fg-muted); background: #f7f9f8; border: 1px solid var(--rule); border-radius: 11px; font-size: .67rem; }
+.ops-help-card h3 { margin-bottom: .55rem; color: var(--ink); font-size: .8rem; }
+.ops-help-card ul { display: grid; gap: .4rem; margin: 0; padding-left: 1rem; }
+.ops-action-bar { display: flex; flex-wrap: wrap; gap: .55rem; margin-top: 1rem; padding-top: 1rem; border-top: 1px solid var(--rule); }
+.ops-filter-card { padding: 1rem; background: var(--surface); border: 1px solid var(--rule); border-radius: 12px; }
+.ops-filter-card form { margin: 0; }
+.ops-section-title { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .75rem; }
+.ops-section-title h3 { margin: 0; color: var(--ink); font-size: .95rem; }
+@media (max-width: 991.98px) {
+  .ops-form-shell { grid-template-columns: 1fr; }
+  .ops-help-card { position: static; }
+}
+@media (max-width: 767.98px) {
+  .ops-page { gap: 1rem; }
+  .ops-hero { align-items: flex-start; flex-direction: column; padding: 1.15rem; }
+  .ops-hero-actions { width: 100%; }
+  .ops-hero-actions .btn { flex: 1; }
+}
+
 /* ============================ Sơ đồ phòng ============================
    SCR-C03. Ma trận phòng × ngày; một lượt đặt vẽ thành một dải liền nhờ colspan,
    nên mắt bắt được khoảng trống giữa hai đơn thay vì phải đếm từng ô.        */

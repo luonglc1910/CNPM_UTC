@@ -90,18 +90,14 @@ public class PortalController : Controller
         DateTime start = checkIn ?? DateTime.Today;
         DateTime end = checkOut ?? DateTime.Today.AddDays(1);
 
-        var overlappingReservations = await _context.ReservationRooms
-            .Include(rr => rr.Reservation)
-            .Where(rr => rr.Reservation.Status == HotelManagement.Web.Models.ReservationStatus.Confirmed || 
-                         rr.Reservation.Status == HotelManagement.Web.Models.ReservationStatus.CheckedIn)
-            .Where(rr => rr.Reservation.CheckInDate < end && rr.Reservation.CheckOutDate > start)
-            .ToListAsync();
+        var availableRooms = await _availability.GetAvailableRoomsAsync(start, end, null, capacity);
+        var availableByType = availableRooms
+            .GroupBy(r => r.RoomTypeId)
+            .ToDictionary(g => g.Key, g => g.Count());
 
         foreach(var rt in roomTypes)
         {
-            int totalRooms = rt.Rooms.Count(r => r.IsActive && r.Status != HotelManagement.Web.Models.RoomStatus.OutOfService);
-            int bookedRooms = overlappingReservations.Count(rr => rr.RoomTypeId == rt.Id);
-            int available = totalRooms - bookedRooms;
+            int available = availableByType.GetValueOrDefault(rt.Id);
 
             if (available > 0)
             {
@@ -132,14 +128,12 @@ public class PortalController : Controller
         DateTime start = DateTime.Today;
         DateTime end = DateTime.Today.AddDays(1);
 
-        ViewBag.OccupiedRoomIds = roomType.Rooms.Where(r => 
-            r.Stays.Any(s => s.Status == HotelManagement.Web.Models.StayStatus.CheckedIn) ||
-            r.ReservationRooms.Any(rr => 
-                (rr.Reservation.Status == HotelManagement.Web.Models.ReservationStatus.Confirmed || 
-                 rr.Reservation.Status == HotelManagement.Web.Models.ReservationStatus.CheckedIn ||
-                 rr.Reservation.Status == HotelManagement.Web.Models.ReservationStatus.Draft) &&
-                rr.Reservation.CheckInDate < end && rr.Reservation.CheckOutDate > start)
-        ).Select(r => r.Id).ToList();
+        var availableToday = await _availability.GetAvailableRoomsAsync(start, end, id);
+        var availableTodayIds = availableToday.Select(r => r.RoomId).ToHashSet();
+        ViewBag.OccupiedRoomIds = roomType.Rooms
+            .Where(r => r.IsActive && !availableTodayIds.Contains(r.Id))
+            .Select(r => r.Id)
+            .ToList();
             
         var allActivePromos = await _context.Promotions
             .Where(p => p.IsActive && p.StartDate <= DateTime.Now && p.EndDate >= DateTime.Now)

@@ -3,12 +3,9 @@
     ViewData["Title"] = $"Sửa loại phòng {Model.Code}";
 }
 
-<div class="card">
-    <div class="card-body">
-        <form method="post" asp-action="Edit" asp-route-id="@Model.Id">
-            <partial name="_Form" model="Model" />
-        </form>
-    </div>
+<div class="ops-page">
+    <section class="ops-hero"><div><span class="ops-hero-kicker">Cấu hình kinh doanh</span><h2>Chỉnh sửa loại phòng @Model.Code</h2><p>Cập nhật giá, sức chứa, nội dung và tiện nghi đang áp dụng.</p></div><div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Danh sách loại phòng</a></div></section>
+    <div class="card"><div class="card-body"><form method="post" asp-action="Edit" asp-route-id="@Model.Id"><partial name="_Form" model="Model" /></form></div></div>
 </div>
 
 @section Scripts {

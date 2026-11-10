@@ -3,7 +3,10 @@
     ViewData["Title"] = "Tạo đơn đặt phòng";
 }
 
-<partial name="_Form" model="Model" />
+<div class="ops-page">
+    <section class="ops-hero"><div><span class="ops-hero-kicker">Đặt phòng</span><h2>Tạo đơn đặt phòng</h2><p>Chọn khách, hình thức thuê, khoảng thời gian và phòng còn khả dụng.</p></div><div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Availability"><i class="bi bi-search"></i> Tra cứu trống</a><a class="btn btn-light" asp-action="RoomChart"><i class="bi bi-calendar3-range"></i> Sơ đồ phòng</a></div></section>
+    <partial name="_Form" model="Model" />
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

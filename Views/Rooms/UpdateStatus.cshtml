@@ -3,7 +3,12 @@
     ViewData["Title"] = $"Đổi trạng thái phòng {Model.RoomNumber}";
 }
 
-<div class="row">
+<div class="ops-page">
+<section class="ops-hero">
+    <div><span class="ops-hero-kicker">Vận hành phòng</span><h2>Đổi trạng thái phòng @Model.RoomNumber</h2><p>Mọi thay đổi đều được kiểm tra theo luật nghiệp vụ và ghi nhật ký.</p></div>
+    <div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Quay lại</a></div>
+</section>
+<div class="row g-3">
     <div class="col-lg-7">
         <div class="card">
             <div class="card-body">
@@ -93,7 +98,7 @@
             </div>
         </div>
     }
-</div>
+</div></div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

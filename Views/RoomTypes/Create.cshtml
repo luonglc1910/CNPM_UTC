@@ -3,12 +3,9 @@
     ViewData["Title"] = "Thêm loại phòng";
 }
 
-<div class="card">
-    <div class="card-body">
-        <form method="post" asp-action="Create">
-            <partial name="_Form" model="Model" />
-        </form>
-    </div>
+<div class="ops-page">
+    <section class="ops-hero"><div><span class="ops-hero-kicker">Cấu hình kinh doanh</span><h2>Thêm loại phòng</h2><p>Thiết lập sức chứa, ba bảng giá và tiện nghi cho hạng phòng mới.</p></div><div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Danh sách loại phòng</a></div></section>
+    <div class="card"><div class="card-body"><form method="post" asp-action="Create"><partial name="_Form" model="Model" /></form></div></div>
 </div>
 
 @section Scripts {

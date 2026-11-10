@@ -3,11 +3,14 @@
     ViewData["Title"] = "Thêm phòng";
 }
 
-<div class="card">
-    <div class="card-body">
-        <form method="post" asp-action="Create">
-            <partial name="_Form" model="Model" />
-        </form>
+<div class="ops-page">
+    <section class="ops-hero">
+        <div><span class="ops-hero-kicker">Danh mục phòng</span><h2>Thêm phòng mới</h2><p>Khai báo phòng, tầng, loại phòng và trạng thái sẵn sàng ban đầu.</p></div>
+        <div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Danh sách phòng</a></div>
+    </section>
+    <div class="ops-form-shell">
+        <div class="card ops-form-main"><div class="card-body"><form method="post" asp-action="Create"><partial name="_Form" model="Model" /></form></div></div>
+        <aside class="ops-help-card"><h3><i class="bi bi-lightbulb"></i> Lưu ý</h3><ul><li>Số phòng phải duy nhất.</li><li>Chọn đúng loại phòng để áp dụng giá.</li><li>Phòng chưa hoàn thiện nên để Bảo trì.</li></ul></aside>
     </div>
 </div>
 

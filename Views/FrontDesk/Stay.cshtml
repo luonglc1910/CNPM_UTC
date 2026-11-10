@@ -7,6 +7,8 @@
     var s = Model.Summary;
 }
 
+<div class="ops-page">
+<section class="ops-hero"><div><span class="ops-hero-kicker">Lễ tân · Lưu trú</span><h2>Phòng @Model.RoomNumber</h2><p>Quản lý khách ở, dịch vụ, công nợ và các thay đổi trong suốt thời gian lưu trú.</p></div><div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Lễ tân</a></div></section>
 <div class="d-flex flex-wrap gap-2 mb-3">
     @if (Model.Stay.Status == StayStatus.CheckedIn)
     {
@@ -43,6 +45,7 @@
     {
         <span class="badge text-bg-success align-self-center">Đã trả phòng</span>
     }
+</div>
 </div>
 
 <div class="row g-3">

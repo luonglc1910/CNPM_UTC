@@ -108,23 +108,89 @@
         background-color: #e0f2fe !important;
         outline: 1px dashed #0284c7;
     }
+    /* Nút +1đ: cùng chiều cao, cỡ chữ và bo góc với dải tên khách (.room-chart-band) cho cân đối. */
     .btn-quick-extend {
-        font-size: 0.65rem;
-        padding: 1px 4px;
-        line-height: 1.1;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        height: 1.8rem;
+        margin: 0.3rem 2px;
+        padding: 0 0.75rem;
+        font-size: 0.75rem;
+        line-height: 1;
         border-radius: 4px;
-        background: rgba(255,255,255,0.75);
-        border: 1px solid rgba(0,0,0,0.15);
+        background: rgba(255,255,255,0.85);
+        border: 1px solid rgba(0,0,0,0.2);
         color: #1e293b;
         font-weight: 700;
         text-decoration: none;
+        white-space: nowrap;
         flex-shrink: 0;
     }
     .btn-quick-extend:hover {
         background: #fff;
         color: #0f172a;
     }
+
+    .room-chart-split {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        gap: 1rem;
+        align-items: start;
+    }
+    .room-chart-pane {
+        display: flex;
+        flex-direction: column;
+        min-width: 0;
+        min-height: 34rem;
+        height: calc(100vh - 20rem);
+        overflow: hidden;
+        background: #fff;
+        border: 1px solid var(--rule);
+        border-radius: 12px;
+    }
+    .room-chart-pane-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: .75rem;
+        padding: .85rem 1rem;
+        background: #f7f9f8;
+        border-bottom: 1px solid var(--rule);
+    }
+    .room-chart-pane-head h3 { margin: 0; font-size: .9rem; color: var(--ink); }
+    .room-chart-pane-head p { margin: .18rem 0 0; color: var(--fg-muted); font-size: .65rem; }
+    .room-map-scroll {
+        flex: 1;
+        min-height: 0;
+        padding: 1rem;
+        overflow: auto;
+    }
+    .room-map-scroll .floor-section:last-child { margin-bottom: 0; }
+    .room-gantt-body {
+        flex: 1;
+        min-height: 0;
+        overflow: auto;
+    }
+    .room-gantt-help {
+        display: grid;
+        gap: .25rem;
+        padding: .65rem .85rem;
+        color: var(--fg-muted);
+        background: #fff;
+        border-bottom: 1px solid var(--rule);
+        font-size: .62rem;
+    }
+    .room-chart-split .card { border: 0; border-radius: 0; }
+    @@media (max-width: 1199.98px) {
+        .room-chart-split { grid-template-columns: 1fr; }
+        .room-chart-pane { height: auto; min-height: 0; }
+        .room-map-scroll, .room-gantt-body { max-height: none; }
+    }
 </style>
+
+<div class="ops-page">
+<section class="ops-hero"><div><span class="ops-hero-kicker">Điều phối phòng</span><h2>Sơ đồ phòng tương tác</h2><p>Xem lịch theo phòng, quét chọn ngày trống, kéo-thả đổi phòng và gia hạn nhanh.</p></div><div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Availability"><i class="bi bi-search"></i> Tra cứu trống</a><a class="btn btn-light" asp-action="Create"><i class="bi bi-plus-lg"></i> Tạo đơn</a></div></section>
 
 @* ── Bộ lọc ───────────────────────────────────────────── *@
 <div class="card mb-3">
@@ -181,6 +247,13 @@ else
     </div>
 
     @* ── Lưới card theo tầng ──────────────────────────────── *@
+    <div class="room-chart-split">
+    <section class="room-chart-pane" aria-labelledby="roomMapTitle">
+        <div class="room-chart-pane-head">
+            <div><h3 id="roomMapTitle"><i class="bi bi-grid-3x3-gap me-1"></i> Sơ đồ phòng</h3><p>Trạng thái hiện tại theo từng tầng</p></div>
+            <span class="badge text-bg-light border">@Model.Rows.Count phòng</span>
+        </div>
+        <div class="room-map-scroll">
     @foreach (var floor in byFloor)
     {
         <div class="floor-section">
@@ -254,21 +327,22 @@ else
         </div>
     }
 
+        </div>
+    </section>
+
     @* ── Bảng Gantt Tương tác (Kéo-thả đổi phòng, Quét chọn ngày đặt phòng, Gia hạn nhanh) ── *@
-    <div class="mt-2">
-        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
-            <button class="btn btn-sm btn-outline-primary" type="button"
-                    data-bs-toggle="collapse" data-bs-target="#ganttPanel" aria-expanded="true">
-                <i class="bi bi-calendar3-range me-1"></i> Sơ đồ Gantt tương tác (@Model.Days ngày)
-            </button>
-            <div class="small text-muted d-flex flex-wrap gap-3">
-                <span><i class="bi bi-mouse text-success"></i> <strong>Kéo chuột qua các ô trống</strong> để chọn khoảng ngày đặt phòng</span>
-                <span><i class="bi bi-arrows-move text-primary"></i> <strong>Kéo-thả thanh khách</strong> sang hàng khác để đổi phòng</span>
-                <span><i class="bi bi-plus-square text-warning"></i> <strong>Bấm +1đ</strong> trên thanh để gia hạn thêm đêm</span>
-            </div>
+    <section class="room-chart-pane" aria-labelledby="ganttTitle">
+        <div class="room-chart-pane-head">
+            <div><h3 id="ganttTitle"><i class="bi bi-calendar3-range me-1"></i> Sơ đồ Gantt tương tác</h3><p>Lịch đặt và lưu trú trong @Model.Days ngày</p></div>
+            <button class="btn btn-sm btn-outline-secondary" type="button" data-bs-toggle="collapse" data-bs-target="#ganttPanel" aria-expanded="true" title="Thu gọn / mở Gantt"><i class="bi bi-chevron-expand"></i></button>
+        </div>
+        <div class="room-gantt-help">
+            <span><i class="bi bi-mouse text-success"></i> Kéo qua ô trống để chọn ngày</span>
+            <span><i class="bi bi-arrows-move text-primary"></i> Kéo thanh khách sang hàng khác để đổi phòng</span>
+            <span><i class="bi bi-plus-square text-warning"></i> Bấm +1đ để gia hạn thêm một đêm</span>
         </div>
 
-        <div class="collapse show" id="ganttPanel">
+        <div class="collapse show room-gantt-body" id="ganttPanel">
             @if (Model.Truncated)
             {
                 <div class="alert alert-info alert-sm mb-2">
@@ -381,6 +455,7 @@ else
                 </div>
             </div>
         </div>
+    </section>
     </div>
 
     @* Form ẩn gia hạn nhanh +1 đêm *@
@@ -565,3 +640,4 @@ else
         })();
     </script>
 }
+</div>

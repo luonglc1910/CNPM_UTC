@@ -21,6 +21,12 @@
     }
 </style>
 
+<div class="ops-page">
+<section class="ops-hero">
+    <div><span class="ops-hero-kicker">Lễ tân</span><h2>Bảng điều khiển lễ tân</h2><p>Xử lý khách chờ nhận phòng, khách đang ở, trả phòng và các trạng thái cần phối hợp.</p></div>
+    <div class="ops-hero-actions"><a class="btn btn-outline-light" asp-controller="Reservations" asp-action="RoomChart"><i class="bi bi-calendar3-range"></i> Sơ đồ phòng</a><a class="btn btn-light" asp-controller="Reservations" asp-action="Create"><i class="bi bi-plus-lg"></i> Tạo đơn</a></div>
+</section>
+
 @* Badge hàng trên — bấm để đổi view *@
 <div class="d-flex flex-wrap gap-3 mb-3" id="badge-bar">
     @*
@@ -228,6 +234,7 @@
         <i class="bi bi-tools fs-5"></i>
         <span><strong>@Model.MaintenanceCount phòng bảo trì</strong> — xem tại <a asp-controller="Rooms" asp-action="Index">Quản lý phòng</a>.</span>
     </div>
+</div>
 </div>
 
 @section Scripts {

@@ -5,6 +5,8 @@
     var groupedTargets = Model.TargetOptions.GroupBy(x => x.GroupLabel).ToList();
 }
 
+<div class="ops-page">
+<section class="ops-hero"><div><span class="ops-hero-kicker">Điều phối phòng</span><h2>Đổi phòng cho khách</h2><p>Áp dụng cho khách đang lưu trú và đơn chờ check-in, có kiểm tra xung đột và tính lại giá.</p></div><div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="RoomChart"><i class="bi bi-calendar3-range"></i> Sơ đồ phòng</a><a class="btn btn-light" asp-controller="FrontDesk" asp-action="Index"><i class="bi bi-speedometer2"></i> Bảng lễ tân</a></div></section>
 <div class="alert alert-secondary small d-flex align-items-center gap-2">
     <i class="bi bi-arrow-left-right fs-5 text-primary"></i>
     <div>
@@ -298,6 +300,7 @@
         <td><button type="button" class="btn btn-sm btn-outline-danger js-remove"><i class="bi bi-trash"></i></button></td>
     </tr>
 </template>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

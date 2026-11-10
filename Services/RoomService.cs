@@ -302,13 +302,17 @@ public class RoomService : IRoomService
             return null;
         }
 
-        var allowed = AllowedTransitions.TryGetValue(room.Status, out var list) ? list : Array.Empty<RoomStatus>();
+        var pendingCheckIn = room.Status == RoomStatus.Available
+            && await _db.ReservationRooms.AsNoTracking().AnyAsync(rr => rr.RoomId == room.Id
+                && rr.Reservation.Status == ReservationStatus.Confirmed);
+        var effectiveStatus = pendingCheckIn ? RoomStatus.Reserved : room.Status;
+        var allowed = AllowedTransitions.TryGetValue(effectiveStatus, out var list) ? list : Array.Empty<RoomStatus>();
 
         return new RoomStatusFormViewModel
         {
             RoomId = room.Id,
             RoomNumber = room.RoomNumber,
-            CurrentStatus = room.Status,
+            CurrentStatus = effectiveStatus,
             NewStatus = allowed.FirstOrDefault(),
             AllowedStatuses = allowed
                 .Select(s => new SelectListItem
@@ -335,14 +339,18 @@ public class RoomService : IRoomService
         }
 
         // Kiểm tra lại ở server: giao diện chỉ liệt kê trạng thái hợp lệ, nhưng không được tin nó.
-        var allowed = AllowedTransitions.TryGetValue(room.Status, out var list) ? list : Array.Empty<RoomStatus>();
+        var pendingCheckIn = room.Status == RoomStatus.Available
+            && await _db.ReservationRooms.AsNoTracking().AnyAsync(rr => rr.RoomId == room.Id
+                && rr.Reservation.Status == ReservationStatus.Confirmed);
+        var effectiveStatus = pendingCheckIn ? RoomStatus.Reserved : room.Status;
+        var allowed = AllowedTransitions.TryGetValue(effectiveStatus, out var list) ? list : Array.Empty<RoomStatus>();
         if (!allowed.Contains(form.NewStatus))
         {
-            return room.Status == RoomStatus.Occupied
+            return effectiveStatus == RoomStatus.Occupied
                 ? ServiceResult.Fail(
                     "Phòng đang có khách. Trạng thái chỉ thay đổi qua check-out hoặc đổi phòng.")
                 : ServiceResult.Fail(
-                    $"Không thể chuyển từ \"{room.Status.ToDisplayName()}\" sang \"{form.NewStatus.ToDisplayName()}\".");
+                    $"Không thể chuyển từ \"{effectiveStatus.ToDisplayName()}\" sang \"{form.NewStatus.ToDisplayName()}\".");
         }
 
         if (RequiresReason(form.NewStatus) && string.IsNullOrWhiteSpace(form.Reason))
@@ -351,7 +359,7 @@ public class RoomService : IRoomService
                 $"Vui lòng nhập lý do khi chuyển sang \"{form.NewStatus.ToDisplayName()}\".", nameof(form.Reason));
         }
 
-        var oldStatus = room.Status;
+        var oldStatus = effectiveStatus;
         room.Status = form.NewStatus;
         room.StatusNote = RequiresReason(form.NewStatus) ? form.Reason?.Trim() : null;
 

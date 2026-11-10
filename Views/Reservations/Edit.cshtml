@@ -3,12 +3,15 @@
     ViewData["Title"] = "Sửa đơn đặt phòng";
 }
 
+<div class="ops-page">
+<section class="ops-hero"><div><span class="ops-hero-kicker">Đặt phòng</span><h2>Chỉnh sửa đơn đặt phòng</h2><p>Mọi thay đổi ngày và phòng đều được kiểm tra lại xung đột trước khi lưu.</p></div><div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Details" asp-route-id="@Model.Id"><i class="bi bi-arrow-left"></i> Chi tiết đơn</a><a class="btn btn-light" asp-action="RoomChart"><i class="bi bi-calendar3-range"></i> Sơ đồ phòng</a></div></section>
 <div class="alert alert-secondary small">
     Sửa được ngày, dòng phòng, số khách, nguồn đặt, khách đứng tên khi đơn ở trạng thái
     <strong>Nháp</strong> hoặc <strong>Chờ check-in</strong>. Đổi ngày/phòng sẽ kiểm tra lại xung đột (BR-06).
 </div>
 
 <partial name="_Form" model="Model" />
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />

@@ -3,11 +3,14 @@
     ViewData["Title"] = $"Sửa phòng {Model.RoomNumber}";
 }
 
-<div class="card">
-    <div class="card-body">
-        <form method="post" asp-action="Edit" asp-route-id="@Model.Id">
-            <partial name="_Form" model="Model" />
-        </form>
+<div class="ops-page">
+    <section class="ops-hero">
+        <div><span class="ops-hero-kicker">Danh mục phòng</span><h2>Chỉnh sửa phòng @Model.RoomNumber</h2><p>Cập nhật thông tin cơ bản; trạng thái vận hành được thay đổi ở luồng riêng có nhật ký.</p></div>
+        <div class="ops-hero-actions"><a class="btn btn-outline-light" asp-action="Index"><i class="bi bi-arrow-left"></i> Danh sách phòng</a><a class="btn btn-light" asp-action="UpdateStatus" asp-route-id="@Model.Id"><i class="bi bi-arrow-repeat"></i> Đổi trạng thái</a></div>
+    </section>
+    <div class="ops-form-shell">
+        <div class="card ops-form-main"><div class="card-body"><form method="post" asp-action="Edit" asp-route-id="@Model.Id"><partial name="_Form" model="Model" /></form></div></div>
+        <aside class="ops-help-card"><h3><i class="bi bi-shield-check"></i> Kiểm soát thay đổi</h3><ul><li>Đổi loại phòng có thể ảnh hưởng đơn tương lai.</li><li>Trạng thái không được sửa trực tiếp tại đây.</li></ul></aside>
     </div>
 </div>
 

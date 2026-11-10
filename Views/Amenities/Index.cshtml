@@ -3,7 +3,9 @@
     ViewData["Title"] = "Tiện nghi";
 }
 
-<div class="d-flex justify-content-between align-items-center mb-3">
+<div class="ops-page">
+<section class="ops-hero"><div><span class="ops-hero-kicker">Cấu hình phòng</span><h2>Tiện nghi phòng</h2><p>Quản lý danh mục tiện nghi dùng trong nội dung và cấu hình loại phòng.</p></div><div class="ops-hero-actions"><a asp-action="Create" class="btn btn-light"><i class="bi bi-plus-lg"></i> Thêm tiện nghi</a></div></section>
+<div class="d-flex justify-content-between align-items-center mb-0">
     <h1 class="h3 mb-0 text-gray-800">Tiện nghi</h1>
     <a asp-action="Create" class="btn btn-primary">
         <i class="bi bi-plus-lg"></i> Thêm tiện nghi mới
@@ -52,3 +54,4 @@ else
     </div>
     <partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" />
 }
+</div>
