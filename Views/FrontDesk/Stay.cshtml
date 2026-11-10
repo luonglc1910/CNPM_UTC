@@ -20,8 +20,23 @@
                 <li><a class="dropdown-item" asp-action="ChangeRoom" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-arrow-left-right me-2"></i>Đổi phòng</a></li>
                 <li><a class="dropdown-item" asp-action="Extend" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-calendar-plus me-2"></i>Gia hạn</a></li>
                 <li><a class="dropdown-item" asp-controller="Billing" asp-action="Folio" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-receipt me-2"></i>Folio</a></li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><a class="dropdown-item" asp-controller="InRoom" asp-action="Menu" asp-route-roomId="@Model.Stay.RoomId" target="_blank"><i class="bi bi-qr-code-scan me-2"></i>Mở Cổng QR tại phòng</a></li>
+                @if (Model.Stay.ReservationId is not null)
+                {
+                    <li><a class="dropdown-item" asp-controller="Billing" asp-action="GroupPayment" asp-route-reservationId="@Model.Stay.ReservationId"><i class="bi bi-collection me-2"></i>Thanh toán gộp theo Đoàn</a></li>
+                }
             </ul>
         </div>
+        <a class="btn btn-outline-primary" asp-controller="InRoom" asp-action="Menu" asp-route-roomId="@Model.Stay.RoomId" target="_blank">
+            <i class="bi bi-qr-code"></i> QR Dịch vụ phòng
+        </a>
+        @if (Model.Stay.ReservationId is not null)
+        {
+            <a class="btn btn-outline-success" asp-controller="Billing" asp-action="GroupPayment" asp-route-reservationId="@Model.Stay.ReservationId">
+                <i class="bi bi-collection"></i> Thanh toán Đoàn
+            </a>
+        }
         <a class="btn btn-primary ms-auto" asp-action="CheckOut" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-box-arrow-left"></i> Check-out</a>
     }
     else

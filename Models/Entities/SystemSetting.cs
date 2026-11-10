@@ -92,4 +92,26 @@ public static class SystemSettingKeys
     /// khi bật cả tham số này lẫn cờ riêng của dịch vụ đó (SCR-A07).
     /// </summary>
     public const string AllowSellWhenOutOfStock = "Limit.AllowSellWhenOutOfStock";
+
+    // Thanh toán VietQR & Email tự động
+    public const string BankBin = "Payment.BankBin";
+    public const string BankName = "Payment.BankName";
+    public const string BankAccountNo = "Payment.BankAccountNo";
+    public const string BankAccountName = "Payment.BankAccountName";
+    public const string EmailEnabled = "Payment.EmailEnabled";
+    public const string EmailSenderName = "Payment.EmailSenderName";
+    public const string EmailSenderAddress = "Payment.EmailSenderAddress";
+    public const string EmailSmtpHost = "Payment.EmailSmtpHost";
+    public const string EmailSmtpPort = "Payment.EmailSmtpPort";
+    public const string EmailSmtpUser = "Payment.EmailSmtpUser";
+    public const string EmailSmtpPass = "Payment.EmailSmtpPass";
+
+    // Bảng giá linh hoạt theo Mùa / Cuối tuần / Ngày lễ (Dynamic Pricing)
+    public const string EnableDynamicPricing = "DynamicPricing.Enabled";
+    /// <summary>Tỷ lệ cộng thêm cho các đêm cuối tuần (VD: 0.15 = +15%).</summary>
+    public const string WeekendSurchargeRate = "DynamicPricing.WeekendSurchargeRate";
+    /// <summary>Danh sách các thứ trong tuần tính là đêm cuối tuần, cách nhau bởi dấu phẩy (VD: Friday,Saturday).</summary>
+    public const string WeekendDays = "DynamicPricing.WeekendDays";
+    /// <summary>Danh sách quy tắc giá theo mùa / lễ Tết lưu dạng JSON.</summary>
+    public const string SeasonalRulesJson = "DynamicPricing.SeasonalRulesJson";
 }

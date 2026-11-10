@@ -1,4 +1,5 @@
 using HotelManagement.Web.Data;
+using HotelManagement.Web.Hubs;
 using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
 using Microsoft.AspNetCore.Authorization;
@@ -9,6 +10,8 @@ using System.Text.Encodings.Web;
 using System.Text.Unicode;
 
 var builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddSignalR();
 
 builder.Services.AddControllersWithViews(options =>
 {
@@ -52,6 +55,12 @@ builder.Services.AddScoped<IFrontDeskService, FrontDeskService>();
 builder.Services.AddScoped<IHousekeepingService, HousekeepingService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<IDashboardService, DashboardService>();
+
+// Tích hợp VietQR động, Thông báo thời gian thực (SignalR) & Email tự động (Chức năng 1 & 2).
+builder.Services.AddScoped<IVietQrService, VietQrService>();
+builder.Services.AddSingleton<IVnPayService, VnPayService>();
+builder.Services.AddSingleton<INotificationService, NotificationService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
 
 // Đối chiếu cookie đăng nhập với bản ghi nhân viên ở mỗi request — xem Security/EmployeeCookieEvents.cs.
 builder.Services.AddScoped<EmployeeCookieEvents>();
@@ -158,6 +167,17 @@ app.UseHttpsRedirection();
 // tĩnh riêng. Chỉ mở đúng thư mục uploads, không mở cả wwwroot lần nữa.
 var uploadsPath = Path.Combine(app.Environment.WebRootPath, "uploads");
 Directory.CreateDirectory(uploadsPath);
+
+// Bản lưu email nằm ngoài thư mục dự án (xem EmailService.GetPreviewFolder) — phải đăng ký
+// trước /uploads để request /uploads/emails/... được phục vụ từ thư mục này.
+var emailPreviewPath = EmailService.GetPreviewFolder(app.Configuration);
+Directory.CreateDirectory(emailPreviewPath);
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(emailPreviewPath),
+    RequestPath = "/uploads/emails"
+});
+
 app.UseStaticFiles(new StaticFileOptions
 {
     FileProvider = new PhysicalFileProvider(uploadsPath),
@@ -172,6 +192,8 @@ app.UseAuthorization();
 // AllowAnonymous bắt buộc: MapStaticAssets đăng ký endpoint thật, nếu không loại trừ thì
 // FallbackPolicy sẽ chặn cả CSS/JS và trang đăng nhập hiện ra không có định dạng.
 app.MapStaticAssets().AllowAnonymous();
+
+app.MapHub<NotificationHub>("/hubs/notifications").AllowAnonymous();
 
 app.MapControllerRoute(
     name: "default",

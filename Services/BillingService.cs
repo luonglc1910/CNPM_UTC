@@ -40,6 +40,22 @@ public interface IBillingService
 
     Task<MinibarViewModel?> BuildMinibarAsync(int stayId);
     Task<ServiceResult> SaveMinibarAsync(MinibarViewModel form, int employeeId);
+
+    /// <summary>Chuyển 1 dòng chi phí hoặc gộp toàn bộ chi phí từ phòng này sang Folio phòng khác.</summary>
+    Task<ServiceResult> TransferFolioAsync(int fromStayId, int toStayId, int? folioItemId, bool includeRoomCharges, string reason, int employeeId);
+
+    /// <summary>Màn hình thanh toán gộp (Master Folio / Group Checkout) cho đoàn hoặc nhiều phòng.</summary>
+    Task<GroupPaymentViewModel?> BuildGroupPaymentAsync(int? reservationId, string? stayIdsCsv, int employeeId, bool isAdmin);
+
+    /// <summary>Kiểm phòng & khóa toàn bộ Folio của đoàn/nhóm phòng trong 1 thao tác.</summary>
+    Task<ServiceResult> PrepareGroupCheckoutAsync(int? reservationId, string? stayIdsCsv, int employeeId);
+
+    /// <summary>Thanh toán gộp tất cả các phòng trong đoàn/nhóm phòng.</summary>
+    Task<(ServiceResult Result, int FirstInvoiceId)> PayGroupAsync(GroupPaymentViewModel form, int employeeId, bool isAdmin);
+
+    /// <summary>Thu nợ cho hóa đơn đang ở trạng thái Công nợ (Debt).</summary>
+    Task<ServiceResult> SettleDebtAsync(int invoiceId, PaymentMethod method, string? transactionRef, int employeeId);
+
     /// <summary>Trạng thái lượt lưu trú, null nếu không có. Chỉ dùng để giải thích lỗi.</summary>
     Task<StayStatus?> GetStayStatusAsync(int stayId);
 
@@ -59,10 +75,14 @@ public class BillingService : IBillingService
     private readonly IShiftService _shifts;
     private readonly ISettingsReader _settings;
     private readonly IInventoryService _inventory;
+    private readonly IVietQrService _vietQr;
+    private readonly INotificationService _notifications;
+    private readonly IEmailService _email;
 
     public BillingService(
         HotelDbContext db, IAuditService audit, IPricingService pricing, INumberSequenceService numbers,
-        ITransactionRunner tx, IShiftService shifts, ISettingsReader settings, IInventoryService inventory)
+        ITransactionRunner tx, IShiftService shifts, ISettingsReader settings, IInventoryService inventory,
+        IVietQrService vietQr, INotificationService notifications, IEmailService email)
     {
         _db = db;
         _audit = audit;
@@ -72,6 +92,9 @@ public class BillingService : IBillingService
         _shifts = shifts;
         _settings = settings;
         _inventory = inventory;
+        _vietQr = vietQr;
+        _notifications = notifications;
+        _email = email;
     }
 
     // ---------- Tổng hợp folio (dùng chung) ----------
@@ -140,8 +163,38 @@ public class BillingService : IBillingService
 
     }
 
-    /// <summary>Cọc đã bị bỏ — luôn trả 0.</summary>
-    private Task<decimal> HeldDepositAsync(Stay stay) => Task.FromResult(0m);
+    /// <summary>
+    /// Tính tổng tiền cọc đang giữ (Held) áp dụng cho lượt lưu trú này.
+    /// Cọc gắn trực tiếp với StayId luôn được tính; cọc gắn cấp ReservationId (StayId == null)
+    /// được phân bổ vào lượt lưu trú đang mở đầu tiên của đơn để tránh nhân đôi khi đoàn nhiều phòng.
+    /// </summary>
+    private async Task<decimal> HeldDepositAsync(Stay stay)
+    {
+        var direct = await _db.Deposits.AsNoTracking()
+            .Where(d => d.Status == DepositStatus.Held && d.StayId == stay.Id)
+            .SumAsync(d => (decimal?)d.Amount) ?? 0m;
+
+        if (stay.ReservationId is null)
+        {
+            return direct;
+        }
+
+        var firstOpenStayId = await _db.Stays.AsNoTracking()
+            .Where(s => s.ReservationId == stay.ReservationId && s.Status == StayStatus.CheckedIn)
+            .OrderBy(s => s.Id)
+            .Select(s => (int?)s.Id)
+            .FirstOrDefaultAsync();
+
+        if (firstOpenStayId == stay.Id || firstOpenStayId is null)
+        {
+            var resDeposit = await _db.Deposits.AsNoTracking()
+                .Where(d => d.Status == DepositStatus.Held && d.StayId == null && d.ReservationId == stay.ReservationId)
+                .SumAsync(d => (decimal?)d.Amount) ?? 0m;
+            return direct + resDeposit;
+        }
+
+        return direct;
+    }
 
     // ---------- SCR-F01 ----------
 
@@ -185,6 +238,7 @@ public class BillingService : IBillingService
             .Include(f => f.Items)
             .Include(f => f.Stay).ThenInclude(s => s.Room)
             .Include(f => f.Stay).ThenInclude(s => s.PrimaryGuest)
+            .Include(f => f.Stay).ThenInclude(s => s.Reservation)
             .ToListAsync();
 
         var keyword = filter.Keyword?.Trim();
@@ -194,7 +248,8 @@ public class BillingService : IBillingService
             if (!string.IsNullOrWhiteSpace(keyword)
                 && !f.Stay.Room.RoomNumber.Contains(keyword)
                 && !f.Stay.PrimaryGuest.FullName.Contains(keyword)
-                && !f.Code.Contains(keyword))
+                && !f.Code.Contains(keyword)
+                && (f.Stay.Reservation == null || !f.Stay.Reservation.Code.Contains(keyword)))
             {
                 continue;
             }
@@ -204,6 +259,8 @@ public class BillingService : IBillingService
             items.Add(new OpenFolioListItem
             {
                 StayId = f.StayId,
+                ReservationId = f.Stay.ReservationId,
+                ReservationCode = f.Stay.Reservation?.Code,
                 FolioCode = f.Code,
                 RoomNumber = f.Stay.Room.RoomNumber,
                 GuestName = f.Stay.PrimaryGuest.FullName,
@@ -239,6 +296,7 @@ public class BillingService : IBillingService
             .Include(f => f.Items)
             .Include(f => f.Stay).ThenInclude(s => s.Room).ThenInclude(r => r.RoomType)
             .Include(f => f.Stay).ThenInclude(s => s.PrimaryGuest)
+            .Include(f => f.Stay).ThenInclude(s => s.Reservation)
             .Include(f => f.Invoice)
             .FirstOrDefaultAsync(f => f.StayId == stayId);
 
@@ -250,9 +308,27 @@ public class BillingService : IBillingService
         var deposit = await HeldDepositAsync(folio.Stay);
         var settings = await _settings.GetPricingSettingsAsync();
 
+        var otherOpenStays = await _db.Stays.AsNoTracking()
+            .Where(s => s.Id != stayId && s.Status == StayStatus.CheckedIn && s.Folio != null && !s.Folio.IsLocked)
+            .Include(s => s.Room)
+            .Include(s => s.PrimaryGuest)
+            .Include(s => s.Folio)
+            .OrderBy(s => s.Room.RoomNumber)
+            .Select(s => new TransferRoomTargetOption
+            {
+                StayId = s.Id,
+                RoomNumber = s.Room.RoomNumber,
+                GuestName = s.PrimaryGuest.FullName,
+                FolioCode = s.Folio != null ? s.Folio.Code : string.Empty,
+                IsSameReservation = folio.Stay.ReservationId != null && s.ReservationId == folio.Stay.ReservationId
+            })
+            .ToListAsync();
+
         return new FolioDetailViewModel
         {
             StayId = stayId,
+            ReservationId = folio.Stay.ReservationId,
+            ReservationCode = folio.Stay.Reservation?.Code,
             RoomNumber = folio.Stay.Room.RoomNumber,
             RoomTypeName = folio.Stay.Room.RoomType.Name,
             GuestName = folio.Stay.PrimaryGuest.FullName,
@@ -262,6 +338,7 @@ public class BillingService : IBillingService
             StayStatus = folio.Stay.Status,
             InvoiceId = folio.Invoice?.Id,
             Summary = BuildSummary(folio, deposit, settings),
+            OtherOpenStays = otherOpenStays,
             Lines = folio.Items
                 .OrderBy(i => i.ChargedAt).ThenBy(i => i.Id)
                 .Select(i => new FolioLineView
@@ -578,6 +655,15 @@ public class BillingService : IBillingService
         var settings = await _settings.GetPricingSettingsAsync();
         var summary = BuildSummary(folio, deposit, settings);
 
+        VietQrPayload? vietQr = null;
+        if (summary.BalanceDue > 0)
+        {
+            vietQr = await _vietQr.BuildAsync(
+                summary.BalanceDue,
+                $"TT P{folio.Stay.Room.RoomNumber} {folio.Code}",
+                $"Thanh toán Folio {folio.Code} - Phòng {folio.Stay.Room.RoomNumber}");
+        }
+
         return new PaymentViewModel
         {
             StayId = stayId,
@@ -588,7 +674,8 @@ public class BillingService : IBillingService
             IsInspected = folio.Stay.IsInspected,
             IsLocked = folio.IsLocked,
             IsAdmin = isAdmin,
-            AmountTendered = summary.BalanceDue > 0 ? summary.BalanceDue : 0m
+            AmountTendered = summary.BalanceDue > 0 ? summary.BalanceDue : 0m,
+            VietQr = vietQr
         };
     }
 
@@ -645,11 +732,13 @@ public class BillingService : IBillingService
             }
         }
 
+        decimal finalAmountPaid = 0m;
         var invoiceId = await _tx.ExecuteAsync(async () =>
         {
             var now = DateTime.Now;
             var amountPaid = recordDebt ? Math.Max(0, form.AmountTendered) : (balance > 0 ? balance : 0m);
             var debt = recordDebt ? Math.Max(0, balance - amountPaid) : 0m;
+            finalAmountPaid = amountPaid;
 
             var invoice = new Invoice
             {
@@ -688,7 +777,9 @@ public class BillingService : IBillingService
                     InvoiceId = invoice.Id
                 });
             }
-            // Cọc đã bị bỏ — không còn Refund/ApplyDeposits.
+
+            // Đánh dấu các khoản cọc Held đã áp dụng thành Applied.
+            await ApplyHeldDepositsAsync(folio.Stay);
 
             folio.Stay.Status = StayStatus.CheckedOut;
             if (folio.Stay.ActualCheckOut is null)
@@ -725,11 +816,36 @@ public class BillingService : IBillingService
             return invoice.Id;
         });
 
+        try
+        {
+            await _email.SendInvoiceEmailAsync(invoiceId);
+            if (finalAmountPaid > 0)
+            {
+                await _notifications.NotifyPaymentReceivedAsync(
+                    folio.Code, finalAmountPaid, form.Method.ToString(), $"/Billing/Invoice/{invoiceId}");
+            }
+        }
+        catch
+        {
+            // Không làm gián đoạn luồng thu ngân nếu gửi email/thông báo gặp lỗi
+        }
+
         return (ServiceResult.Ok(message: "Đã thanh toán và xuất hóa đơn."), invoiceId);
     }
 
-    /// <summary>Cọc đã bị bỏ — không làm gì.</summary>
-    private static Task ApplyDepositsAsync(Stay stay, decimal refundTotal) => Task.CompletedTask;
+    private async Task ApplyHeldDepositsAsync(Stay stay)
+    {
+        var deposits = await _db.Deposits
+            .Where(d => d.Status == DepositStatus.Held
+                && (d.StayId == stay.Id || (stay.ReservationId != null && d.StayId == null && d.ReservationId == stay.ReservationId)))
+            .ToListAsync();
+
+        foreach (var d in deposits)
+        {
+            d.Status = DepositStatus.Applied;
+            d.StayId ??= stay.Id;
+        }
+    }
 
     // ---------- SCR-F06 ----------
 
@@ -748,6 +864,15 @@ public class BillingService : IBillingService
 
         var stay = invoice.Folio.Stay;
 
+        VietQrPayload? debtQr = null;
+        if (invoice.Status == InvoiceStatus.Debt && invoice.DebtAmount > 0)
+        {
+            debtQr = await _vietQr.BuildAsync(
+                invoice.DebtAmount,
+                $"THUNO {invoice.InvoiceNo}",
+                $"Thu nợ Hóa đơn {invoice.InvoiceNo} - Phòng {stay.Room.RoomNumber}");
+        }
+
         return new InvoiceViewModel
         {
             Invoice = invoice,
@@ -757,10 +882,12 @@ public class BillingService : IBillingService
             HotelTaxCode = await _settings.GetStringAsync(SystemSettingKeys.HotelTaxCode),
             GuestName = stay.PrimaryGuest.FullName,
             GuestIdNumber = stay.PrimaryGuest.IdNumber,
+            GuestEmail = stay.PrimaryGuest.Email,
             RoomNumber = stay.Room.RoomNumber,
             ActualCheckIn = stay.ActualCheckIn,
             ActualCheckOut = stay.ActualCheckOut,
             Nights = stay.Nights,
+            DebtVietQr = debtQr,
             Payments = invoice.Payments.OrderBy(p => p.PaidAt).ToList(),
             Lines = invoice.Folio.Items
                 .OrderBy(i => i.ChargedAt).ThenBy(i => i.Id)
@@ -945,6 +1072,476 @@ public class BillingService : IBillingService
         });
 
         return ServiceResult.Ok(message: "Đã ghi nhận kiểm phòng & minibar.");
+    }
+
+    // ---------- Chuyển / Gộp chi phí liên phòng & Thanh toán gộp (Master Folio / Group Checkout) ----------
+
+    public async Task<ServiceResult> TransferFolioAsync(
+        int fromStayId, int toStayId, int? folioItemId, bool includeRoomCharges, string reason, int employeeId)
+    {
+        if (fromStayId == toStayId)
+        {
+            return ServiceResult.Fail("Phòng nhận chi phí phải khác phòng chuyển.");
+        }
+
+        if (string.IsNullOrWhiteSpace(reason))
+        {
+            return ServiceResult.Fail("Vui lòng nhập lý do chuyển/gộp chi phí.");
+        }
+
+        var sourceFolio = await _db.Folios
+            .Include(f => f.Items)
+            .Include(f => f.Stay).ThenInclude(s => s.Room)
+            .FirstOrDefaultAsync(f => f.StayId == fromStayId);
+
+        var targetFolio = await _db.Folios
+            .Include(f => f.Stay).ThenInclude(s => s.Room)
+            .FirstOrDefaultAsync(f => f.StayId == toStayId);
+
+        if (sourceFolio is null || targetFolio is null)
+        {
+            return ServiceResult.Fail("Không tìm thấy Folio của phòng nguồn hoặc phòng đích.");
+        }
+
+        if (sourceFolio.IsLocked || sourceFolio.Stay.Status != StayStatus.CheckedIn)
+        {
+            return ServiceResult.Fail($"Folio phòng {sourceFolio.Stay.Room.RoomNumber} đã khóa hoặc đã trả phòng.");
+        }
+
+        if (targetFolio.IsLocked || targetFolio.Stay.Status != StayStatus.CheckedIn)
+        {
+            return ServiceResult.Fail($"Folio phòng {targetFolio.Stay.Room.RoomNumber} đã khóa hoặc đã trả phòng.");
+        }
+
+        List<FolioItem> toMove;
+        if (folioItemId.HasValue && folioItemId.Value > 0)
+        {
+            var single = sourceFolio.Items.FirstOrDefault(i => i.Id == folioItemId.Value && !i.IsVoided);
+            if (single is null)
+            {
+                return ServiceResult.Fail("Không tìm thấy dòng chi phí cần chuyển (hoặc đã hủy).");
+            }
+            toMove = [single];
+        }
+        else
+        {
+            toMove = sourceFolio.Items
+                .Where(i => !i.IsVoided && (includeRoomCharges || i.ItemType != FolioItemType.Room))
+                .ToList();
+        }
+
+        if (toMove.Count == 0)
+        {
+            return ServiceResult.Fail("Không có dòng chi phí hợp lệ nào để chuyển sang phòng khác.");
+        }
+
+        var trimmedReason = reason.Trim();
+        var srcRoomNo = sourceFolio.Stay.Room.RoomNumber;
+        var dstRoomNo = targetFolio.Stay.Room.RoomNumber;
+        decimal movedTotal = 0m;
+
+        await _tx.ExecuteAsync(async () =>
+        {
+            var now = DateTime.Now;
+            foreach (var item in toMove)
+            {
+                item.IsVoided = true;
+                item.VoidedAt = now;
+                item.VoidedBy = employeeId;
+                item.VoidReason = $"Chuyển sang P.{dstRoomNo}: {trimmedReason}";
+
+                var prefix = $"[Từ P.{srcRoomNo}] ";
+                var newDesc = item.Description.StartsWith("[Từ P.")
+                    ? item.Description
+                    : (prefix + item.Description);
+                if (newDesc.Length > 250)
+                {
+                    newDesc = newDesc[..250];
+                }
+
+                _db.FolioItems.Add(new FolioItem
+                {
+                    FolioId = targetFolio.Id,
+                    ItemType = item.ItemType,
+                    HotelServiceId = item.HotelServiceId,
+                    Description = newDesc,
+                    Quantity = item.Quantity,
+                    UnitPrice = item.UnitPrice,
+                    Amount = item.Amount,
+                    ChargedAt = now,
+                    SurchargeType = item.SurchargeType,
+                    DiscountReason = item.DiscountReason
+                });
+
+                movedTotal += item.Amount;
+            }
+
+            _audit.Log("TransferFolioCharge", nameof(Folio), $"{sourceFolio.Id}->{targetFolio.Id}",
+                reason: trimmedReason,
+                newValue: $"Chuyển {toMove.Count} mục ({movedTotal:N0} ₫) từ P.{srcRoomNo} sang P.{dstRoomNo}");
+
+            await _db.SaveChangesAsync();
+        });
+
+        return ServiceResult.Ok(
+            message: $"Đã chuyển {toMove.Count} mục chi phí ({movedTotal:N0} ₫) từ P.{srcRoomNo} sang Folio P.{dstRoomNo}.");
+    }
+
+    private async Task<List<Folio>> LoadGroupFoliosAsync(int? reservationId, string? stayIdsCsv, bool asNoTracking)
+    {
+        var query = asNoTracking ? _db.Folios.AsNoTracking() : _db.Folios.AsQueryable();
+        query = query
+            .Include(f => f.Items)
+            .Include(f => f.Invoice)
+            .Include(f => f.Stay).ThenInclude(s => s.Room)
+            .Include(f => f.Stay).ThenInclude(s => s.PrimaryGuest)
+            .Include(f => f.Stay).ThenInclude(s => s.Reservation)
+            .Where(f => f.Stay.Status == StayStatus.CheckedIn);
+
+        if (!string.IsNullOrWhiteSpace(stayIdsCsv))
+        {
+            var ids = stayIdsCsv
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(s => int.TryParse(s, out var id) ? id : 0)
+                .Where(id => id > 0)
+                .Distinct()
+                .ToList();
+
+            if (ids.Count > 0)
+            {
+                return await query.Where(f => ids.Contains(f.StayId))
+                    .OrderBy(f => f.Stay.Room.RoomNumber)
+                    .ToListAsync();
+            }
+        }
+
+        if (reservationId.HasValue && reservationId.Value > 0)
+        {
+            return await query.Where(f => f.Stay.ReservationId == reservationId.Value)
+                .OrderBy(f => f.Stay.Room.RoomNumber)
+                .ToListAsync();
+        }
+
+        return [];
+    }
+
+    public async Task<GroupPaymentViewModel?> BuildGroupPaymentAsync(
+        int? reservationId, string? stayIdsCsv, int employeeId, bool isAdmin)
+    {
+        var folios = await LoadGroupFoliosAsync(reservationId, stayIdsCsv, asNoTracking: true);
+        if (folios.Count == 0)
+        {
+            return null;
+        }
+
+        var settings = await _settings.GetPricingSettingsAsync();
+        var stayItems = new List<GroupStaySummaryItem>();
+
+        foreach (var f in folios)
+        {
+            var dep = await HeldDepositAsync(f.Stay);
+            var sum = BuildSummary(f, dep, settings);
+            stayItems.Add(new GroupStaySummaryItem
+            {
+                StayId = f.StayId,
+                RoomNumber = f.Stay.Room.RoomNumber,
+                GuestName = f.Stay.PrimaryGuest.FullName,
+                FolioCode = f.Code,
+                IsInspected = f.Stay.IsInspected,
+                IsLocked = f.IsLocked,
+                RoomCharge = sum.RoomCharge,
+                ServiceCharge = sum.ServiceCharge,
+                SurchargeAmount = sum.SurchargeAmount,
+                DiscountAmount = sum.DiscountAmount,
+                TaxAmount = sum.TaxAmount,
+                Total = sum.Total,
+                DepositApplied = sum.DepositApplied,
+                BalanceDue = sum.BalanceDue
+            });
+        }
+
+        var firstStay = folios[0].Stay;
+        var resId = reservationId ?? (folios.Select(f => f.Stay.ReservationId).Distinct().Count() == 1 ? firstStay.ReservationId : null);
+        var resCode = resId.HasValue ? firstStay.Reservation?.Code : null;
+        var totalBalanceDue = stayItems.Sum(i => i.BalanceDue);
+
+        VietQrPayload? qr = null;
+        if (totalBalanceDue > 0)
+        {
+            var memo = !string.IsNullOrWhiteSpace(resCode)
+                ? $"TT DOAN {resCode}"
+                : $"TT GOP {stayItems.Count} PHONG";
+            qr = await _vietQr.BuildAsync(
+                totalBalanceDue,
+                memo,
+                $"Thanh toán gộp {stayItems.Count} phòng ({string.Join(", ", stayItems.Select(s => "P." + s.RoomNumber))})");
+        }
+
+        return new GroupPaymentViewModel
+        {
+            ReservationId = resId,
+            ReservationCode = resCode,
+            LeaderGuestName = firstStay.PrimaryGuest.FullName,
+            StayIdsCsv = string.Join(",", stayItems.Select(s => s.StayId)),
+            Stays = stayItems,
+            TotalRoomCharge = stayItems.Sum(i => i.RoomCharge),
+            TotalServiceCharge = stayItems.Sum(i => i.ServiceCharge),
+            TotalSurcharge = stayItems.Sum(i => i.SurchargeAmount),
+            TotalDiscount = stayItems.Sum(i => i.DiscountAmount),
+            TotalTax = stayItems.Sum(i => i.TaxAmount),
+            GrandTotal = stayItems.Sum(i => i.Total),
+            TotalDepositApplied = stayItems.Sum(i => i.DepositApplied),
+            TotalBalanceDue = totalBalanceDue,
+            HasOpenShift = await _shifts.GetOpenShiftAsync(employeeId) is not null,
+            AllInspected = stayItems.All(i => i.IsInspected),
+            AllLocked = stayItems.All(i => i.IsLocked),
+            IsAdmin = isAdmin,
+            AmountTendered = totalBalanceDue > 0 ? totalBalanceDue : 0m,
+            VietQr = qr
+        };
+    }
+
+    public async Task<ServiceResult> PrepareGroupCheckoutAsync(int? reservationId, string? stayIdsCsv, int employeeId)
+    {
+        var folios = await LoadGroupFoliosAsync(reservationId, stayIdsCsv, asNoTracking: false);
+        if (folios.Count == 0)
+        {
+            return ServiceResult.Fail("Không tìm thấy phòng đang lưu trú trong nhóm để chuẩn bị check-out.");
+        }
+
+        var now = DateTime.Now;
+        foreach (var f in folios)
+        {
+            if (!f.Stay.IsInspected)
+            {
+                f.Stay.IsInspected = true;
+                f.Stay.InspectedAt = now;
+                f.Stay.InspectedBy = employeeId;
+            }
+
+            if (!f.IsLocked)
+            {
+                f.IsLocked = true;
+                f.LockedAt = now;
+                f.LockedBy = employeeId;
+            }
+        }
+
+        _audit.Log("PrepareGroupCheckout", nameof(Stay),
+            string.Join(",", folios.Select(f => f.StayId)),
+            newValue: $"Đã kiểm phòng & khóa Folio cho {folios.Count} phòng ({string.Join(", ", folios.Select(f => "P." + f.Stay.Room.RoomNumber))})");
+
+        await _db.SaveChangesAsync();
+        return ServiceResult.Ok(message: $"Đã xác nhận kiểm phòng & khóa tất cả {folios.Count} Folio. Sẵn sàng thanh toán gộp!");
+    }
+
+    public async Task<(ServiceResult Result, int FirstInvoiceId)> PayGroupAsync(
+        GroupPaymentViewModel form, int employeeId, bool isAdmin)
+    {
+        var shift = await _shifts.GetOpenShiftAsync(employeeId);
+        if (shift is null)
+        {
+            return (ServiceResult.Fail("Bạn cần mở ca làm việc trước khi thu tiền gộp (BR-10)."), 0);
+        }
+
+        var folios = await LoadGroupFoliosAsync(form.ReservationId, form.StayIdsCsv, asNoTracking: false);
+        if (folios.Count == 0)
+        {
+            return (ServiceResult.Fail("Không tìm thấy các phòng cần thanh toán gộp."), 0);
+        }
+
+        if (folios.Any(f => !f.Stay.IsInspected || !f.IsLocked))
+        {
+            return (ServiceResult.Fail("Vui lòng bấm 'Kiểm phòng & Khóa tất cả Folio' trước khi thanh toán gộp."), 0);
+        }
+
+        if (form.Method != PaymentMethod.Cash && string.IsNullOrWhiteSpace(form.TransactionRef))
+        {
+            return (ServiceResult.Fail("Chuyển khoản/Thẻ bắt buộc nhập mã giao dịch.", nameof(form.TransactionRef)), 0);
+        }
+
+        var settings = await _settings.GetPricingSettingsAsync();
+        var summaries = new List<(Folio Folio, BillingFolioSummary Summary)>();
+        foreach (var f in folios)
+        {
+            var dep = await HeldDepositAsync(f.Stay);
+            summaries.Add((f, BuildSummary(f, dep, settings)));
+        }
+
+        var totalBalance = summaries.Sum(x => x.Summary.BalanceDue);
+        if (totalBalance > 0 && form.Method == PaymentMethod.Cash && form.AmountTendered < totalBalance)
+        {
+            return (ServiceResult.Fail("Tiền khách đưa nhỏ hơn tổng số phải thu của đoàn."), 0);
+        }
+
+        var firstInvoiceId = await _tx.ExecuteAsync(async () =>
+        {
+            var now = DateTime.Now;
+            var createdInvoiceIds = new List<int>();
+
+            foreach (var (folio, summary) in summaries)
+            {
+                var balance = summary.BalanceDue;
+                var amountPaid = balance > 0 ? balance : 0m;
+
+                var invoice = new Invoice
+                {
+                    InvoiceNo = await _numbers.NextInvoiceNoAsync(now),
+                    FolioId = folio.Id,
+                    IssuedAt = now,
+                    IssuedBy = employeeId,
+                    CashierShiftId = shift.Id,
+                    RoomCharge = summary.RoomCharge,
+                    ServiceCharge = summary.ServiceCharge,
+                    SurchargeAmount = summary.SurchargeAmount,
+                    DiscountAmount = summary.DiscountAmount,
+                    DepositAmount = summary.DepositApplied,
+                    SubTotal = summary.SubTotal,
+                    TaxRate = summary.TaxRate,
+                    TaxAmount = summary.TaxAmount,
+                    TotalAmount = summary.Total,
+                    AmountPaid = amountPaid,
+                    DebtAmount = 0m,
+                    Status = InvoiceStatus.Settled
+                };
+                _db.Invoices.Add(invoice);
+                await _db.SaveChangesAsync();
+                createdInvoiceIds.Add(invoice.Id);
+
+                if (amountPaid > 0)
+                {
+                    _db.Payments.Add(new Payment
+                    {
+                        Type = PaymentType.InvoiceSettlement,
+                        Method = form.Method,
+                        Amount = amountPaid,
+                        TransactionRef = string.IsNullOrWhiteSpace(form.TransactionRef) ? null : form.TransactionRef.Trim(),
+                        PaidAt = now,
+                        CashierShiftId = shift.Id,
+                        InvoiceId = invoice.Id,
+                        Notes = $"Thanh toán gộp {folios.Count} phòng"
+                    });
+                }
+
+                await ApplyHeldDepositsAsync(folio.Stay);
+
+                folio.Stay.Status = StayStatus.CheckedOut;
+                folio.Stay.ActualCheckOut ??= now;
+                folio.Stay.Room.Status = RoomStatus.Dirty;
+            }
+
+            // Đóng các Reservation liên quan nếu không còn phòng nào đang CheckedIn
+            var reservationIds = folios
+                .Where(f => f.Stay.ReservationId.HasValue)
+                .Select(f => f.Stay.ReservationId!.Value)
+                .Distinct()
+                .ToList();
+
+            var checkedOutStayIds = folios.Select(f => f.StayId).ToHashSet();
+            foreach (var resId in reservationIds)
+            {
+                var reservation = await _db.Reservations.FirstOrDefaultAsync(r => r.Id == resId);
+                if (reservation is not null && reservation.Status == ReservationStatus.CheckedIn)
+                {
+                    var remainingOpen = await _db.Stays.CountAsync(s =>
+                        s.ReservationId == resId && s.Status == StayStatus.CheckedIn && !checkedOutStayIds.Contains(s.Id));
+                    if (remainingOpen == 0)
+                    {
+                        reservation.Status = ReservationStatus.CheckedOut;
+                    }
+                }
+            }
+
+            _audit.Log("SettleGroupInvoices", nameof(Invoice), string.Join(",", createdInvoiceIds),
+                newValue: $"Thanh toán gộp {folios.Count} phòng, tổng thu {totalBalance:N0} ₫");
+
+            await _db.SaveChangesAsync();
+            return createdInvoiceIds.FirstOrDefault();
+        });
+
+        try
+        {
+            if (firstInvoiceId > 0)
+            {
+                await _email.SendInvoiceEmailAsync(firstInvoiceId);
+                if (totalBalance > 0)
+                {
+                    await _notifications.NotifyPaymentReceivedAsync(
+                        $"Đoàn ({folios.Count} phòng)", totalBalance, form.Method.ToString(), $"/Billing/Invoice/{firstInvoiceId}");
+                }
+            }
+        }
+        catch
+        {
+            // Ignore notification errors
+        }
+
+        return (ServiceResult.Ok(
+            message: $"Đã thanh toán gộp và trả phòng thành công cho {folios.Count} phòng ({totalBalance:N0} ₫)."), firstInvoiceId);
+    }
+
+    public async Task<ServiceResult> SettleDebtAsync(
+        int invoiceId, PaymentMethod method, string? transactionRef, int employeeId)
+    {
+        var shift = await _shifts.GetOpenShiftAsync(employeeId);
+        if (shift is null)
+        {
+            return ServiceResult.Fail("Bạn cần mở ca làm việc trước khi thu nợ hóa đơn (BR-10).");
+        }
+
+        if (method != PaymentMethod.Cash && string.IsNullOrWhiteSpace(transactionRef))
+        {
+            return ServiceResult.Fail("Chuyển khoản/Thẻ bắt buộc nhập mã giao dịch.");
+        }
+
+        var invoice = await _db.Invoices.FirstOrDefaultAsync(i => i.Id == invoiceId);
+        if (invoice is null)
+        {
+            return ServiceResult.Fail("Không tìm thấy hóa đơn.");
+        }
+
+        if (invoice.Status != InvoiceStatus.Debt || invoice.DebtAmount <= 0)
+        {
+            return ServiceResult.Fail("Hóa đơn này không có khoản nợ cần thu.");
+        }
+
+        var debtToCollect = invoice.DebtAmount;
+        await _tx.ExecuteAsync(async () =>
+        {
+            var now = DateTime.Now;
+            _db.Payments.Add(new Payment
+            {
+                Type = PaymentType.InvoiceSettlement,
+                Method = method,
+                Amount = debtToCollect,
+                TransactionRef = string.IsNullOrWhiteSpace(transactionRef) ? null : transactionRef.Trim(),
+                PaidAt = now,
+                CashierShiftId = shift.Id,
+                InvoiceId = invoice.Id,
+                Notes = "Thu dứt điểm công nợ hóa đơn"
+            });
+
+            invoice.AmountPaid += debtToCollect;
+            invoice.DebtAmount = 0m;
+            invoice.Status = InvoiceStatus.Settled;
+
+            _audit.Log("SettleInvoiceDebt", nameof(Invoice), invoice.Id.ToString(),
+                newValue: $"Thu nợ {debtToCollect:N0} ₫ cho HĐ {invoice.InvoiceNo}");
+
+            await _db.SaveChangesAsync();
+        });
+
+        try
+        {
+            await _notifications.NotifyPaymentReceivedAsync(
+                invoice.InvoiceNo, debtToCollect, method.ToString(), $"/Billing/Invoice/{invoice.Id}");
+        }
+        catch
+        {
+            // Ignore notification errors
+        }
+
+        return ServiceResult.Ok(message: $"Đã thu hết nợ {debtToCollect:N0} ₫ cho hóa đơn {invoice.InvoiceNo}.");
     }
 
     private async Task<IReadOnlyList<SelectListItem>> ServiceOptionsAsync()

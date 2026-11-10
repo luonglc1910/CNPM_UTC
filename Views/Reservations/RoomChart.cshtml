@@ -78,7 +78,52 @@
     .stat-bar { display: flex; flex-wrap: wrap; gap: .5rem 1.25rem; font-size: .82rem; }
     .stat-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; flex-shrink: 0; }
 
-    /* ── Gantt (giữ nguyên từ bản gốc) ─────────────────────────── */
+    /* ── Gantt (Tương tác kéo-thả & chọn dải ngày) ─────────────────────────── */
+    .interactive-free-cell {
+        cursor: crosshair;
+        user-select: none;
+        position: relative;
+        transition: background-color 0.1s;
+    }
+    .interactive-free-cell:hover {
+        background-color: #dcfce7 !important;
+    }
+    .interactive-free-cell.drag-selected {
+        background-color: #86efac !important;
+        box-shadow: inset 0 0 0 2px #16a34a;
+    }
+    .draggable-band-wrapper {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 4px;
+        width: 100%;
+        cursor: grab;
+    }
+    .draggable-band-wrapper:active {
+        cursor: grabbing;
+    }
+    .gantt-row-drop-hover th,
+    .gantt-row-drop-hover td {
+        background-color: #e0f2fe !important;
+        outline: 1px dashed #0284c7;
+    }
+    .btn-quick-extend {
+        font-size: 0.65rem;
+        padding: 1px 4px;
+        line-height: 1.1;
+        border-radius: 4px;
+        background: rgba(255,255,255,0.75);
+        border: 1px solid rgba(0,0,0,0.15);
+        color: #1e293b;
+        font-weight: 700;
+        text-decoration: none;
+        flex-shrink: 0;
+    }
+    .btn-quick-extend:hover {
+        background: #fff;
+        color: #0f172a;
+    }
 </style>
 
 @* ── Bộ lọc ───────────────────────────────────────────── *@
@@ -160,11 +205,13 @@ else
                             <div class="room-badge"><i class="bi @icon"></i> @label</div>
                         </a>
                     }
-                    else if (kind == RoomChartCellKind.Occupied && seg?.ReservationId is int occupiedId)
+                    else if (kind == RoomChartCellKind.Occupied && (seg?.StayId is not null || seg?.ReservationId is not null))
                     {
+                        var stayUrl = seg?.StayId is int sid
+                            ? Url.Action("Stay", "FrontDesk", new { id = sid })
+                            : Url.Action("Details", "Reservations", new { id = seg!.ReservationId });
                         <a class="room-card @css"
-                           asp-controller="Reservations" asp-action="Details"
-                           asp-route-id="@occupiedId"
+                           href="@stayUrl"
                            title="@seg?.Tooltip">
                             <div class="room-no">@row.RoomNumber</div>
                             <div class="room-type">@row.RoomTypeName</div>
@@ -207,22 +254,30 @@ else
         </div>
     }
 
-    @* ── Bảng Gantt (thu gọn được) ────────────────────────── *@
+    @* ── Bảng Gantt Tương tác (Kéo-thả đổi phòng, Quét chọn ngày đặt phòng, Gia hạn nhanh) ── *@
     <div class="mt-2">
-        <button class="btn btn-sm btn-outline-secondary mb-2" type="button"
-                data-bs-toggle="collapse" data-bs-target="#ganttPanel">
-            <i class="bi bi-calendar3"></i> Xem sơ đồ Gantt @Model.Days ngày
-        </button>
-        <div class="collapse" id="ganttPanel">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+            <button class="btn btn-sm btn-outline-primary" type="button"
+                    data-bs-toggle="collapse" data-bs-target="#ganttPanel" aria-expanded="true">
+                <i class="bi bi-calendar3-range me-1"></i> Sơ đồ Gantt tương tác (@Model.Days ngày)
+            </button>
+            <div class="small text-muted d-flex flex-wrap gap-3">
+                <span><i class="bi bi-mouse text-success"></i> <strong>Kéo chuột qua các ô trống</strong> để chọn khoảng ngày đặt phòng</span>
+                <span><i class="bi bi-arrows-move text-primary"></i> <strong>Kéo-thả thanh khách</strong> sang hàng khác để đổi phòng</span>
+                <span><i class="bi bi-plus-square text-warning"></i> <strong>Bấm +1đ</strong> trên thanh để gia hạn thêm đêm</span>
+            </div>
+        </div>
+
+        <div class="collapse show" id="ganttPanel">
             @if (Model.Truncated)
             {
                 <div class="alert alert-info alert-sm mb-2">
                     Khoảng yêu cầu vượt @RoomChartViewModel.MaxDays ngày nên đã rút gọn.
                 </div>
             }
-            <div class="card">
+            <div class="card shadow-sm">
                 <div class="table-responsive">
-                    <table class="table room-chart mb-0">
+                    <table class="table room-chart mb-0" id="interactiveGanttTable">
                         <thead>
                             <tr>
                                 <th class="room-chart-head">Phòng</th>
@@ -239,7 +294,10 @@ else
                         <tbody>
                             @foreach (var row in Model.Rows)
                             {
-                                <tr>
+                                <tr class="gantt-room-row"
+                                    data-target-room-id="@row.RoomId"
+                                    data-target-room-no="@row.RoomNumber"
+                                    data-target-room-type="@row.RoomTypeName">
                                     <th class="room-chart-head">
                                         <div class="fw-semibold">@row.RoomNumber</div>
                                         <div class="text-muted small">@row.RoomTypeName</div>
@@ -248,19 +306,32 @@ else
                                     {
                                         @if (seg.Kind == RoomChartCellKind.Free)
                                         {
-                                            <td class="room-chart-cell chart-free" colspan="@seg.Span">
-                                                <a class="room-chart-link"
-                                                   asp-action="Create"
-                                                   asp-route-roomId="@row.RoomId"
-                                                   asp-route-checkIn="@seg.Date.ToString("yyyy-MM-dd")"
-                                                   asp-route-checkOut="@seg.Date.AddDays(seg.Span).ToString("yyyy-MM-dd")"
-                                                   title="Đặt phòng @row.RoomNumber từ @seg.Date.ToString("dd/MM") (@seg.Span đêm trống)">
-                                                    <span class="visually-hidden">Đặt phòng</span>
-                                                </a>
-                                            </td>
+                                            @for (var offset = 0; offset < seg.Span; offset++)
+                                            {
+                                                var cellDate = seg.Date.AddDays(offset);
+                                                var nextDate = cellDate.AddDays(1);
+                                                <td class="room-chart-cell chart-free interactive-free-cell"
+                                                    data-room-id="@row.RoomId"
+                                                    data-room-type-id="@row.RoomTypeId"
+                                                    data-room-no="@row.RoomNumber"
+                                                    data-date="@cellDate.ToString("yyyy-MM-dd")"
+                                                    title="Kéo chuột chọn ngày hoặc nhấp để đặt P.@row.RoomNumber ngày @cellDate.ToString("dd/MM")">
+                                                    <a class="room-chart-link"
+                                                       asp-action="Create"
+                                                       asp-route-roomId="@row.RoomId"
+                                                       asp-route-roomTypeId="@row.RoomTypeId"
+                                                       asp-route-checkIn="@cellDate.ToString("yyyy-MM-dd")"
+                                                       asp-route-checkOut="@nextDate.ToString("yyyy-MM-dd")">
+                                                        <span class="visually-hidden">Đặt phòng</span>
+                                                    </a>
+                                                </td>
+                                            }
                                         }
                                         else
                                         {
+                                            var isDraggable = seg.Kind is RoomChartCellKind.Reserved or RoomChartCellKind.Occupied
+                                                && (seg.ReservationId.HasValue || seg.StayId.HasValue);
+
                                             <td class="room-chart-cell @CellClass(seg.Kind)" colspan="@seg.Span" title="@seg.Tooltip">
                                                 @if (seg.Kind == RoomChartCellKind.Hourly)
                                                 {
@@ -272,11 +343,29 @@ else
                                                         @seg.HourlyCount lượt giờ
                                                     </a>
                                                 }
-                                                else if (seg.ReservationId is int rid)
+                                                else if (isDraggable)
                                                 {
-                                                    <a class="room-chart-band" asp-action="Details" asp-route-id="@rid">
-                                                        @seg.GuestName
-                                                    </a>
+                                                    var detailUrl = seg.Kind == RoomChartCellKind.Occupied && seg.StayId.HasValue
+                                                        ? Url.Action("Stay", "FrontDesk", new { id = seg.StayId })
+                                                        : Url.Action("Details", "Reservations", new { id = seg.ReservationId });
+
+                                                    <div class="draggable-band-wrapper"
+                                                         draggable="true"
+                                                         data-reservation-id="@seg.ReservationId"
+                                                         data-stay-id="@seg.StayId"
+                                                         data-from-room-id="@row.RoomId"
+                                                         data-from-room-no="@row.RoomNumber"
+                                                         data-guest="@seg.GuestName"
+                                                         data-code="@(seg.ReservationCode ?? "Lưu trú")">
+                                                        <a class="room-chart-band text-truncate" href="@detailUrl">
+                                                            <i class="bi bi-grip-vertical opacity-50 me-1"></i>@seg.GuestName
+                                                        </a>
+                                                        <button type="button" class="btn-quick-extend"
+                                                                title="Gia hạn thêm 1 đêm cho @seg.GuestName (P.@row.RoomNumber)"
+                                                                onclick="submitQuickExtend(event, '@seg.ReservationId', '@seg.StayId', '@row.RoomNumber', '@Html.Raw((seg.GuestName ?? "").Replace("'", "\\'"))')">
+                                                            +1đ
+                                                        </button>
+                                                    </div>
                                                 }
                                                 else
                                                 {
@@ -291,9 +380,188 @@ else
                     </table>
                 </div>
             </div>
-            <p class="text-muted small mt-2">
-                Nhấp ô trống để tạo đơn; nhấp dải màu để mở chi tiết đơn.
-            </p>
         </div>
     </div>
+
+    @* Form ẩn gia hạn nhanh +1 đêm *@
+    <form method="post" asp-action="QuickExtend" id="quickExtendForm" class="d-none">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="reservationId" id="extReservationId" />
+        <input type="hidden" name="stayId" id="extStayId" />
+        <input type="hidden" name="addNights" value="1" />
+        <input type="hidden" name="from" value="@Model.From.ToString("yyyy-MM-dd")" />
+        <input type="hidden" name="days" value="@Model.Days" />
+    </form>
+
+    @* Modal xác nhận kéo-thả đổi phòng nhanh *@
+    <div class="modal fade" id="quickMoveModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-action="QuickMoveRoom">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="reservationId" id="moveReservationId" />
+                    <input type="hidden" name="stayId" id="moveStayId" />
+                    <input type="hidden" name="fromRoomId" id="moveFromRoomId" />
+                    <input type="hidden" name="toRoomId" id="moveToRoomId" />
+                    <input type="hidden" name="from" value="@Model.From.ToString("yyyy-MM-dd")" />
+                    <input type="hidden" name="days" value="@Model.Days" />
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-arrows-move text-primary me-1"></i> Xác nhận Đổi phòng nhanh</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-info mb-3" id="moveSummaryText"></div>
+                        <div class="mb-2">
+                            <label class="form-label">Lý do đổi phòng <span class="text-danger">*</span></label>
+                            <input type="text" name="reason" class="form-control" value="Đổi phòng theo yêu cầu khách trên sơ đồ" required />
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Xác nhận chuyển phòng</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function submitQuickExtend(e, resId, stayId, roomNo, guestName) {
+            e.preventDefault();
+            e.stopPropagation();
+            if (!confirm('Gia hạn thêm 1 đêm cho khách ' + guestName + ' (Phòng ' + roomNo + ')?')) return;
+            document.getElementById('extReservationId').value = resId || '';
+            document.getElementById('extStayId').value = stayId || '';
+            document.getElementById('quickExtendForm').submit();
+        }
+
+        (function () {
+            // 1. Kéo chuột qua các ô trống cùng phòng để chọn khoảng ngày tạo đơn
+            var isSelecting = false;
+            var selectRoomId = null;
+            var selectRoomTypeId = null;
+            var startDate = null;
+            var endDate = null;
+
+            function clearSelection() {
+                document.querySelectorAll('.interactive-free-cell.drag-selected').forEach(function (el) {
+                    el.classList.remove('drag-selected');
+                });
+            }
+
+            function highlightRange(roomId, d1, d2) {
+                clearSelection();
+                var minD = d1 < d2 ? d1 : d2;
+                var maxD = d1 < d2 ? d2 : d1;
+                document.querySelectorAll('.interactive-free-cell[data-room-id="' + roomId + '"]').forEach(function (cell) {
+                    var cd = cell.getAttribute('data-date');
+                    if (cd >= minD && cd <= maxD) {
+                        cell.classList.add('drag-selected');
+                    }
+                });
+            }
+
+            document.querySelectorAll('.interactive-free-cell').forEach(function (cell) {
+                cell.addEventListener('mousedown', function (e) {
+                    if (e.button !== 0) return;
+                    isSelecting = true;
+                    selectRoomId = cell.getAttribute('data-room-id');
+                    selectRoomTypeId = cell.getAttribute('data-room-type-id');
+                    startDate = cell.getAttribute('data-date');
+                    endDate = startDate;
+                    highlightRange(selectRoomId, startDate, endDate);
+                });
+
+                cell.addEventListener('mouseenter', function () {
+                    if (!isSelecting) return;
+                    if (cell.getAttribute('data-room-id') !== selectRoomId) return;
+                    endDate = cell.getAttribute('data-date');
+                    highlightRange(selectRoomId, startDate, endDate);
+                });
+            });
+
+            document.addEventListener('mouseup', function () {
+                if (!isSelecting) return;
+                isSelecting = false;
+                if (selectRoomId && startDate && endDate && startDate !== endDate) {
+                    var minD = startDate < endDate ? startDate : endDate;
+                    var maxD = startDate < endDate ? endDate : startDate;
+                    var checkOutObj = new Date(maxD + 'T00:00:00');
+                    checkOutObj.setDate(checkOutObj.getDate() + 1);
+                    var checkOutStr = checkOutObj.toISOString().slice(0, 10);
+                    clearSelection();
+                    window.location.href = '/Reservations/Create?roomId=' + encodeURIComponent(selectRoomId)
+                        + '&roomTypeId=' + encodeURIComponent(selectRoomTypeId || '')
+                        + '&checkIn=' + encodeURIComponent(minD)
+                        + '&checkOut=' + encodeURIComponent(checkOutStr);
+                } else {
+                    clearSelection();
+                }
+            });
+
+            // 2. Kéo-thả thanh Đặt phòng / Lưu trú sang hàng phòng khác để đổi phòng nhanh
+            var draggedData = null;
+
+            document.querySelectorAll('.draggable-band-wrapper').forEach(function (band) {
+                band.addEventListener('dragstart', function (e) {
+                    draggedData = {
+                        reservationId: band.getAttribute('data-reservation-id') || '',
+                        stayId: band.getAttribute('data-stay-id') || '',
+                        fromRoomId: band.getAttribute('data-from-room-id') || '',
+                        fromRoomNo: band.getAttribute('data-from-room-no') || '',
+                        guest: band.getAttribute('data-guest') || '',
+                        code: band.getAttribute('data-code') || ''
+                    };
+                    e.dataTransfer.effectAllowed = 'move';
+                    e.dataTransfer.setData('text/plain', draggedData.fromRoomId);
+                });
+
+                band.addEventListener('dragend', function () {
+                    document.querySelectorAll('.gantt-row-drop-hover').forEach(function (r) {
+                        r.classList.remove('gantt-row-drop-hover');
+                    });
+                });
+            });
+
+            document.querySelectorAll('.gantt-room-row').forEach(function (row) {
+                row.addEventListener('dragover', function (e) {
+                    if (!draggedData) return;
+                    var targetRoomId = row.getAttribute('data-target-room-id');
+                    if (targetRoomId && targetRoomId !== draggedData.fromRoomId) {
+                        e.preventDefault();
+                        e.dataTransfer.dropEffect = 'move';
+                        row.classList.add('gantt-row-drop-hover');
+                    }
+                });
+
+                row.addEventListener('dragleave', function () {
+                    row.classList.remove('gantt-row-drop-hover');
+                });
+
+                row.addEventListener('drop', function (e) {
+                    row.classList.remove('gantt-row-drop-hover');
+                    if (!draggedData) return;
+                    var targetRoomId = row.getAttribute('data-target-room-id');
+                    var targetRoomNo = row.getAttribute('data-target-room-no');
+                    var targetRoomType = row.getAttribute('data-target-room-type');
+                    if (!targetRoomId || targetRoomId === draggedData.fromRoomId) return;
+                    e.preventDefault();
+
+                    document.getElementById('moveReservationId').value = draggedData.reservationId;
+                    document.getElementById('moveStayId').value = draggedData.stayId;
+                    document.getElementById('moveFromRoomId').value = draggedData.fromRoomId;
+                    document.getElementById('moveToRoomId').value = targetRoomId;
+                    document.getElementById('moveSummaryText').innerHTML =
+                        'Chuyển khách <strong>' + draggedData.guest + '</strong> (' + draggedData.code + ') từ '
+                        + '<strong>Phòng ' + draggedData.fromRoomNo + '</strong> sang '
+                        + '<strong>Phòng ' + targetRoomNo + ' (' + targetRoomType + ')</strong>?';
+
+                    var modalEl = document.getElementById('quickMoveModal');
+                    if (modalEl && window.bootstrap) {
+                        new bootstrap.Modal(modalEl).show();
+                    }
+                });
+            });
+        })();
+    </script>
 }

@@ -5,15 +5,27 @@
     var s = Model.Summary;
 }
 
-<div class="d-flex flex-wrap gap-2 mb-3">
+<div class="d-flex flex-wrap gap-2 mb-3 align-items-center">
     <div class="me-auto">
-        <h5 class="mb-0"><code>@s.FolioCode</code> · Phòng @Model.RoomNumber (@Model.RoomTypeName)</h5>
+        <h5 class="mb-0">
+            <code>@s.FolioCode</code> · Phòng @Model.RoomNumber (@Model.RoomTypeName)
+            @if (!string.IsNullOrWhiteSpace(Model.ReservationCode))
+            {
+                <a class="badge text-bg-info text-decoration-none ms-1" asp-controller="Reservations" asp-action="Details" asp-route-id="@Model.ReservationId">
+                    Đơn @Model.ReservationCode
+                </a>
+            }
+        </h5>
         <span class="text-muted small">@Model.GuestName · @Model.ActualCheckIn.ToString("dd/MM HH:mm") → @Model.ExpectedCheckOut.ToString("dd/MM/yyyy") (@Model.Nights đêm) @(s.IsLocked ? "· Đã khóa" : "")</span>
     </div>
     @if (Model.CanEdit)
     {
         <a class="btn btn-sm btn-outline-primary" asp-action="AddCharge" asp-route-stayId="@Model.StayId"><i class="bi bi-plus-lg"></i> Thêm chi phí</a>
         <a class="btn btn-sm btn-outline-secondary" asp-action="Discount" asp-route-stayId="@Model.StayId"><i class="bi bi-percent"></i> Giảm giá</a>
+        <button type="button" class="btn btn-sm btn-outline-info" data-bs-toggle="modal" data-bs-target="#transferFolioModal"
+                onclick="openTransferModal(null, 'Gộp chi phí từ Phòng @Model.RoomNumber sang phòng khác')">
+            <i class="bi bi-arrow-left-right"></i> Chuyển / Gộp sang phòng khác
+        </button>
         <form method="post" asp-action="LockFolio" class="d-inline">
             <input type="hidden" name="stayId" value="@Model.StayId" />
             <button class="btn btn-sm btn-outline-dark"><i class="bi bi-lock"></i> Khóa folio</button>
@@ -25,6 +37,12 @@
             <input type="hidden" name="stayId" value="@Model.StayId" />
             <button class="btn btn-sm btn-outline-warning"><i class="bi bi-unlock"></i> Mở khóa</button>
         </form>
+    }
+    @if (Model.ReservationId is not null && Model.InvoiceId is null)
+    {
+        <a class="btn btn-sm btn-success" asp-action="GroupPayment" asp-route-reservationId="@Model.ReservationId">
+            <i class="bi bi-people-fill"></i> Thanh toán gộp theo Đoàn
+        </a>
     }
     @if (s.IsLocked && Model.InvoiceId is null)
     {
@@ -51,25 +69,36 @@
                         <td class="text-center">@l.Quantity</td>
                         <td class="text-end">@l.UnitPrice.ToString("N0")</td>
                         <td class="text-end">@l.Amount.ToString("N0")</td>
-                        <td class="text-end">
-                            @if (Model.CanEdit && !l.IsVoided && !l.IsRoomCharge)
+                        <td class="text-end text-nowrap">
+                            @if (Model.CanEdit && !l.IsVoided)
                             {
-                                <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#void-@l.Id"><i class="bi bi-trash"></i></button>
-                                <div class="modal fade" id="void-@l.Id" tabindex="-1">
-                                    <div class="modal-dialog"><div class="modal-content">
-                                        <form method="post" asp-action="VoidLine">
-                                            <div class="modal-header"><h5 class="modal-title">Hủy dòng chi phí</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
-                                            <div class="modal-body">
-                                                <input type="hidden" name="folioItemId" value="@l.Id" />
-                                                <input type="hidden" name="stayId" value="@Model.StayId" />
-                                                <p class="small">@l.Description — @l.Amount.ToString("N0") ₫</p>
-                                                <label class="form-label">Lý do hủy <span class="text-danger">*</span></label>
-                                                <input name="reason" class="form-control" required />
-                                            </div>
-                                            <div class="modal-footer"><button class="btn btn-danger">Hủy dòng</button></div>
-                                        </form>
-                                    </div></div>
-                                </div>
+                                @if (Model.OtherOpenStays.Count > 0)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-info me-1" title="Chuyển khoản phí này sang phòng khác"
+                                            data-bs-toggle="modal" data-bs-target="#transferFolioModal"
+                                            onclick="openTransferModal(@l.Id, '@Html.Raw(l.Description.Replace("'", "\\'")) (@l.Amount.ToString("N0") ₫)')">
+                                        <i class="bi bi-arrow-left-right"></i>
+                                    </button>
+                                }
+                                @if (!l.IsRoomCharge)
+                                {
+                                    <button type="button" class="btn btn-sm btn-outline-danger" data-bs-toggle="modal" data-bs-target="#void-@l.Id"><i class="bi bi-trash"></i></button>
+                                    <div class="modal fade" id="void-@l.Id" tabindex="-1">
+                                        <div class="modal-dialog"><div class="modal-content text-start">
+                                            <form method="post" asp-action="VoidLine">
+                                                <div class="modal-header"><h5 class="modal-title">Hủy dòng chi phí</h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+                                                <div class="modal-body">
+                                                    <input type="hidden" name="folioItemId" value="@l.Id" />
+                                                    <input type="hidden" name="stayId" value="@Model.StayId" />
+                                                    <p class="small">@l.Description — @l.Amount.ToString("N0") ₫</p>
+                                                    <label class="form-label">Lý do hủy <span class="text-danger">*</span></label>
+                                                    <input name="reason" class="form-control" required />
+                                                </div>
+                                                <div class="modal-footer"><button class="btn btn-danger">Hủy dòng</button></div>
+                                            </form>
+                                        </div></div>
+                                    </div>
+                                }
                             }
                         </td>
                     </tr>
@@ -91,9 +120,85 @@
                     <tr class="fw-semibold"><td>Tạm tính</td><td class="text-end">@s.SubTotal.ToString("N0") ₫</td></tr>
                     <tr><td>VAT @((s.TaxRate * 100).ToString("0.#"))%</td><td class="text-end">@s.TaxAmount.ToString("N0") ₫</td></tr>
                     <tr class="fw-semibold"><td>Tổng (làm tròn)</td><td class="text-end">@s.Total.ToString("N0") ₫</td></tr>
+                    @if (s.DepositApplied > 0)
+                    {
+                        <tr class="text-success"><td>Đã cọc / TT trước</td><td class="text-end">-@s.DepositApplied.ToString("N0") ₫</td></tr>
+                    }
                     <tr class="table-light fw-semibold"><td>Số dư phải thu</td><td class="text-end">@s.BalanceDue.ToString("N0") ₫</td></tr>
                 </tbody>
             </table>
         </div></div>
     </div>
 </div>
+
+@if (Model.CanEdit)
+{
+    <div class="modal fade" id="transferFolioModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <form method="post" asp-action="TransferFolio">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="fromStayId" value="@Model.StayId" />
+                    <input type="hidden" name="folioItemId" id="transferFolioItemId" value="" />
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-arrow-left-right text-info me-1"></i> Chuyển / Gộp chi phí sang phòng khác</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-light border small mb-3" id="transferModalSubtitle">
+                            Gộp chi phí từ Phòng @Model.RoomNumber sang phòng khác
+                        </div>
+                        @if (Model.OtherOpenStays.Count == 0)
+                        {
+                            <div class="alert alert-warning small mb-0">
+                                Hiện chỉ có duy nhất Phòng @Model.RoomNumber đang mở Folio. Cần ít nhất 2 phòng đang lưu trú (CheckedIn &amp; chưa khóa Folio) để chuyển/gộp chi phí liên phòng.
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="mb-3">
+                                <label class="form-label">Chọn phòng nhận chi phí (Master Folio) <span class="text-danger">*</span></label>
+                                <select name="toStayId" class="form-select" required>
+                                    @foreach (var target in Model.OtherOpenStays.OrderByDescending(x => x.IsSameReservation).ThenBy(x => x.RoomNumber))
+                                    {
+                                        <option value="@target.StayId">
+                                            Phòng @target.RoomNumber — @target.GuestName (@target.FolioCode) @(target.IsSameReservation ? "★ Cùng đoàn" : "")
+                                        </option>
+                                    }
+                                </select>
+                            </div>
+                            <div class="form-check mb-3" id="includeRoomChargesGroup">
+                                <input class="form-check-input" type="checkbox" name="includeRoomCharges" value="true" id="chkIncludeRoom" checked />
+                                <label class="form-check-label" for="chkIncludeRoom">
+                                    Gộp cả tiền phòng (nếu bỏ chọn sẽ chỉ chuyển dịch vụ &amp; phụ thu, giữ lại tiền phòng)
+                                </label>
+                            </div>
+                            <div class="mb-2">
+                                <label class="form-label">Lý do chuyển / gộp <span class="text-danger">*</span></label>
+                                <input name="reason" class="form-control" value="Gộp hóa đơn về phòng trưởng đoàn" required />
+                            </div>
+                        }
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                        @if (Model.OtherOpenStays.Count > 0)
+                        {
+                            <button type="submit" class="btn btn-info text-white"><i class="bi bi-check2-circle"></i> Xác nhận chuyển chi phí</button>
+                        }
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function openTransferModal(itemId, subtitle) {
+            var input = document.getElementById('transferFolioItemId');
+            var sub = document.getElementById('transferModalSubtitle');
+            var roomGrp = document.getElementById('includeRoomChargesGroup');
+            if (input) input.value = itemId || '';
+            if (sub) sub.textContent = itemId ? ('Chuyển mục: ' + subtitle) : subtitle;
+            if (roomGrp) roomGrp.style.display = itemId ? 'none' : 'block';
+        }
+    </script>
+}

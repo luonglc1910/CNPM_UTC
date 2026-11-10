@@ -1,5 +1,6 @@
 using HotelManagement.Web.Data;
 using HotelManagement.Web.Models;
+using HotelManagement.Web.Models.Entities;
 using HotelManagement.Web.Models.ViewModels;
 using Microsoft.EntityFrameworkCore;
 
@@ -34,19 +35,37 @@ public class DashboardService : IDashboardService
         var today = DateTime.Now.Date;
         var tomorrow = today.AddDays(1);
 
-        var roomStatuses = await _db.Rooms.AsNoTracking()
+        var rooms = await _db.Rooms.AsNoTracking()
             .Where(r => r.IsActive)
-            .Select(r => r.Status)
+            .Select(r => new { r.Id, r.Status })
             .ToListAsync();
+
+        // Phòng đã gán cho đơn Confirmed được coi là đang chờ check-in.
+        // Chỉ tách từ nhóm phòng trống để các thẻ trạng thái không bị đếm trùng.
+        var availableRoomIds = rooms
+            .Where(r => r.Status == RoomStatus.Available)
+            .Select(r => r.Id)
+            .ToList();
+
+        var pendingCheckInRoomIds = await _db.ReservationRooms.AsNoTracking()
+            .Where(rr => rr.RoomId != null
+                && availableRoomIds.Contains(rr.RoomId.Value)
+                && rr.Reservation.Status == ReservationStatus.Confirmed)
+            .Select(rr => rr.RoomId!.Value)
+            .Distinct()
+            .ToListAsync();
+
+        var pendingCheckInSet = pendingCheckInRoomIds.ToHashSet();
 
         var vm = new DashboardViewModel
         {
-            AvailableRooms = roomStatuses.Count(s => s == RoomStatus.Available),
-            OccupiedRooms = roomStatuses.Count(s => s == RoomStatus.Occupied),
-            DirtyRooms = roomStatuses.Count(s => s == RoomStatus.Dirty),
-            MaintenanceRooms = roomStatuses.Count(s => s == RoomStatus.Maintenance),
+            AvailableRooms = availableRoomIds.Count(id => !pendingCheckInSet.Contains(id)),
+            PendingCheckInRooms = pendingCheckInRoomIds.Count,
+            OccupiedRooms = rooms.Count(r => r.Status == RoomStatus.Occupied),
+            DirtyRooms = rooms.Count(r => r.Status == RoomStatus.Dirty),
+            MaintenanceRooms = rooms.Count(r => r.Status == RoomStatus.Maintenance),
             // Mẫu số bỏ phòng ngừng khai thác, giống cách tính công suất ở SCR-G02.
-            UsableRooms = roomStatuses.Count(s => s != RoomStatus.OutOfService)
+            UsableRooms = rooms.Count(r => r.Status != RoomStatus.OutOfService)
         };
 
         // Đã check-in trong ngày hôm nay
@@ -80,6 +99,8 @@ public class DashboardService : IDashboardService
             vm.RevenueIsWholeHotel = true;
             vm.HasOpenShift = true;
             vm.RevenueToday = await settled.SumAsync(i => (decimal?)i.TotalAmount) ?? 0m;
+            await FillCashFlowAsync(vm, _db.Payments.AsNoTracking()
+                .Where(p => p.PaidAt >= today && p.PaidAt < tomorrow));
             return;
         }
 
@@ -92,6 +113,27 @@ public class DashboardService : IDashboardService
             ? 0m
             : await settled.Where(i => i.CashierShiftId == shift.Id)
                 .SumAsync(i => (decimal?)i.TotalAmount) ?? 0m;
+
+        if (shift is not null)
+        {
+            await FillCashFlowAsync(vm, _db.Payments.AsNoTracking()
+                .Where(p => p.CashierShiftId == shift.Id
+                    && p.PaidAt >= today && p.PaidAt < tomorrow));
+        }
+    }
+
+    private static async Task FillCashFlowAsync(DashboardViewModel vm, IQueryable<Payment> payments)
+    {
+        vm.CashInToday = await payments
+            .Where(p => p.Amount > 0)
+            .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+        var negative = await payments
+            .Where(p => p.Amount < 0)
+            .SumAsync(p => (decimal?)p.Amount) ?? 0m;
+
+        vm.CashOutToday = Math.Abs(negative);
+        vm.PaymentCountToday = await payments.CountAsync();
     }
 
     private async Task<List<PendingWorkItem>> BuildPendingWorkAsync()

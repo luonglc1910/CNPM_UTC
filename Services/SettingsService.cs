@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using HotelManagement.Web.Data;
 using HotelManagement.Web.Models.Entities;
 using HotelManagement.Web.Models.ViewModels;
@@ -24,6 +25,11 @@ public interface ISettingsService
     Task<ServiceResult> SaveSurchargeAsync(SurchargeSettings form);
     Task<ServiceResult> SaveCancellationAsync(CancellationSettings form);
     Task<ServiceResult> SaveLimitAsync(LimitSettings form);
+    Task<ServiceResult> SavePaymentAsync(PaymentAndEmailSettings form);
+    Task<ServiceResult> SaveDynamicPricingAsync(DynamicPricingSettings form);
+    Task<ServiceResult> AddSeasonalRuleAsync(AddSeasonalRuleInput input);
+    Task<ServiceResult> ToggleSeasonalRuleAsync(string id);
+    Task<ServiceResult> DeleteSeasonalRuleAsync(string id);
 
     /// <summary>Đưa cả nhóm về giá trị mặc định — SCR-A12.</summary>
     Task<ServiceResult> ResetGroupAsync(string group);
@@ -96,6 +102,29 @@ public class SettingsService : ISettingsService
                 AllowSellWhenOutOfStock = Bool(values, SystemSettingKeys.AllowSellWhenOutOfStock),
                 LoyalGuestStayThreshold = Int(values, SystemSettingKeys.LoyalGuestStayThreshold),
                 ChildAgeLimit = Int(values, SystemSettingKeys.ChildAgeLimit)
+            },
+            Payment = new PaymentAndEmailSettings
+            {
+                BankBin = Text(values, SystemSettingKeys.BankBin),
+                BankName = Text(values, SystemSettingKeys.BankName),
+                BankAccountNo = Text(values, SystemSettingKeys.BankAccountNo),
+                BankAccountName = Text(values, SystemSettingKeys.BankAccountName),
+                EmailEnabled = Bool(values, SystemSettingKeys.EmailEnabled),
+                EmailSenderName = Text(values, SystemSettingKeys.EmailSenderName),
+                EmailSenderAddress = Text(values, SystemSettingKeys.EmailSenderAddress),
+                EmailSmtpHost = Text(values, SystemSettingKeys.EmailSmtpHost),
+                EmailSmtpPort = Int(values, SystemSettingKeys.EmailSmtpPort),
+                EmailSmtpUser = Text(values, SystemSettingKeys.EmailSmtpUser),
+                // Không bao giờ đẩy mật khẩu đã lưu ngược ra HTML.
+                EmailSmtpPass = null,
+                EmailSmtpPasswordConfigured = !string.IsNullOrWhiteSpace(Text(values, SystemSettingKeys.EmailSmtpPass))
+            },
+            DynamicPricing = new DynamicPricingSettings
+            {
+                Enabled = Bool(values, SystemSettingKeys.EnableDynamicPricing),
+                WeekendSurchargePercent = Percent(values, SystemSettingKeys.WeekendSurchargeRate),
+                WeekendDays = Text(values, SystemSettingKeys.WeekendDays),
+                Rules = SettingsReader.ParseSeasonalRules(Text(values, SystemSettingKeys.SeasonalRulesJson))
             }
         };
     }
@@ -204,6 +233,111 @@ public class SettingsService : ISettingsService
             [SystemSettingKeys.ChildAgeLimit] = form.ChildAgeLimit.ToString(CultureInfo.InvariantCulture)
         });
 
+    public async Task<ServiceResult> SavePaymentAsync(PaymentAndEmailSettings form)
+    {
+        var updates = new Dictionary<string, string>
+        {
+            [SystemSettingKeys.BankBin] = form.BankBin.Trim(),
+            [SystemSettingKeys.BankName] = form.BankName.Trim(),
+            [SystemSettingKeys.BankAccountNo] = form.BankAccountNo.Trim(),
+            [SystemSettingKeys.BankAccountName] = form.BankAccountName.Trim().ToUpperInvariant(),
+            [SystemSettingKeys.EmailEnabled] = form.EmailEnabled ? "true" : "false",
+            [SystemSettingKeys.EmailSenderName] = form.EmailSenderName?.Trim() ?? "AURA Boutique Hotel & Resort",
+            [SystemSettingKeys.EmailSenderAddress] = form.EmailSenderAddress?.Trim() ?? "booking@aurahotel.vn",
+            [SystemSettingKeys.EmailSmtpHost] = form.EmailSmtpHost?.Trim() ?? string.Empty,
+            [SystemSettingKeys.EmailSmtpPort] = form.EmailSmtpPort.ToString(CultureInfo.InvariantCulture),
+            [SystemSettingKeys.EmailSmtpUser] = form.EmailSmtpUser?.Trim() ?? string.Empty
+        };
+
+        // Để trống nghĩa là giữ mật khẩu cũ, không phải xóa nó.
+        if (!string.IsNullOrWhiteSpace(form.EmailSmtpPass))
+            updates[SystemSettingKeys.EmailSmtpPass] = form.EmailSmtpPass.Trim();
+
+        return await ApplyAsync(SystemSettingDefaults.Groups.Payment, updates);
+    }
+
+    public async Task<ServiceResult> SaveDynamicPricingAsync(DynamicPricingSettings form)
+        => await ApplyAsync(SystemSettingDefaults.Groups.DynamicPricing, new Dictionary<string, string>
+        {
+            [SystemSettingKeys.EnableDynamicPricing] = form.Enabled ? "true" : "false",
+            [SystemSettingKeys.WeekendSurchargeRate] = FromPercent(form.WeekendSurchargePercent),
+            [SystemSettingKeys.WeekendDays] = string.IsNullOrWhiteSpace(form.WeekendDays) ? "Friday,Saturday" : form.WeekendDays.Trim()
+        });
+
+    public async Task<ServiceResult> AddSeasonalRuleAsync(AddSeasonalRuleInput input)
+    {
+        if (string.IsNullOrWhiteSpace(input.Name))
+        {
+            return ServiceResult.Fail("Vui lòng nhập tên đợt lễ / mùa vụ.");
+        }
+
+        if (input.EndDate.Date < input.StartDate.Date)
+        {
+            return ServiceResult.Fail("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.");
+        }
+
+        var values = await LoadAsync();
+        var rules = SettingsReader.ParseSeasonalRules(Text(values, SystemSettingKeys.SeasonalRulesJson));
+
+        rules.Add(new SeasonalPricingRule
+        {
+            Id = $"SR-{DateTime.Now:yyMMddHHmmss}",
+            Name = input.Name.Trim(),
+            StartDate = input.StartDate.Date,
+            EndDate = input.EndDate.Date,
+            PercentChange = input.PercentChange,
+            RoomTypeIds = input.RoomTypeIds?.Trim() ?? string.Empty,
+            IsActive = true
+        });
+
+        var json = SettingsReader.SerializeSeasonalRules(rules);
+        await ApplyAsync(SystemSettingDefaults.Groups.DynamicPricing, new Dictionary<string, string>
+        {
+            [SystemSettingKeys.SeasonalRulesJson] = json
+        });
+
+        return ServiceResult.Ok(message: $"Đã thêm quy tắc giá mùa vụ \"{input.Name.Trim()}\".");
+    }
+
+    public async Task<ServiceResult> ToggleSeasonalRuleAsync(string id)
+    {
+        var values = await LoadAsync();
+        var rules = SettingsReader.ParseSeasonalRules(Text(values, SystemSettingKeys.SeasonalRulesJson));
+        var rule = rules.FirstOrDefault(r => r.Id == id);
+        if (rule is null)
+        {
+            return ServiceResult.Fail("Không tìm thấy quy tắc giá mùa vụ.");
+        }
+
+        rule.IsActive = !rule.IsActive;
+        var json = SettingsReader.SerializeSeasonalRules(rules);
+        await ApplyAsync(SystemSettingDefaults.Groups.DynamicPricing, new Dictionary<string, string>
+        {
+            [SystemSettingKeys.SeasonalRulesJson] = json
+        });
+
+        return ServiceResult.Ok(message: $"Đã {(rule.IsActive ? "bật" : "tắt")} quy tắc \"{rule.Name}\".");
+    }
+
+    public async Task<ServiceResult> DeleteSeasonalRuleAsync(string id)
+    {
+        var values = await LoadAsync();
+        var rules = SettingsReader.ParseSeasonalRules(Text(values, SystemSettingKeys.SeasonalRulesJson));
+        var removed = rules.RemoveAll(r => r.Id == id);
+        if (removed == 0)
+        {
+            return ServiceResult.Fail("Không tìm thấy quy tắc giá mùa vụ.");
+        }
+
+        var json = SettingsReader.SerializeSeasonalRules(rules);
+        await ApplyAsync(SystemSettingDefaults.Groups.DynamicPricing, new Dictionary<string, string>
+        {
+            [SystemSettingKeys.SeasonalRulesJson] = json
+        });
+
+        return ServiceResult.Ok(message: "Đã xóa quy tắc giá mùa vụ.");
+    }
+
     public async Task<ServiceResult> ResetGroupAsync(string group)
     {
         if (!SystemSettingDefaults.Groups.All.Contains(group, StringComparer.Ordinal))
@@ -254,7 +388,8 @@ public class SettingsService : ISettingsService
                     Description = definition.Description
                 });
 
-                _audit.Log("ChangeSetting", nameof(SystemSetting), key, newValue: value);
+                _audit.Log("ChangeSetting", nameof(SystemSetting), key,
+                    newValue: IsSecret(key) ? "***" : value);
                 changed++;
                 continue;
             }
@@ -266,7 +401,8 @@ public class SettingsService : ISettingsService
 
             // BR-11: nhật ký giữ nguyên giá trị cũ để còn đối chiếu về sau.
             _audit.Log(isReset ? "ResetSetting" : "ChangeSetting", nameof(SystemSetting), key,
-                oldValue: entity.Value, newValue: value);
+                oldValue: IsSecret(key) ? "***" : entity.Value,
+                newValue: IsSecret(key) ? "***" : value);
 
             entity.Value = value;
             changed++;
@@ -287,6 +423,9 @@ public class SettingsService : ISettingsService
     private async Task<Dictionary<string, string>> LoadAsync()
         => await _db.SystemSettings.AsNoTracking()
             .ToDictionaryAsync(s => s.Key, s => s.Value, StringComparer.Ordinal);
+
+    private static bool IsSecret(string key)
+        => string.Equals(key, SystemSettingKeys.EmailSmtpPass, StringComparison.Ordinal);
 
     // ---------- Chuyển đổi kiểu ----------
 

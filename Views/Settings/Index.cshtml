@@ -430,6 +430,237 @@
             </div>
         </div>
     </div>
+
+    @* ---------- 7. Thanh toán VietQR & Email tự động ---------- *@
+    <div class="col-12" id="Payment">
+        <div class="card @(active == "Payment" ? "border-primary" : "")">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-qr-code-scan"></i> 7. Thanh toán VietQR &amp; Email tự động</span>
+                <form method="post" asp-action="ResetGroup" asp-route-group="Payment"
+                      onsubmit="return confirm('Khôi phục nhóm Thanh toán VietQR &amp; Email về mặc định?');">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Khôi phục mặc định
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="SavePayment">
+                    <div class="row g-3">
+                        <div class="col-md-3">
+                            <label asp-for="Payment.BankBin" class="form-label">Ngân hàng thụ hưởng (VietQR / Napas)</label>
+                            <select asp-for="Payment.BankBin" class="form-select">
+                                <option value="970419">Ngân hàng NCB (970419)</option>
+                                <option value="970422">MB Bank (970422)</option>
+                                <option value="970436">Vietcombank (970436)</option>
+                                <option value="970415">VietinBank (970415)</option>
+                                <option value="970418">BIDV (970418)</option>
+                                <option value="970407">Techcombank (970407)</option>
+                                <option value="970416">ACB (970416)</option>
+                                <option value="970432">VPBank (970432)</option>
+                                <option value="970423">TPBank (970423)</option>
+                            </select>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="Payment.BankName" class="form-label">Tên hiển thị ngân hàng</label>
+                            <input asp-for="Payment.BankName" class="form-control" />
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="Payment.BankAccountNo" class="form-label">Số thẻ / Số tài khoản</label>
+                            <input asp-for="Payment.BankAccountNo" class="form-control" />
+                            <div class="form-text">Thẻ NCB mẫu: <code>9704198526191432198</code></div>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="Payment.BankAccountName" class="form-label">Tên chủ thẻ / tài khoản (Không dấu)</label>
+                            <input asp-for="Payment.BankAccountName" class="form-control text-uppercase" />
+                            <div class="form-text">Ngày phát hành: <code>07/15</code> · OTP: <code>123456</code></div>
+                        </div>
+
+                        <div class="col-12"><hr class="my-1" /></div>
+
+                        <div class="col-md-12">
+                            <div class="form-check form-switch">
+                                <input asp-for="Payment.EmailEnabled" class="form-check-input" />
+                                <label asp-for="Payment.EmailEnabled" class="form-check-label fw-semibold"></label>
+                            </div>
+                            <div class="form-text">Khi bật, hệ thống tự động gửi Email xác nhận đặt phòng &amp; hóa đơn (kèm lưu bản xem trước HTML tại máy chủ).</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="Payment.EmailSenderName" class="form-label"></label>
+                            <input asp-for="Payment.EmailSenderName" class="form-control" />
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="Payment.EmailSenderAddress" class="form-label"></label>
+                            <input asp-for="Payment.EmailSenderAddress" class="form-control" />
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="Payment.EmailSmtpHost" class="form-label"></label>
+                            <input asp-for="Payment.EmailSmtpHost" class="form-control" placeholder="smtp.gmail.com" />
+                        </div>
+                        <div class="col-md-1">
+                            <label asp-for="Payment.EmailSmtpPort" class="form-label"></label>
+                            <input asp-for="Payment.EmailSmtpPort" type="number" class="form-control" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Payment.EmailSmtpUser" class="form-label"></label>
+                            <input asp-for="Payment.EmailSmtpUser" class="form-control" placeholder="tenkhachsan@gmail.com" autocomplete="username" />
+                        </div>
+                        <div class="col-md-4">
+                            <label asp-for="Payment.EmailSmtpPass" class="form-label"></label>
+                            <input asp-for="Payment.EmailSmtpPass" class="form-control" value="" placeholder="@(Model.Payment.EmailSmtpPasswordConfigured ? "Đã cấu hình — để trống để giữ nguyên" : "Nhập mật khẩu ứng dụng")" autocomplete="new-password" />
+                            <div class="form-text">
+                                Gmail phải dùng <strong>Mật khẩu ứng dụng 16 ký tự</strong>, không dùng mật khẩu đăng nhập.
+                            </div>
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-3">
+                        <i class="bi bi-check-lg"></i> Lưu cấu hình VietQR &amp; Email
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    @* ---------- 8. Bảng giá linh hoạt theo Mùa / Cuối tuần / Ngày lễ ---------- *@
+    <div class="col-12" id="DynamicPricing">
+        <div class="card @(active == "DynamicPricing" ? "border-primary" : "")">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-calendar-range"></i> 8. Bảng giá linh hoạt theo Mùa / Cuối tuần / Ngày lễ (Dynamic Pricing)</span>
+                <form method="post" asp-action="ResetGroup" asp-route-group="DynamicPricing"
+                      onsubmit="return confirm('Khôi phục Bảng giá linh hoạt về mặc định?');">
+                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                        <i class="bi bi-arrow-counterclockwise"></i> Khôi phục mặc định
+                    </button>
+                </form>
+            </div>
+            <div class="card-body">
+                <form method="post" asp-action="SaveDynamicPricing" class="mb-4">
+                    <div class="row g-3 align-items-end">
+                        <div class="col-md-4">
+                            <div class="form-check form-switch mb-2">
+                                <input asp-for="DynamicPricing.Enabled" class="form-check-input" />
+                                <label asp-for="DynamicPricing.Enabled" class="form-check-label fw-semibold"></label>
+                            </div>
+                            <div class="form-text">Tự động áp dụng giá cuối tuần và mùa lễ khi tạo đơn / đặt phòng trên Portal.</div>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="DynamicPricing.WeekendSurchargePercent" class="form-label">Phụ thu đêm cuối tuần (%)</label>
+                            <div class="input-group">
+                                <span class="input-group-text">+</span>
+                                <input asp-for="DynamicPricing.WeekendSurchargePercent" type="number" step="1" class="form-control" />
+                                <span class="input-group-text">%</span>
+                            </div>
+                        </div>
+                        <div class="col-md-3">
+                            <label asp-for="DynamicPricing.WeekendDays" class="form-label">Các đêm tính cuối tuần</label>
+                            <select asp-for="DynamicPricing.WeekendDays" class="form-select">
+                                <option value="Friday,Saturday">Đêm Thứ 6 &amp; Thứ 7</option>
+                                <option value="Friday,Saturday,Sunday">Đêm Thứ 6, Thứ 7 &amp; Chủ Nhật</option>
+                                <option value="Saturday,Sunday">Đêm Thứ 7 &amp; Chủ Nhật</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">
+                                <i class="bi bi-check-lg"></i> Lưu cấu hình
+                            </button>
+                        </div>
+                    </div>
+                </form>
+
+                <hr />
+                <h6 class="fw-semibold mb-2"><i class="bi bi-stars text-warning"></i> Danh sách đợt Giá Mùa Vụ / Lễ Tết</h6>
+                <div class="table-responsive mb-3">
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Tên đợt / Sự kiện</th>
+                                <th>Từ ngày</th>
+                                <th>Đến ngày</th>
+                                <th class="text-center">Điều chỉnh giá</th>
+                                <th class="text-center">Trạng thái</th>
+                                <th class="text-end">Thao tác</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var r in Model.DynamicPricing.Rules.OrderBy(x => x.StartDate))
+                            {
+                                <tr>
+                                    <td class="fw-medium">@r.Name</td>
+                                    <td>@r.StartDate.ToString("dd/MM/yyyy")</td>
+                                    <td>@r.EndDate.ToString("dd/MM/yyyy")</td>
+                                    <td class="text-center">
+                                        @if (r.PercentChange >= 0)
+                                        {
+                                            <span class="badge text-bg-warning">+@r.PercentChange.ToString("0.#")%</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-success">@r.PercentChange.ToString("0.#")%</span>
+                                        }
+                                    </td>
+                                    <td class="text-center">
+                                        @if (r.IsActive)
+                                        {
+                                            <span class="badge text-bg-success">Đang bật</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge text-bg-secondary">Đang tắt</span>
+                                        }
+                                    </td>
+                                    <td class="text-end">
+                                        <form method="post" asp-action="ToggleSeasonalRule" class="d-inline">
+                                            <input type="hidden" name="id" value="@r.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                                @(r.IsActive ? "Tắt" : "Bật")
+                                            </button>
+                                        </form>
+                                        <form method="post" asp-action="DeleteSeasonalRule" class="d-inline"
+                                              onsubmit="return confirm('Xóa đợt giá mùa vụ này?');">
+                                            <input type="hidden" name="id" value="@r.Id" />
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            }
+                            @if (Model.DynamicPricing.Rules.Count == 0)
+                            {
+                                <tr><td colspan="6" class="text-center text-muted py-3">Chưa có quy tắc giá mùa vụ nào.</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+
+                <form method="post" asp-action="AddSeasonalRule" class="row g-2 align-items-end bg-light p-3 rounded border">
+                    <div class="col-md-4">
+                        <label class="form-label small mb-1">Tên đợt lễ / mùa cao điểm <span class="text-danger">*</span></label>
+                        <input type="text" name="Name" required class="form-control form-control-sm" placeholder="VD: Tết Nguyên Đán / Lễ 30/4" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1">Từ ngày</label>
+                        <input type="date" name="StartDate" value="@DateTime.Today.ToString("yyyy-MM-dd")" required class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1">Đến ngày</label>
+                        <input type="date" name="EndDate" value="@DateTime.Today.AddDays(5).ToString("yyyy-MM-dd")" required class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1">% Tăng / Giảm</label>
+                        <div class="input-group input-group-sm">
+                            <input type="number" name="PercentChange" value="25" step="1" required class="form-control" />
+                            <span class="input-group-text">%</span>
+                        </div>
+                    </div>
+                    <div class="col-md-2">
+                        <button type="submit" class="btn btn-sm btn-success w-100">
+                            <i class="bi bi-plus-circle"></i> Thêm đợt giá
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>
 
 <p class="text-muted small mt-3">

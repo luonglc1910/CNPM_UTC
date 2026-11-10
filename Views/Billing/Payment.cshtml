@@ -1,99 +1,171 @@
-﻿@model PaymentViewModel
+@model PaymentViewModel
 @{
     ViewData["Title"] = $"Thanh toán — Phòng {Model.RoomNumber}";
     var s = Model.Summary;
 }
 
-<div class="row"><div class="col-lg-7">
-    @if (!Model.HasOpenShift)
-    {
-        <div class="alert alert-warning">Bạn chưa mở ca — không thu tiền được (BR-10). <a class="btn btn-sm btn-primary ms-2" asp-controller="Shifts" asp-action="Index">Mở ca làm việc</a></div>
-    }
-    else if (!Model.IsInspected)
-    {
-        <div class="alert alert-warning">Chưa kiểm phòng &amp; minibar (BR-08). <a class="btn btn-sm btn-warning ms-2" asp-action="Minibar" asp-route-stayId="@Model.StayId">Kiểm phòng</a></div>
-    }
-    else if (!Model.IsLocked)
-    {
-        <div class="alert alert-warning">Folio chưa khóa. Vào <a asp-action="Folio" asp-route-stayId="@Model.StayId">folio</a> để khóa, hoặc dùng luồng check-out.</div>
-    }
+<div class="row g-3">
+    <div class="col-lg-7">
+        @if (!Model.HasOpenShift)
+        {
+            <div class="alert alert-warning">Bạn chưa mở ca — không thu tiền được (BR-10). <a class="btn btn-sm btn-primary ms-2" asp-controller="Shifts" asp-action="Index">Mở ca làm việc</a></div>
+        }
+        else if (!Model.IsInspected)
+        {
+            <div class="alert alert-warning">Chưa kiểm phòng &amp; minibar (BR-08). <a class="btn btn-sm btn-warning ms-2" asp-action="Minibar" asp-route-stayId="@Model.StayId">Kiểm phòng</a></div>
+        }
+        else if (!Model.IsLocked)
+        {
+            <div class="alert alert-warning">Folio chưa khóa. Vào <a asp-action="Folio" asp-route-stayId="@Model.StayId">folio</a> để khóa, hoặc dùng luồng check-out.</div>
+        }
 
-    <div class="card mb-3">
-        <div class="card-header">Cần thu</div>
-        <div class="card-body">
-            <div class="table-responsive">
-            <table class="table table-sm mb-0">
-                <tbody>
-                    <tr><td>Tổng hóa đơn</td><td class="text-end">@s.Total.ToString("N0") ₫</td></tr>
-                    <tr class="table-light fw-semibold">
-                        <td>@(Model.IsRefund ? "HOÀN LẠI KHÁCH" : "SỐ DƯ PHẢI THU")</td>
-                        <td class="text-end">@Math.Abs(s.BalanceDue).ToString("N0") ₫</td>
-                    </tr>
-                </tbody>
-            </table>
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span>Cần thu — Phòng <strong>@Model.RoomNumber</strong> (@Model.GuestName)</span>
+                <code>@s.FolioCode</code>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                <table class="table table-sm mb-0">
+                    <tbody>
+                        <tr><td>Tổng hóa đơn (đã gồm VAT)</td><td class="text-end">@s.Total.ToString("N0") ₫</td></tr>
+                        @if (s.DepositApplied > 0)
+                        {
+                            <tr class="text-success"><td>Trừ tiền cọc / thanh toán trước</td><td class="text-end">-@s.DepositApplied.ToString("N0") ₫</td></tr>
+                        }
+                        <tr class="table-light fw-semibold fs-6">
+                            <td>@(Model.IsRefund ? "HOÀN LẠI KHÁCH" : "SỐ DƯ PHẢI THU")</td>
+                            <td class="text-end text-primary">@Math.Abs(s.BalanceDue).ToString("N0") ₫</td>
+                        </tr>
+                    </tbody>
+                </table>
+                </div>
             </div>
         </div>
+
+        @if (Model.HasOpenShift && Model.IsInspected && Model.IsLocked)
+        {
+            <form method="post" asp-action="Payment" id="paymentForm">
+                <input type="hidden" asp-for="StayId" />
+                <input type="hidden" id="balanceDue" value="@s.BalanceDue" />
+                <div class="card">
+                    <div class="card-header">@(Model.IsRefund ? "Hoàn tiền" : "Nhận tiền")</div>
+                    <div class="card-body">
+                        <div class="mb-2">
+                            <label asp-for="Method" class="form-label">Phương thức</label>
+                            <select asp-for="Method" id="paymentMethodSelect" class="form-select">
+                                @foreach (var m in Enum.GetValues<PaymentMethod>())
+                                {
+                                    <option value="@((int)m)" selected="@(Model.Method == m)">@m.ToDisplayName()</option>
+                                }
+                            </select>
+                        </div>
+                        @if (!Model.IsRefund)
+                        {
+                            <div class="mb-2">
+                                <label asp-for="AmountTendered" class="form-label">Số tiền khách đưa</label>
+                                <input asp-for="AmountTendered" id="tendered" type="number" min="0" step="any" class="form-control" />
+                                <div class="form-text">Tiền thối lại: <strong id="change">0 ₫</strong></div>
+                            </div>
+                        }
+                        <div class="mb-2">
+                            <label asp-for="TransactionRef" class="form-label">Mã giao dịch (CK/Thẻ/VietQR)</label>
+                            <input asp-for="TransactionRef" id="txRefInput" class="form-control" placeholder="VD: VQR-20261109..." />
+                        </div>
+                        @if (Model.IsAdmin && !Model.IsRefund)
+                        {
+                            <div class="form-check">
+                                <input asp-for="RecordAsDebt" class="form-check-input" />
+                                <label asp-for="RecordAsDebt" class="form-check-label">Ghi nhận công nợ (khách trả thiếu) — số tiền đưa = phần đã trả</label>
+                            </div>
+                        }
+                    </div>
+                    <div class="card-footer d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Hoàn tất &amp; xuất hóa đơn</button>
+                        <a class="btn btn-outline-secondary" asp-action="Folio" asp-route-stayId="@Model.StayId">Quay lại</a>
+                    </div>
+                </div>
+            </form>
+        }
     </div>
 
-    @if (Model.HasOpenShift && Model.IsInspected && Model.IsLocked)
+    @if (Model.VietQr is not null && s.BalanceDue > 0)
     {
-        <form method="post" asp-action="Payment">
-            <input type="hidden" asp-for="StayId" />
-            <input type="hidden" id="balanceDue" value="@s.BalanceDue" />
-            <div class="card">
-                <div class="card-header">@(Model.IsRefund ? "Hoàn tiền" : "Nhận tiền")</div>
-                <div class="card-body">
-                    <div class="mb-2">
-                        <label asp-for="Method" class="form-label">Phương thức</label>
-                        <select asp-for="Method" class="form-select">
-                            @foreach (var m in Enum.GetValues<PaymentMethod>())
-                            {
-                                <option value="@((int)m)" selected="@(Model.Method == m)">@m.ToDisplayName()</option>
-                            }
-                        </select>
-                    </div>
-                    @if (!Model.IsRefund)
-                    {
-                        <div class="mb-2">
-                            <label asp-for="AmountTendered" class="form-label">Số tiền khách đưa</label>
-                            <input asp-for="AmountTendered" id="tendered" type="number" min="0" step="any" class="form-control" />
-                            <div class="form-text">Tiền thối lại: <strong id="change">0 ₫</strong></div>
-                        </div>
-                    }
-                    <div class="mb-2">
-                        <label asp-for="TransactionRef" class="form-label">Mã giao dịch (CK/Thẻ)</label>
-                        <input asp-for="TransactionRef" class="form-control" />
-                    </div>
-                    @if (Model.IsAdmin && !Model.IsRefund)
-                    {
-                        <div class="form-check">
-                            <input asp-for="RecordAsDebt" class="form-check-input" />
-                            <label asp-for="RecordAsDebt" class="form-check-label">Ghi nhận công nợ (khách trả thiếu) — số tiền đưa = phần đã trả</label>
-                        </div>
-                    }
+        <div class="col-lg-5">
+            <div class="card border-primary shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-qr-code-scan me-1"></i> Quét mã VietQR thanh toán</span>
+                    <span class="badge bg-light text-primary">@Model.VietQr.BankName</span>
                 </div>
-                <div class="card-footer">
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Hoàn tất &amp; xuất hóa đơn</button>
-                    <a class="btn btn-outline-secondary" asp-action="Folio" asp-route-stayId="@Model.StayId">Quay lại</a>
+                <div class="card-body text-center">
+                    <img src="@Model.VietQr.QrImageUrl" alt="VietQR" class="img-fluid rounded border p-2 mb-3" style="max-width: 250px;" />
+                    <div class="small text-start bg-light rounded p-2 mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Ngân hàng:</span>
+                            <strong>@Model.VietQr.BankName</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Tên chủ thẻ:</span>
+                            <strong>@Model.VietQr.AccountName</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Số thẻ / Số TK:</span>
+                            <code>@Model.VietQr.AccountNo</code>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Ngày phát hành / OTP:</span>
+                            <span><code>@Model.VietQr.IssueDate</code> · OTP: <code>@Model.VietQr.DefaultOtp</code></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Số tiền:</span>
+                            <strong class="text-danger">@Model.VietQr.Amount.ToString("N0") ₫</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Nội dung CK:</span>
+                            <code>@Model.VietQr.TransferMemo</code>
+                        </div>
+                    </div>
+                    @if (Model.HasOpenShift && Model.IsInspected && Model.IsLocked)
+                    {
+                        <button type="button" id="btnConfirmVietQr" class="btn btn-success w-100">
+                            <i class="bi bi-lightning-charge-fill"></i> Khách đã chuyển khoản VietQR (Xác nhận ngay)
+                        </button>
+                    }
                 </div>
             </div>
-        </form>
+        </div>
     }
-</div></div>
+</div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
     <script>
         (function () {
-            var due = Number(document.getElementById('balanceDue').value) || 0;
+            var due = Number(document.getElementById('balanceDue')?.value) || 0;
             var t = document.getElementById('tendered');
             var out = document.getElementById('change');
-            if (!t) return;
-            function upd() {
-                var c = (Number(t.value) || 0) - due;
-                out.textContent = (c > 0 ? c : 0).toLocaleString('vi-VN') + ' ₫';
+            if (t && out) {
+                function upd() {
+                    var c = (Number(t.value) || 0) - due;
+                    out.textContent = (c > 0 ? c : 0).toLocaleString('vi-VN') + ' ₫';
+                }
+                t.addEventListener('input', upd);
+                upd();
             }
-            t.addEventListener('input', upd); upd();
+
+            var btnQr = document.getElementById('btnConfirmVietQr');
+            if (btnQr) {
+                btnQr.addEventListener('click', function () {
+                    var sel = document.getElementById('paymentMethodSelect');
+                    var tx = document.getElementById('txRefInput');
+                    if (sel) sel.value = '@((int)PaymentMethod.BankTransfer)';
+                    if (t) t.value = due;
+                    if (tx && !tx.value) {
+                        tx.value = 'VQR-' + new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+                    }
+                    document.getElementById('paymentForm')?.submit();
+                });
+            }
         })();
     </script>
 }

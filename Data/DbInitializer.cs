@@ -34,6 +34,15 @@ public static class DbInitializer
     /// </summary>
     private static async Task SeedSettingsAsync(HotelDbContext db)
     {
+        try
+        {
+            await db.Database.ExecuteSqlRawAsync("ALTER TABLE SystemSettings ALTER COLUMN [Value] NVARCHAR(2000) NOT NULL;");
+        }
+        catch
+        {
+            // Bỏ qua nếu cột đã là NVARCHAR(2000) hoặc DB không cho phép ALTER trực tiếp
+        }
+
         var existing = await db.SystemSettings.Select(s => s.Key).ToListAsync();
 
         var missing = SystemSettingDefaults.All
@@ -48,6 +57,20 @@ public static class DbInitializer
 
         db.SystemSettings.AddRange(missing);
         await db.SaveChangesAsync();
+
+        // Cập nhật sang cấu hình Ngân hàng NCB mặc định nếu đang ở giá trị mẫu cũ
+        var accNoSetting = await db.SystemSettings.FirstOrDefaultAsync(s => s.Key == SystemSettingKeys.BankAccountNo);
+        if (accNoSetting is not null && accNoSetting.Value != "9704198526191432198")
+        {
+            accNoSetting.Value = "9704198526191432198";
+            var binSetting = await db.SystemSettings.FirstOrDefaultAsync(s => s.Key == SystemSettingKeys.BankBin);
+            if (binSetting is not null) binSetting.Value = "970419";
+            var nameSetting = await db.SystemSettings.FirstOrDefaultAsync(s => s.Key == SystemSettingKeys.BankName);
+            if (nameSetting is not null) nameSetting.Value = "Ngân hàng NCB";
+            var holderSetting = await db.SystemSettings.FirstOrDefaultAsync(s => s.Key == SystemSettingKeys.BankAccountName);
+            if (holderSetting is not null) holderSetting.Value = "NGUYEN VAN A";
+            await db.SaveChangesAsync();
+        }
     }
 
     /// <summary>Tài khoản mặc định cho 2 vai trò. Mật khẩu ban đầu đều là 123456.</summary>

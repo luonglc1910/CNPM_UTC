@@ -143,20 +143,20 @@
                             </div>
                             <!-- Radio Options -->
                             <div class="flex flex-col gap-space-md">
-                                <!-- Option 1: Credit / Debit Card -->
-
-                                <!-- Option 2: VietQR / E-Wallet -->
-                                <label class="relative flex items-center justify-between p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer border border-transparent has-[:checked]:bg-surface-container">
-                                    <div class="flex items-center gap-space-sm">
-                                        <input class="w-5 h-5 text-primary accent-primary cursor-pointer" name="PaymentMethod" required type="radio" value="qr">
-                                        <div>
-                                            <span class="font-headline-sm text-body-lg text-primary font-semibold">Quét mã Ngân Hàng</span>
-                                            <p class="font-body-sm text-body-sm text-on-surface-variant">Tạo mã QR chuyển khoản tức thì, xác nhận tự động trong 30 giây</p>
+                                <!-- Option 1: Ngân hàng NCB (Thẻ nội địa / VietQR) -->
+                                <label class="relative flex flex-col gap-2 p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer border border-primary/30 has-[:checked]:bg-surface-container">
+                                    <div class="flex items-center justify-between w-full">
+                                        <div class="flex items-center gap-space-sm">
+                                            <input checked class="w-5 h-5 text-primary accent-primary cursor-pointer" name="PaymentMethod" required type="radio" value="qr">
+                                            <div>
+                                                <span class="font-headline-sm text-body-lg text-primary font-semibold">Thanh toán Ngân hàng NCB (Thẻ nội địa / Mã QR)</span>
+                                                <p class="font-body-sm text-body-sm text-on-surface-variant">Hỗ trợ thẻ NCB (9704198526191432198 - NGUYEN VAN A - 07/15 - OTP 123456) &amp; quét mã VietQR</p>
+                                            </div>
                                         </div>
+                                        <span class="font-label-sm text-label-sm text-secondary bg-surface-container-lowest px-2 py-1 rounded font-medium">Khuyên dùng</span>
                                     </div>
-                                    <span class="font-label-sm text-label-sm text-secondary bg-surface-container-lowest px-2 py-1 rounded font-medium">Tiện lợi</span>
                                 </label>
-                                <!-- Option 3: Pay at Reception -->
+                                <!-- Option 2: Pay at Reception -->
                                 <label class="relative flex items-center justify-between p-space-md rounded-xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer border border-transparent has-[:checked]:bg-surface-container">
                                     <div class="flex items-center gap-space-sm">
                                         <input class="w-5 h-5 text-primary accent-primary cursor-pointer" name="PaymentMethod" required type="radio" value="pay_later">
@@ -230,9 +230,22 @@
                                 <!-- Price Breakdown Ledger -->
                                 <div class="flex flex-col gap-space-xs text-body-sm font-body-sm">
                                     <div class="flex items-center justify-between text-on-surface">
-                                        <span class="">Giá phòng (@Model.BasePrice.ToString("N0")đ × @Model.NightsOrHours)</span>
+                                        <span class="">Giá phòng (@Model.NightsOrHours @(Model.RentalType == "Daily" ? "đêm" : "lượt"))</span>
                                         <span class="font-numeric-table text-numeric-table font-medium">@Model.TotalRoomPrice.ToString("N0")đ</span>
                                     </div>
+                                    @if (Model.NightlyBreakdown != null && Model.NightlyBreakdown.Count > 0)
+                                    {
+                                        <div class="bg-surface-container-low rounded-lg p-2 my-1 flex flex-col gap-1 text-xs">
+                                            <span class="font-semibold text-primary">Chi tiết giá từng đêm (Dynamic Pricing):</span>
+                                            @foreach (var n in Model.NightlyBreakdown)
+                                            {
+                                                <div class="flex items-center justify-between text-on-surface-variant">
+                                                    <span>@n.Date.ToString("dd/MM") — @n.RateLabel</span>
+                                                    <span class="font-medium @(n.IsSpecialRate ? "text-secondary font-semibold" : "")">@n.AppliedPrice.ToString("N0")đ</span>
+                                                </div>
+                                            }
+                                        </div>
+                                    }
                                     @if(Model.DiscountAmount > 0)
                                     {
                                         <div class="flex items-center justify-between text-secondary">

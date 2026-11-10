@@ -1,17 +1,38 @@
-﻿@model InvoiceViewModel
+@model InvoiceViewModel
 @{
     ViewData["Title"] = $"Hóa đơn {Model.Invoice.InvoiceNo}";
     var inv = Model.Invoice;
 }
 
-<div class="d-flex gap-2 mb-3 d-print-none">
+<div class="d-flex flex-wrap gap-2 mb-3 d-print-none">
     <button class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> In hóa đơn</button>
+    <form method="post" asp-action="SendInvoiceEmail" class="d-inline">
+        @Html.AntiForgeryToken()
+        <input type="hidden" name="invoiceId" value="@inv.Id" />
+        <button type="submit" class="btn btn-outline-primary">
+            <i class="bi bi-envelope-paper"></i> Gửi Email HĐ điện tử @(string.IsNullOrWhiteSpace(Model.GuestEmail) ? "" : $"({Model.GuestEmail})")
+        </button>
+    </form>
+    @if (inv.Status == InvoiceStatus.Debt && inv.DebtAmount > 0)
+    {
+        <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#settleDebtModal">
+            <i class="bi bi-qr-code-scan"></i> Thu nợ hóa đơn (@inv.DebtAmount.ToString("N0") ₫)
+        </button>
+    }
     <a class="btn btn-outline-secondary" asp-action="Index" asp-route-tab="@BillingIndexViewModel.InvoiceTab">Danh sách hóa đơn</a>
     @if (User.IsInRole(Roles.Admin) && inv.Status != InvoiceStatus.Void)
     {
         <a class="btn btn-outline-danger ms-auto" asp-action="VoidInvoice" asp-route-id="@inv.Id"><i class="bi bi-x-octagon"></i> Hủy hóa đơn</a>
     }
 </div>
+
+@if (TempData["EmailPreviewUrl"] is string previewUrl && !string.IsNullOrWhiteSpace(previewUrl))
+{
+    <div class="alert alert-info d-flex justify-content-between align-items-center d-print-none">
+        <span><i class="bi bi-envelope-check me-2"></i>Bản lưu HTML của email hóa đơn đã được tạo thành công.</span>
+        <a href="@previewUrl" target="_blank" class="btn btn-sm btn-primary"><i class="bi bi-box-arrow-up-right"></i> Xem bản Email HTML</a>
+    </div>
+}
 
 <div class="card"><div class="card-body">
     @if (inv.Status == InvoiceStatus.Void)
@@ -20,7 +41,12 @@
     }
     else if (inv.Status == InvoiceStatus.Debt)
     {
-        <div class="alert alert-warning">Còn nợ: <strong>@inv.DebtAmount.ToString("N0") ₫</strong></div>
+        <div class="alert alert-warning d-flex justify-content-between align-items-center">
+            <span>Còn nợ: <strong>@inv.DebtAmount.ToString("N0") ₫</strong></span>
+            <button type="button" class="btn btn-sm btn-warning d-print-none" data-bs-toggle="modal" data-bs-target="#settleDebtModal">
+                <i class="bi bi-cash-coin"></i> Thu nợ ngay
+            </button>
+        </div>
     }
 
     <div class="d-flex justify-content-between flex-wrap">
@@ -70,10 +96,14 @@
                     <tr><td>Tạm tính</td><td class="text-end">@inv.SubTotal.ToString("N0") ₫</td></tr>
                     <tr><td>VAT @((inv.TaxRate * 100).ToString("0.#"))%</td><td class="text-end">@inv.TaxAmount.ToString("N0") ₫</td></tr>
                     <tr class="fw-semibold"><td>Tổng</td><td class="text-end">@inv.TotalAmount.ToString("N0") ₫</td></tr>
+                    @if (inv.DepositAmount > 0)
+                    {
+                        <tr class="text-success"><td>Đã đối trừ cọc</td><td class="text-end">-@inv.DepositAmount.ToString("N0") ₫</td></tr>
+                    }
                     <tr><td>Đã thanh toán</td><td class="text-end">@inv.AmountPaid.ToString("N0") ₫</td></tr>
                     @if (inv.DebtAmount > 0)
                     {
-                        <tr class="text-danger"><td>Còn nợ</td><td class="text-end">@inv.DebtAmount.ToString("N0") ₫</td></tr>
+                        <tr class="text-danger fw-bold"><td>Còn nợ</td><td class="text-end">@inv.DebtAmount.ToString("N0") ₫</td></tr>
                     }
                 </tbody>
             </table>
@@ -87,3 +117,71 @@
     }
     <div class="text-center text-muted small mt-3">Cảm ơn quý khách. Hóa đơn này không thay thế hóa đơn giá trị gia tăng.</div>
 </div></div>
+
+@if (inv.Status == InvoiceStatus.Debt && inv.DebtAmount > 0)
+{
+    <div class="modal fade d-print-none" id="settleDebtModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <form method="post" asp-action="SettleDebt" id="settleDebtForm">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="invoiceId" value="@inv.Id" />
+                    <div class="modal-header">
+                        <h5 class="modal-title"><i class="bi bi-cash-coin text-success me-1"></i> Thu nợ hóa đơn @inv.InvoiceNo</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="row g-3 align-items-center">
+                            <div class="col-md-6">
+                                <div class="alert alert-warning mb-3">
+                                    Số tiền nợ cần thu: <strong class="fs-5">@inv.DebtAmount.ToString("N0") ₫</strong>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Phương thức thu nợ</label>
+                                    <select name="method" id="debtMethodSelect" class="form-select">
+                                        @foreach (var m in Enum.GetValues<PaymentMethod>())
+                                        {
+                                            <option value="@((int)m)">@m.ToDisplayName()</option>
+                                        }
+                                    </select>
+                                </div>
+                                <div class="mb-3">
+                                    <label class="form-label">Mã giao dịch (nếu CK / Thẻ / VietQR)</label>
+                                    <input name="transactionRef" id="debtTxRef" class="form-control" placeholder="VD: VQR-THUNO-..." />
+                                </div>
+                            </div>
+                            @if (Model.DebtVietQr is not null)
+                            {
+                                <div class="col-md-6 text-center border-start">
+                                    <div class="fw-semibold text-primary mb-2"><i class="bi bi-qr-code"></i> Quét VietQR thu nợ</div>
+                                    <img src="@Model.DebtVietQr.QrImageUrl" alt="VietQR Thu nợ" class="img-fluid rounded border p-1 mb-2" style="max-width: 210px;" />
+                                    <div class="small text-muted mb-2">
+                                        <strong>@Model.DebtVietQr.BankName</strong> · Chủ thẻ: <strong>@Model.DebtVietQr.AccountName</strong><br />
+                                        Số thẻ: <code>@Model.DebtVietQr.AccountNo</code> · Phát hành: <code>@Model.DebtVietQr.IssueDate</code> · OTP: <code>@Model.DebtVietQr.DefaultOtp</code><br />
+                                        Nội dung: <code>@Model.DebtVietQr.TransferMemo</code>
+                                    </div>
+                                    <button type="button" class="btn btn-sm btn-success w-100" onclick="confirmDebtVietQr()">
+                                        <i class="bi bi-lightning-charge-fill"></i> Đã nhận VietQR — Tất toán ngay
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-primary"><i class="bi bi-check2-circle"></i> Xác nhận thu đủ @inv.DebtAmount.ToString("N0") ₫</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <script>
+        function confirmDebtVietQr() {
+            var sel = document.getElementById('debtMethodSelect');
+            var tx = document.getElementById('debtTxRef');
+            if (sel) sel.value = '@((int)PaymentMethod.BankTransfer)';
+            if (tx && !tx.value) tx.value = 'VQR-DEBT-' + Date.now();
+            document.getElementById('settleDebtForm')?.submit();
+        }
+    </script>
+}

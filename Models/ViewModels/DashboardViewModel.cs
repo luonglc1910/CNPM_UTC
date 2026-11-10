@@ -34,6 +34,7 @@ public class PendingWorkItem
 public class DashboardViewModel
 {
     public int AvailableRooms { get; set; }
+    public int PendingCheckInRooms { get; set; }
     public int OccupiedRooms { get; set; }
     public int DirtyRooms { get; set; }
     public int MaintenanceRooms { get; set; }
@@ -46,6 +47,16 @@ public class DashboardViewModel
     /// của mình — lọc ở tầng truy vấn theo <c>Invoice.CashierShiftId</c> chứ không ẩn ở view.
     /// </summary>
     public decimal RevenueToday { get; set; }
+
+    /// <summary>Tổng các giao dịch thu dương trong ngày / ca đang mở.</summary>
+    public decimal CashInToday { get; set; }
+
+    /// <summary>Tổng tiền chi, hoàn và điều chỉnh âm; luôn hiển thị dương.</summary>
+    public decimal CashOutToday { get; set; }
+
+    public decimal NetCashFlowToday => CashInToday - CashOutToday;
+
+    public int PaymentCountToday { get; set; }
 
     /// <summary>Đúng nội dung thẻ doanh thu đang hiển thị, để nhãn nói thật.</summary>
     public bool RevenueIsWholeHotel { get; set; }
@@ -60,5 +71,7 @@ public class DashboardViewModel
     /// <summary>Số phòng còn khai thác được, làm mẫu số cho tỉ lệ lấp đầy.</summary>
     public int UsableRooms { get; set; }
 
-    public double OccupancyRate => UsableRooms == 0 ? 0 : (double)OccupiedRooms / UsableRooms;
+    public double OccupancyRate => UsableRooms == 0
+        ? 0
+        : (double)(OccupiedRooms + PendingCheckInRooms) / UsableRooms;
 }

@@ -45,6 +45,13 @@ public interface IReservationService
 
     /// <summary>Sơ đồ phòng theo ngày — SCR-C03.</summary>
     Task<RoomChartViewModel> BuildRoomChartAsync(DateTime? from, int days);
+
+    /// <summary>Kéo-thả đổi phòng nhanh trên Sơ đồ phòng (RoomChart).</summary>
+    Task<ServiceResult> QuickMoveRoomAsync(int? reservationId, int? stayId, int fromRoomId, int toRoomId, string? reason, int employeeId, bool isAdmin);
+
+    /// <summary>Gia hạn nhanh (+N đêm) trực tiếp từ Sơ đồ phòng (RoomChart).</summary>
+    Task<ServiceResult> QuickExtendAsync(int? reservationId, int? stayId, int addNights, int employeeId, bool isAdmin);
+
     /// <summary>Trạng thái đơn đặt phòng, null nếu không có. Chỉ dùng để giải thích lỗi.</summary>
     Task<(ReservationStatus? Status, string? Code)> GetStatusAsync(int reservationId);
 
@@ -64,10 +71,14 @@ public class ReservationService : IReservationService
     private readonly ITransactionRunner _tx;
     private readonly IShiftService _shifts;
     private readonly ISettingsReader _settings;
+    private readonly IVietQrService _vietQr;
+    private readonly INotificationService _notifications;
+    private readonly IEmailService _email;
 
     public ReservationService(
         HotelDbContext db, IAuditService audit, IAvailabilityService availability, IPricingService pricing,
-        INumberSequenceService numbers, ITransactionRunner tx, IShiftService shifts, ISettingsReader settings)
+        INumberSequenceService numbers, ITransactionRunner tx, IShiftService shifts, ISettingsReader settings,
+        IVietQrService vietQr, INotificationService notifications, IEmailService email)
     {
         _db = db;
         _audit = audit;
@@ -77,6 +88,9 @@ public class ReservationService : IReservationService
         _tx = tx;
         _shifts = shifts;
         _settings = settings;
+        _vietQr = vietQr;
+        _notifications = notifications;
+        _email = email;
     }
 
     // ---------- SCR-C01 ----------
@@ -125,12 +139,14 @@ public class ReservationService : IReservationService
             }
         }
 
+        // Đơn đặt gần đây nhất lên đầu (theo thời điểm tạo đơn), cùng giờ thì Id lớn hơn trước.
         var projected = query
-            .OrderByDescending(r => r.CheckInDate).ThenByDescending(r => r.Id)
+            .OrderByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id)
             .Select(r => new ReservationListItem
             {
                 Id = r.Id,
                 Code = r.Code,
+                CreatedAt = r.CreatedAt,
                 GuestName = r.PrimaryGuest.FullName,
                 PhoneNumber = r.PrimaryGuest.PhoneNumber,
                 CheckInDate = r.CheckInDate,
@@ -215,6 +231,14 @@ public class ReservationService : IReservationService
             CheckInDate = (checkIn ?? DateTime.Now).Date,
             CheckOutDate = (checkOut ?? DateTime.Now.AddDays(1)).Date
         };
+
+        if (roomTypeId is null && roomId is not null)
+        {
+            roomTypeId = await _db.Rooms.AsNoTracking()
+                .Where(r => r.Id == roomId.Value)
+                .Select(r => (int?)r.RoomTypeId)
+                .FirstOrDefaultAsync();
+        }
 
         if (roomTypeId is not null)
         {
@@ -306,6 +330,7 @@ public class ReservationService : IReservationService
             .Include(x => x.PrimaryGuest)
             .Include(x => x.Rooms).ThenInclude(rr => rr.RoomType)
             .Include(x => x.Rooms).ThenInclude(rr => rr.Room)
+            .Include(x => x.Deposits)
             .FirstOrDefaultAsync(x => x.Id == id);
 
         if (r is null)
@@ -316,13 +341,20 @@ public class ReservationService : IReservationService
             : await _db.Employees.Where(e => e.Id == r.CreatedBy).Select(e => e.FullName).FirstOrDefaultAsync() ?? string.Empty;
 
         var today = DateTime.Now.Date;
+        var depositPaid = r.Deposits
+            .Where(d => d.Status == DepositStatus.Held || d.Status == DepositStatus.Applied)
+            .Sum(d => d.Amount);
+        var remaining = Math.Max(0m, r.EstimatedTotal - depositPaid);
 
         return new ReservationDetailsViewModel
         {
             Reservation = r,
+            GuestId = r.PrimaryGuestId,
+            GuestHasAccount = !string.IsNullOrEmpty(r.PrimaryGuest.PasswordHash),
             GuestName = r.PrimaryGuest.FullName,
             PhoneNumber = r.PrimaryGuest.PhoneNumber,
             IdNumber = r.PrimaryGuest.IdNumber,
+            GuestEmail = r.PrimaryGuest.Email,
             GuestBlacklisted = r.PrimaryGuest.IsBlacklisted,
             CreatedByName = createdBy,
             Rooms = r.Rooms.Select(rr => new ReservationRoomLine
@@ -335,10 +367,18 @@ public class ReservationService : IReservationService
                 UnitText = RoomLineUnitText(r, rr),
                 LineTotal = RoomLineTotal(r, rr)
             }).ToList(),
-            DepositPaid = 0m,
-            EstimatedRemaining = r.EstimatedTotal,
+            Deposits = r.Deposits
+                .OrderByDescending(d => d.ReceivedAt)
+                .Select(d => new ReservationDepositLine
+                {
+                    ReceivedAt = d.ReceivedAt,
+                    Amount = d.Amount,
+                    Status = d.Status
+                }).ToList(),
+            DepositPaid = depositPaid,
+            EstimatedRemaining = remaining,
             CanEdit = EditableStatuses.Contains(r.Status),
-            CanTakeDeposit = false,
+            CanTakeDeposit = EditableStatuses.Contains(r.Status) && remaining > 0,
             // Mốc nhận phòng mang giờ thật (BR-13) nên phải so với đầu ngày mai; so với đầu hôm nay
             // thì đơn của chính hôm nay bị loại và nút Check-in biến mất.
             CanCheckIn = r.Status == ReservationStatus.Confirmed && r.CheckInDate < today.AddDays(1),
@@ -435,13 +475,130 @@ public class ReservationService : IReservationService
         return (ServiceResult.Ok(message: $"Đã cập nhật đơn {r.Code}."), r.Id);
     }
 
-    // ---------- SCR-C07 — Deposit đã bị bỏ ----------
+    // ---------- SCR-C07 — Thu cọc / Thanh toán trước kèm VietQR ----------
 
-    public Task<DepositFormViewModel?> BuildDepositFormAsync(int id, int employeeId)
-        => Task.FromResult<DepositFormViewModel?>(null);
+    public async Task<DepositFormViewModel?> BuildDepositFormAsync(int id, int employeeId)
+    {
+        var r = await _db.Reservations.AsNoTracking()
+            .Include(x => x.PrimaryGuest)
+            .Include(x => x.Deposits)
+            .FirstOrDefaultAsync(x => x.Id == id);
 
-    public Task<ServiceResult> TakeDepositAsync(DepositFormViewModel form, int employeeId)
-        => Task.FromResult(ServiceResult.Fail("Tính năng thu cọc đã bị vô hiệu."));
+        if (r is null || !EditableStatuses.Contains(r.Status))
+        {
+            return null;
+        }
+
+        var alreadyPaid = r.Deposits
+            .Where(d => d.Status == DepositStatus.Held || d.Status == DepositStatus.Applied)
+            .Sum(d => d.Amount);
+        var remaining = Math.Max(0m, r.EstimatedTotal - alreadyPaid);
+        var suggested = Math.Min(remaining, await SuggestedDepositAsync(r));
+        if (suggested <= 0m)
+        {
+            suggested = remaining;
+        }
+
+        VietQrPayload? qr = null;
+        if (suggested > 0m)
+        {
+            qr = await _vietQr.BuildAsync(
+                suggested,
+                $"COC {r.Code}",
+                $"Đặt cọc đơn {r.Code} - {r.PrimaryGuest.FullName}");
+        }
+
+        return new DepositFormViewModel
+        {
+            ReservationId = r.Id,
+            ReservationCode = r.Code,
+            GuestName = r.PrimaryGuest.FullName,
+            EstimatedTotal = r.EstimatedTotal,
+            AlreadyPaid = alreadyPaid,
+            SuggestedAmount = suggested,
+            Amount = suggested,
+            HasOpenShift = await _shifts.GetOpenShiftAsync(employeeId) is not null,
+            VietQr = qr
+        };
+    }
+
+    public async Task<ServiceResult> TakeDepositAsync(DepositFormViewModel form, int employeeId)
+    {
+        var shift = await _shifts.GetOpenShiftAsync(employeeId);
+        if (shift is null)
+        {
+            return ServiceResult.Fail("Bạn cần mở ca làm việc trước khi thu tiền cọc (BR-10).");
+        }
+
+        if (form.Amount <= 0)
+        {
+            return ServiceResult.Fail("Số tiền cọc phải lớn hơn 0.", nameof(form.Amount));
+        }
+
+        if (form.Method != PaymentMethod.Cash && string.IsNullOrWhiteSpace(form.TransactionRef))
+        {
+            return ServiceResult.Fail("Chuyển khoản/Thẻ bắt buộc nhập mã giao dịch.", nameof(form.TransactionRef));
+        }
+
+        var r = await _db.Reservations
+            .Include(x => x.Deposits)
+            .FirstOrDefaultAsync(x => x.Id == form.ReservationId);
+
+        if (r is null || !EditableStatuses.Contains(r.Status))
+        {
+            return ServiceResult.Fail("Đơn đặt phòng không ở trạng thái cho phép thu cọc.");
+        }
+
+        await _tx.ExecuteAsync(async () =>
+        {
+            var now = DateTime.Now;
+            var deposit = new Deposit
+            {
+                ReservationId = r.Id,
+                Amount = form.Amount,
+                Status = DepositStatus.Held,
+                ReceivedAt = now
+            };
+            _db.Deposits.Add(deposit);
+            await _db.SaveChangesAsync();
+
+            var payment = new Payment
+            {
+                Type = PaymentType.Deposit,
+                Method = form.Method,
+                Amount = form.Amount,
+                TransactionRef = Trimmed(form.TransactionRef),
+                PaidAt = now,
+                CashierShiftId = shift.Id,
+                DepositId = deposit.Id,
+                ReservationId = r.Id,
+                Notes = Trimmed(form.Notes) ?? $"Thu cọc đơn {r.Code}"
+            };
+            _db.Payments.Add(payment);
+
+            if (r.Status == ReservationStatus.Draft)
+            {
+                r.Status = ReservationStatus.Confirmed;
+            }
+
+            _audit.Log("TakeDeposit", nameof(Reservation), r.Id.ToString(),
+                newValue: $"Thu cọc {form.Amount:N0} ₫ ({form.Method.ToDisplayName()}) cho đơn {r.Code}");
+
+            await _db.SaveChangesAsync();
+        });
+
+        try
+        {
+            await _notifications.NotifyPaymentReceivedAsync(
+                r.Code, form.Amount, form.Method.ToDisplayName(), $"/Reservations/Details/{r.Id}");
+        }
+        catch
+        {
+            // Ignore notification errors
+        }
+
+        return ServiceResult.Ok(message: $"Đã thu cọc {form.Amount:N0} ₫ cho đơn {r.Code}.");
+    }
 
     // ---------- SCR-C08 ----------
 
@@ -651,7 +808,11 @@ public class ReservationService : IReservationService
         form.RoomTypeOptions = await RoomTypeOptionsAsync();
 
         form.AllRooms = await _db.Rooms.AsNoTracking()
-            .Where(r => r.IsActive && r.Status != RoomStatus.OutOfService)
+            .Where(r => r.IsActive
+                && r.Status != RoomStatus.OutOfService
+                && !_db.ReservationRooms.Any(rr => rr.RoomId == r.Id
+                    && rr.Reservation.Status == ReservationStatus.Confirmed
+                    && rr.ReservationId != form.Id))
             .OrderBy(r => r.RoomNumber)
             .Select(r => new RoomPickerItem
             {
@@ -1414,10 +1575,16 @@ public class ReservationService : IReservationService
 
             // Giá đêm: chỉ Admin được sửa tay; lễ tân dùng giá niêm yết của loại phòng.
             // Giá giờ và giá qua đêm luôn lấy theo bảng giá — không có ô nhập tay trên form.
-            var price = isAdmin && line.PricePerNight > 0 ? line.PricePerNight : type.BasePricePerNight;
+            var isManualCustomPrice = isAdmin && line.PricePerNight > 0 && line.PricePerNight != type.BasePricePerNight;
+            var basePrice = isManualCustomPrice ? line.PricePerNight : type.BasePricePerNight;
 
-            var roomCharge = _pricing.RoomChargeFor(period, price,
-                type.PriceFirstHour, type.PriceExtraHour, type.PriceOvernight);
+            var roomCharge = _pricing.RoomChargeFor(period, basePrice,
+                type.PriceFirstHour, type.PriceExtraHour, type.PriceOvernight,
+                isManualCustomPrice ? null : settings, type.Id);
+
+            var effectivePricePerNight = period.Nights > 0 && !isManualCustomPrice
+                ? Math.Round(roomCharge / period.Nights, 0)
+                : basePrice;
 
             // Phụ thu thêm người tính theo đêm, nên chỉ có nghĩa với hình thức có đêm.
             var extraGuest = period.Nights > 0
@@ -1432,7 +1599,7 @@ public class ReservationService : IReservationService
                 RoomId = line.RoomId,
                 Adults = line.Adults,
                 Children = line.Children,
-                PricePerNight = price,
+                PricePerNight = effectivePricePerNight,
                 PriceFirstHour = type.PriceFirstHour,
                 PriceExtraHour = type.PriceExtraHour,
                 PriceOvernight = type.PriceOvernight
@@ -1524,10 +1691,12 @@ public class ReservationService : IReservationService
             .Select(r => new
             {
                 r.Id,
+                r.RoomTypeId,
                 r.RoomNumber,
                 r.Floor,
                 r.Status,
-                RoomTypeName = r.RoomType.Name
+                RoomTypeName = r.RoomType.Name,
+                BasePricePerNight = r.RoomType.BasePricePerNight
             })
             .ToListAsync();
 
@@ -1562,6 +1731,7 @@ public class ReservationService : IReservationService
                 && (s.ActualCheckOut == null || s.ActualCheckOut > start))
             .Select(s => new
             {
+                StayId = s.Id,
                 s.RoomId,
                 s.ReservationId,
                 Code = s.Reservation != null ? s.Reservation.Code : null,
@@ -1599,6 +1769,7 @@ public class ReservationService : IReservationService
                     {
                         Kind = RoomChartCellKind.Occupied,
                         Date = day,
+                        StayId = stay.StayId,
                         ReservationId = stay.ReservationId,
                         ReservationCode = stay.Code,
                         GuestName = stay.GuestName,
@@ -1672,9 +1843,11 @@ public class ReservationService : IReservationService
             rows.Add(new RoomChartRow
             {
                 RoomId = room.Id,
+                RoomTypeId = room.RoomTypeId,
                 RoomNumber = room.RoomNumber,
                 Floor = room.Floor,
                 RoomTypeName = room.RoomTypeName,
+                BasePricePerNight = room.BasePricePerNight,
                 CurrentStatus = room.Status,
                 Segments = MergeSegments(cells)
             });
@@ -1708,7 +1881,8 @@ public class ReservationService : IReservationService
             var sameRun = last is not null
                 && last.Kind == cell.Kind
                 && cell.Kind != RoomChartCellKind.Hourly
-                && last.ReservationId == cell.ReservationId;
+                && last.ReservationId == cell.ReservationId
+                && last.StayId == cell.StayId;
 
             if (sameRun)
             {
@@ -1721,6 +1895,7 @@ public class ReservationService : IReservationService
                 Kind = cell.Kind,
                 Date = cell.Date,
                 Span = 1,
+                StayId = cell.StayId,
                 ReservationId = cell.ReservationId,
                 ReservationCode = cell.ReservationCode,
                 GuestName = cell.GuestName,
@@ -1777,6 +1952,266 @@ public class ReservationService : IReservationService
         }
 
         return merged;
+    }
+
+    public async Task<ServiceResult> QuickMoveRoomAsync(
+        int? reservationId, int? stayId, int fromRoomId, int toRoomId, string? reason, int employeeId, bool isAdmin)
+    {
+        if (fromRoomId == toRoomId)
+        {
+            return ServiceResult.Fail("Phòng chuyển đến trùng với phòng hiện tại.");
+        }
+
+        var targetRoom = await _db.Rooms.Include(r => r.RoomType)
+            .FirstOrDefaultAsync(r => r.Id == toRoomId && r.IsActive);
+        if (targetRoom is null)
+        {
+            return ServiceResult.Fail("Không tìm thấy phòng chuyển đến.");
+        }
+
+        if (targetRoom.Status is RoomStatus.Maintenance or RoomStatus.OutOfService)
+        {
+            return ServiceResult.Fail($"Phòng {targetRoom.RoomNumber} đang bảo trì / ngừng khai thác.");
+        }
+
+        var moveReason = string.IsNullOrWhiteSpace(reason) ? "Kéo thả đổi phòng trên Sơ đồ phòng" : reason.Trim();
+
+        // Trường hợp 1: Khách đang lưu trú (Occupied / Stay)
+        if (stayId.HasValue && stayId.Value > 0)
+        {
+            var stay = await _db.Stays
+                .Include(s => s.Room)
+                .FirstOrDefaultAsync(s => s.Id == stayId.Value && s.Status == StayStatus.CheckedIn);
+
+            if (stay is null)
+            {
+                return ServiceResult.Fail("Không tìm thấy lượt lưu trú đang mở.");
+            }
+
+            if (targetRoom.Status == RoomStatus.Occupied)
+            {
+                return ServiceResult.Fail($"Phòng {targetRoom.RoomNumber} hiện đang có khách ở.");
+            }
+
+            var free = await _availability.IsRoomAvailableAsync(
+                toRoomId, DateTime.Now.Date, stay.ExpectedCheckOut, stay.ReservationId);
+            if (!free)
+            {
+                return ServiceResult.Fail($"Phòng {targetRoom.RoomNumber} đã có lịch đặt trùng trong khoảng lưu trú còn lại.");
+            }
+
+            var oldRoomNo = stay.Room.RoomNumber;
+            await _tx.ExecuteAsync(async () =>
+            {
+                var minutesElapsed = (DateTime.Now - stay.ActualCheckIn).TotalMinutes;
+                stay.Room.Status = minutesElapsed <= 15 ? RoomStatus.Available : RoomStatus.Dirty;
+                targetRoom.Status = RoomStatus.Occupied;
+                stay.RoomId = targetRoom.Id;
+
+                _db.RoomChangeLogs.Add(new RoomChangeLog
+                {
+                    StayId = stay.Id,
+                    FromRoomId = fromRoomId,
+                    ToRoomId = targetRoom.Id,
+                    ChangedAt = DateTime.Now,
+                    Reason = moveReason,
+                    OldPricePerNight = stay.PricePerNight,
+                    NewPricePerNight = stay.PricePerNight,
+                    PriceDifferenceWaived = true
+                });
+
+                _audit.Log("QuickMoveStayRoom", nameof(Stay), stay.Id.ToString(),
+                    reason: moveReason, oldValue: $"P.{oldRoomNo}", newValue: $"P.{targetRoom.RoomNumber}");
+
+                await _db.SaveChangesAsync();
+            });
+
+            return ServiceResult.Ok(message: $"Đã chuyển khách từ P.{oldRoomNo} sang P.{targetRoom.RoomNumber} trên sơ đồ.");
+        }
+
+        // Trường hợp 2: Đơn đặt trước chưa nhận phòng (Reserved / Reservation)
+        if (reservationId.HasValue && reservationId.Value > 0)
+        {
+            var r = await _db.Reservations
+                .Include(x => x.Rooms).ThenInclude(rr => rr.Room)
+                .FirstOrDefaultAsync(x => x.Id == reservationId.Value);
+
+            if (r is null || !EditableStatuses.Contains(r.Status))
+            {
+                return ServiceResult.Fail("Chỉ kéo-thả đổi phòng được cho đơn ở trạng thái Nháp hoặc Đã xác nhận.");
+            }
+
+            var line = r.Rooms.FirstOrDefault(rr => rr.RoomId == fromRoomId) ?? r.Rooms.FirstOrDefault();
+            if (line is null)
+            {
+                return ServiceResult.Fail("Không tìm thấy dòng phòng trong đơn đặt.");
+            }
+
+            var free = await _availability.IsRoomAvailableAsync(toRoomId, r.CheckInDate, r.CheckOutDate, r.Id);
+            if (!free)
+            {
+                return ServiceResult.Fail($"Phòng {targetRoom.RoomNumber} đã có lịch trùng trong khoảng {r.CheckInDate:dd/MM} – {r.CheckOutDate:dd/MM}.");
+            }
+
+            var oldRoomNo = line.Room?.RoomNumber ?? $"Loại #{line.RoomTypeId}";
+            line.RoomId = targetRoom.Id;
+            if (line.RoomTypeId != targetRoom.RoomTypeId)
+            {
+                line.RoomTypeId = targetRoom.RoomTypeId;
+                var settings = await _settings.GetPricingSettingsAsync();
+                var (period, _) = _pricing.ResolvePeriod(r.RentalType, r.CheckInDate, r.CheckOutDate, settings);
+                if (period is not null)
+                {
+                    var roomCharge = _pricing.RoomChargeFor(
+                        period, targetRoom.RoomType.BasePricePerNight,
+                        targetRoom.RoomType.PriceFirstHour, targetRoom.RoomType.PriceExtraHour, targetRoom.RoomType.PriceOvernight,
+                        settings, targetRoom.RoomTypeId);
+                    line.PricePerNight = period.Nights > 0 ? Math.Round(roomCharge / period.Nights, 0) : targetRoom.RoomType.BasePricePerNight;
+                    line.PriceFirstHour = targetRoom.RoomType.PriceFirstHour;
+                    line.PriceExtraHour = targetRoom.RoomType.PriceExtraHour;
+                    line.PriceOvernight = targetRoom.RoomType.PriceOvernight;
+                }
+                r.EstimatedTotal = r.Rooms.Sum(rr => RoomLineTotal(r, rr));
+            }
+
+            _audit.Log("QuickMoveReservationRoom", nameof(Reservation), r.Id.ToString(),
+                reason: moveReason, oldValue: $"P.{oldRoomNo}", newValue: $"P.{targetRoom.RoomNumber}");
+
+            await _db.SaveChangesAsync();
+            return ServiceResult.Ok(message: $"Đã chuyển đơn {r.Code} từ P.{oldRoomNo} sang P.{targetRoom.RoomNumber}.");
+        }
+
+        return ServiceResult.Fail("Không xác định được đơn đặt hoặc lượt lưu trú cần đổi phòng.");
+    }
+
+    public async Task<ServiceResult> QuickExtendAsync(
+        int? reservationId, int? stayId, int addNights, int employeeId, bool isAdmin)
+    {
+        if (addNights <= 0)
+        {
+            addNights = 1;
+        }
+
+        var settings = await _settings.GetPricingSettingsAsync();
+
+        // Trường hợp 1: Khách đang lưu trú (Stay)
+        if (stayId.HasValue && stayId.Value > 0)
+        {
+            var stay = await _db.Stays
+                .Include(s => s.Room).ThenInclude(r => r.RoomType)
+                .Include(s => s.Folio)
+                .FirstOrDefaultAsync(s => s.Id == stayId.Value && s.Status == StayStatus.CheckedIn);
+
+            if (stay is null || stay.Folio is null)
+            {
+                return ServiceResult.Fail("Không tìm thấy lượt lưu trú đang mở.");
+            }
+
+            if (stay.Folio.IsLocked)
+            {
+                return ServiceResult.Fail("Folio đã khóa — vui lòng mở khóa trước khi gia hạn.");
+            }
+
+            var oldOut = stay.ExpectedCheckOut;
+            var newOut = oldOut.AddDays(addNights);
+
+            var free = await _availability.IsRoomAvailableAsync(stay.RoomId, oldOut, newOut, stay.ReservationId);
+            if (!free)
+            {
+                return ServiceResult.Fail($"Phòng {stay.Room.RoomNumber} đã có khách đặt kế tiếp từ ngày {oldOut:dd/MM/yyyy}, không thể gia hạn thêm {addNights} đêm.");
+            }
+
+            var (extPeriod, _) = _pricing.ResolvePeriod(RentalType.Daily, oldOut.Date, newOut.Date, settings);
+            var extCharge = extPeriod is not null
+                ? _pricing.RoomChargeFor(
+                    extPeriod, stay.Room.RoomType.BasePricePerNight,
+                    stay.PriceFirstHour, stay.PriceExtraHour, stay.PriceOvernight,
+                    settings, stay.Room.RoomTypeId)
+                : stay.PricePerNight * addNights;
+
+            var unitPrice = Math.Round(extCharge / addNights, 0);
+
+            await _tx.ExecuteAsync(async () =>
+            {
+                stay.ExpectedCheckOut = newOut;
+                stay.Nights += addNights;
+
+                _db.FolioItems.Add(new FolioItem
+                {
+                    FolioId = stay.Folio.Id,
+                    ItemType = FolioItemType.Room,
+                    Description = $"Gia hạn thêm {addNights} đêm ({oldOut:dd/MM} → {newOut:dd/MM})",
+                    Quantity = addNights,
+                    UnitPrice = unitPrice,
+                    Amount = extCharge,
+                    ChargedAt = DateTime.Now
+                });
+
+                _audit.Log("QuickExtendStay", nameof(Stay), stay.Id.ToString(),
+                    newValue: $"+{addNights} đêm → {newOut:dd/MM/yyyy} (+{extCharge:N0} ₫)");
+
+                await _db.SaveChangesAsync();
+            });
+
+            return ServiceResult.Ok(
+                message: $"Đã gia hạn P.{stay.Room.RoomNumber} thêm {addNights} đêm (đến {newOut:dd/MM/yyyy}, +{extCharge:N0} ₫).");
+        }
+
+        // Trường hợp 2: Đơn đặt trước (Reservation)
+        if (reservationId.HasValue && reservationId.Value > 0)
+        {
+            var r = await _db.Reservations
+                .Include(x => x.Rooms).ThenInclude(rr => rr.RoomType)
+                .FirstOrDefaultAsync(x => x.Id == reservationId.Value);
+
+            if (r is null || !EditableStatuses.Contains(r.Status))
+            {
+                return ServiceResult.Fail("Chỉ gia hạn được đơn đặt ở trạng thái Nháp hoặc Đã xác nhận.");
+            }
+
+            var oldOut = r.CheckOutDate;
+            var newOut = oldOut.AddDays(addNights);
+
+            foreach (var rr in r.Rooms.Where(x => x.RoomId.HasValue))
+            {
+                var free = await _availability.IsRoomAvailableAsync(rr.RoomId!.Value, oldOut, newOut, r.Id);
+                if (!free)
+                {
+                    return ServiceResult.Fail($"Phòng trong đơn {r.Code} đã vướng lịch đặt khác từ ngày {oldOut:dd/MM/yyyy}.");
+                }
+            }
+
+            r.CheckOutDate = newOut;
+            r.Nights += addNights;
+
+            var (fullPeriod, _) = _pricing.ResolvePeriod(r.RentalType, r.CheckInDate, r.CheckOutDate, settings);
+            decimal newTotal = 0m;
+            foreach (var rr in r.Rooms)
+            {
+                if (fullPeriod is not null && r.RentalType == RentalType.Daily)
+                {
+                    var rc = _pricing.RoomChargeFor(
+                        fullPeriod, rr.RoomType.BasePricePerNight,
+                        rr.PriceFirstHour, rr.PriceExtraHour, rr.PriceOvernight,
+                        settings, rr.RoomTypeId);
+                    rr.PricePerNight = fullPeriod.Nights > 0 ? Math.Round(rc / fullPeriod.Nights, 0) : rr.PricePerNight;
+                    newTotal += rc;
+                }
+                else
+                {
+                    newTotal += RoomLineTotal(r, rr);
+                }
+            }
+            r.EstimatedTotal = newTotal;
+
+            _audit.Log("QuickExtendReservation", nameof(Reservation), r.Id.ToString(),
+                newValue: $"+{addNights} đêm → {newOut:dd/MM/yyyy} (tổng {r.EstimatedTotal:N0} ₫)");
+
+            await _db.SaveChangesAsync();
+            return ServiceResult.Ok(message: $"Đã gia hạn đơn {r.Code} thêm {addNights} đêm (đến {newOut:dd/MM/yyyy}).");
+        }
+
+        return ServiceResult.Fail("Không tìm thấy đơn hoặc lượt lưu trú để gia hạn.");
     }
 
     // ---------- Giải thích lỗi ----------

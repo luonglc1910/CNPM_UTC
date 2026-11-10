@@ -40,7 +40,9 @@ public class RoomConflict
 /// Kiểm tra phòng trống và chống trùng lịch — BR-06.
 ///
 /// Điều kiện chồng lấn: <c>existing.CheckIn &lt; req.CheckOut AND existing.CheckOut &gt; req.CheckIn</c>
-/// (ngày trả trùng ngày nhận thì KHÔNG tính chồng lấn). Xét cả đơn đặt ở trạng thái Confirmed/CheckedIn
+/// (ngày trả trùng ngày nhận thì KHÔNG tính chồng lấn). Phòng đã gán cho đơn
+/// Confirmed được giữ riêng tới khi check-in/hủy/no-show; đơn CheckedIn và lượt lưu trú
+/// vẫn được kiểm tra theo khoảng thời gian.
 /// lẫn lượt lưu trú đang mở; loại phòng Maintenance/OutOfService/đã ngừng khai thác.
 ///
 /// Mọi phép lọc đẩy xuống DB bằng NOT EXISTS, không nạp toàn bộ phòng về RAM để lọc.
@@ -94,9 +96,9 @@ public class AvailabilityService : IAvailabilityService
             .Where(r => !_db.ReservationRooms.Any(rr =>
                 rr.RoomId == r.Id
                 && (rr.Reservation.Status == ReservationStatus.Confirmed
-                    || rr.Reservation.Status == ReservationStatus.CheckedIn)
-                && rr.Reservation.CheckInDate < checkOut
-                && rr.Reservation.CheckOutDate > checkIn))
+                    || (rr.Reservation.Status == ReservationStatus.CheckedIn
+                        && rr.Reservation.CheckInDate < checkOut
+                        && rr.Reservation.CheckOutDate > checkIn))))
             // Lượt thuê theo giờ đang mở chưa có giờ đi (BR-13): ExpectedCheckOut chỉ là mốc tạm
             // một giờ. Nếu vẫn so theo mốc đó thì qua một giờ phòng lại hiện ra là trống trong khi
             // khách còn nằm trong đó. Chừng nào chưa trả phòng thì nó chặn mọi khoảng phía sau.
@@ -142,6 +144,16 @@ public class AvailabilityService : IAvailabilityService
             return false;
         }
 
+        var heldForCheckIn = await _db.ReservationRooms.AsNoTracking().AnyAsync(rr =>
+            rr.RoomId == roomId
+            && rr.Reservation.Status == ReservationStatus.Confirmed
+            && (excludeReservationId == null || rr.ReservationId != excludeReservationId));
+
+        if (heldForCheckIn)
+        {
+            return false;
+        }
+
         var conflicts = await FindConflictsAsync(roomId, checkIn, checkOut, excludeReservationId, excludeStayId);
         return conflicts.Count == 0;
     }
@@ -153,9 +165,9 @@ public class AvailabilityService : IAvailabilityService
         var reservationConflicts = await _db.ReservationRooms.AsNoTracking()
             .Where(rr => rr.RoomId == roomId
                 && (rr.Reservation.Status == ReservationStatus.Confirmed
-                    || rr.Reservation.Status == ReservationStatus.CheckedIn)
-                && rr.Reservation.CheckInDate < checkOut
-                && rr.Reservation.CheckOutDate > checkIn
+                    || (rr.Reservation.Status == ReservationStatus.CheckedIn
+                        && rr.Reservation.CheckInDate < checkOut
+                        && rr.Reservation.CheckOutDate > checkIn))
                 && (excludeReservationId == null || rr.ReservationId != excludeReservationId))
             .Select(rr => new RoomConflict
             {

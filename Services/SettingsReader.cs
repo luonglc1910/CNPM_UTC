@@ -1,4 +1,5 @@
 using System.Globalization;
+using System.Text.Json;
 using HotelManagement.Web.Data;
 using HotelManagement.Web.Models.Entities;
 using Microsoft.EntityFrameworkCore;
@@ -83,8 +84,73 @@ public class SettingsReader : ISettingsReader
             CancelFeeOver48hRate = await GetDecimalAsync(SystemSettingKeys.CancelFeeOver48hRate),
             CancelFee24To48hRate = await GetDecimalAsync(SystemSettingKeys.CancelFee24To48hRate),
             CancelFeeUnder24hRate = await GetDecimalAsync(SystemSettingKeys.CancelFeeUnder24hRate),
-            ChildAgeLimit = await GetIntAsync(SystemSettingKeys.ChildAgeLimit)
+            ChildAgeLimit = await GetIntAsync(SystemSettingKeys.ChildAgeLimit),
+            EnableDynamicPricing = await GetBoolAsync(SystemSettingKeys.EnableDynamicPricing),
+            WeekendSurchargeRate = await GetDecimalAsync(SystemSettingKeys.WeekendSurchargeRate),
+            WeekendDays = await GetStringAsync(SystemSettingKeys.WeekendDays),
+            SeasonalRules = ParseSeasonalRules(await GetStringAsync(SystemSettingKeys.SeasonalRulesJson))
         };
+    }
+
+    public static List<SeasonalPricingRule> ParseSeasonalRules(string? raw)
+    {
+        if (string.IsNullOrWhiteSpace(raw))
+        {
+            return new List<SeasonalPricingRule>();
+        }
+
+        var trimmed = raw.Trim();
+        if (trimmed.StartsWith("[", StringComparison.Ordinal))
+        {
+            try
+            {
+                return JsonSerializer.Deserialize<List<SeasonalPricingRule>>(trimmed, new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }) ?? new List<SeasonalPricingRule>();
+            }
+            catch
+            {
+                return new List<SeasonalPricingRule>();
+            }
+        }
+
+        // Định dạng nén gọn (Id|Name|yyyy-MM-dd|yyyy-MM-dd|PercentChange|RoomTypeIds|1;...) để vừa cột Value MaxLength(500)
+        var list = new List<SeasonalPricingRule>();
+        foreach (var entry in trimmed.Split(';', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        {
+            var parts = entry.Split('|');
+            if (parts.Length < 5) continue;
+
+            if (!DateTime.TryParse(parts[2], CultureInfo.InvariantCulture, DateTimeStyles.None, out var start)) continue;
+            if (!DateTime.TryParse(parts[3], CultureInfo.InvariantCulture, DateTimeStyles.None, out var end)) continue;
+            if (!decimal.TryParse(parts[4], NumberStyles.Any, CultureInfo.InvariantCulture, out var pct)) continue;
+
+            list.Add(new SeasonalPricingRule
+            {
+                Id = parts[0],
+                Name = parts[1],
+                StartDate = start.Date,
+                EndDate = end.Date,
+                PercentChange = pct,
+                RoomTypeIds = parts.Length > 5 ? parts[5] : string.Empty,
+                IsActive = parts.Length <= 6 || parts[6] != "0"
+            });
+        }
+        return list;
+    }
+
+    public static string SerializeSeasonalRules(IEnumerable<SeasonalPricingRule> rules)
+    {
+        var entries = rules.Select(r =>
+        {
+            var safeName = (r.Name ?? string.Empty).Replace("|", " ").Replace(";", " ").Trim();
+            var safeRooms = (r.RoomTypeIds ?? string.Empty).Replace("|", ",").Replace(";", ",");
+            return string.Create(CultureInfo.InvariantCulture,
+                $"{r.Id}|{safeName}|{r.StartDate:yyyy-MM-dd}|{r.EndDate:yyyy-MM-dd}|{r.PercentChange:0.##}|{safeRooms}|{(r.IsActive ? "1" : "0")}");
+        });
+        var result = string.Join(";", entries);
+        return result.Length <= 500 ? result : result[..500];
     }
 
     private async Task<Dictionary<string, string>> EnsureLoadedAsync()

@@ -147,6 +147,83 @@
             </div>
         </form>
     </div>
+
+    @* Danh sách đơn đặt phòng của khách hàng trên Portal *@
+    @{
+        var myReservations = ViewBag.MyReservations as List<HotelManagement.Web.Models.Entities.Reservation> ?? new();
+    }
+    <div class="bg-surface-container-lowest rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] border border-surface-variant p-6 md:p-10 mt-8">
+        <div class="flex items-center justify-between border-b border-surface-variant pb-4 mb-6">
+            <h3 class="text-xl font-headline-md font-semibold text-on-surface flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary">receipt_long</span>
+                Đơn đặt phòng của tôi (@myReservations.Count)
+            </h3>
+            <a href="/Portal/Search" class="text-sm font-semibold text-primary hover:underline flex items-center gap-1">
+                <span class="material-symbols-outlined text-[18px]">add_circle</span> Đặt phòng mới
+            </a>
+        </div>
+
+        @if (myReservations.Count == 0)
+        {
+            <div class="text-center py-8 text-on-surface-variant">
+                Quý khách chưa có đơn đặt phòng nào. <a href="/Portal/Search" class="text-primary font-semibold underline">Khám phá phòng nghỉ ngay</a>.
+            </div>
+        }
+        else
+        {
+            <div class="flex flex-col gap-4">
+                @foreach (var r in myReservations)
+                {
+                    var paid = r.Deposits.Where(d => d.Status == HotelManagement.Web.Models.DepositStatus.Held || d.Status == HotelManagement.Web.Models.DepositStatus.Applied).Sum(d => d.Amount);
+                    var rem = Math.Max(0, r.EstimatedTotal - paid);
+                    var roomText = string.Join(", ", r.Rooms.Select(rr => rr.Room != null ? $"P.{rr.Room.RoomNumber} ({rr.RoomType.Name})" : rr.RoomType.Name));
+                    <div class="p-4 rounded-2xl bg-surface-container-low border border-surface-variant flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div class="flex flex-col gap-1">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <span class="font-bold text-primary text-base">@r.Code</span>
+                                <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold @(r.Status == HotelManagement.Web.Models.ReservationStatus.Confirmed ? "bg-blue-100 text-blue-800" : r.Status == HotelManagement.Web.Models.ReservationStatus.CheckedIn ? "bg-amber-100 text-amber-800" : r.Status == HotelManagement.Web.Models.ReservationStatus.CheckedOut ? "bg-green-100 text-green-800" : "bg-gray-200 text-gray-700")">
+                                    @r.Status.ToDisplayName()
+                                </span>
+                                @if (rem <= 0 && r.EstimatedTotal > 0)
+                                {
+                                    <span class="text-xs px-2.5 py-0.5 rounded-full font-semibold bg-green-100 text-green-800">Đã thanh toán VietQR</span>
+                                }
+                            </div>
+                            <div class="text-sm font-medium text-on-surface">@roomText</div>
+                            <div class="text-xs text-on-surface-variant">
+                                Nhận phòng: <strong>@r.CheckInDate.ToString("dd/MM/yyyy HH:mm")</strong> &rarr; Trả phòng: <strong>@r.CheckOutDate.ToString("dd/MM/yyyy HH:mm")</strong>
+                            </div>
+                        </div>
+                        <div class="flex flex-col md:items-end gap-2">
+                            <div class="text-sm">
+                                Tổng: <strong class="text-primary">@r.EstimatedTotal.ToString("N0") ₫</strong>
+                                @if (paid > 0)
+                                {
+                                    <span class="text-xs text-green-700 block">Đã trả trước: @paid.ToString("N0") ₫</span>
+                                }
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <a href="/Portal/BookingSuccess/@r.Id@(rem > 0 ? "?pay=qr" : "")" class="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-semibold flex items-center gap-1 hover:bg-primary-container transition-colors">
+                                    <span class="material-symbols-outlined text-[16px]">@(rem > 0 ? "qr_code_scanner" : "visibility")</span>
+                                    @(rem > 0 && r.Status == HotelManagement.Web.Models.ReservationStatus.Confirmed ? "Thanh toán VietQR" : "Xem chi tiết")
+                                </a>
+                                @if (r.Status == HotelManagement.Web.Models.ReservationStatus.Confirmed || r.Status == HotelManagement.Web.Models.ReservationStatus.Draft)
+                                {
+                                    <form method="post" asp-action="CancelMyBooking" onsubmit="return confirm('Quý khách chắc chắn muốn hủy đơn @r.Code?');">
+                                        @Html.AntiForgeryToken()
+                                        <input type="hidden" name="reservationId" value="@r.Id" />
+                                        <button type="submit" class="px-3 py-1.5 rounded-lg bg-red-50 text-red-700 border border-red-200 text-xs font-semibold hover:bg-red-100 transition-colors">
+                                            Hủy đơn
+                                        </button>
+                                    </form>
+                                }
+                            </div>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
 </div>
 
 @section Scripts {

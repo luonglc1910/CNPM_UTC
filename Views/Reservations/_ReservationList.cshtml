@@ -72,6 +72,7 @@ else
                 <thead class="table-light">
                     <tr>
                         <th>Mã đơn</th>
+                        <th>Thời gian đặt</th>
                         <th>Khách</th>
                         <th>Hình thức</th>
                         <th>Đến</th>
@@ -89,6 +90,7 @@ else
                 {
                     <tr>
                         <td><code>@r.Code</code></td>
+                        <td class="text-nowrap">@r.CreatedAt.ToString("HH:mm")<br /><span class="text-muted small">@r.CreatedAt.ToString("dd/MM/yyyy")</span></td>
                         <td>@r.GuestName<br /><span class="text-muted small">@r.PhoneNumber</span></td>
                         <td class="text-nowrap">
                             <span class="badge @r.RentalType.BadgeClass()">

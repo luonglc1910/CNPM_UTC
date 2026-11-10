@@ -1,64 +1,314 @@
 @model HotelManagement.Web.Models.Entities.Reservation
+@using System.Globalization
 @{
     Layout = "_PortalLayout";
-    ViewData["Title"] = "Đặt phòng thành công";
+    ViewData["Title"] = "Đặt phòng thành công & Thanh toán Ngân hàng NCB";
+    var qr = ViewBag.VietQr as HotelManagement.Web.Services.VietQrPayload;
+    decimal depositPaid = ViewBag.DepositPaid is decimal dp ? dp : 0m;
+    decimal remaining = ViewBag.RemainingAmount is decimal rm ? rm : Math.Max(0, Model.EstimatedTotal - depositPaid);
+    bool showQrModal = ViewBag.ShowQrModal is bool sq && sq;
+    bool transferReported = ViewBag.TransferReported is bool tr && tr;
+    bool vnPayEnabled = ViewBag.VnPayEnabled is bool ve && ve;
+    string? emailPreviewUrl = TempData["EmailPreviewUrl"] as string;
+    bool emailSent = TempData["EmailSent"] is bool es && es;
+    string? emailMessage = TempData["EmailMessage"] as string;
 }
 
-<div class="w-full max-w-3xl mx-auto px-margin py-space-xl flex flex-col items-center text-center gap-space-lg">
-    <div class="w-20 h-20 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center">
-        <span class="material-symbols-outlined text-[40px]">check_circle</span>
-    </div>
-    
-    <h1 class="font-display-lg text-display-lg text-primary">Đặt phòng thành công!</h1>
-    <p class="font-body-lg text-body-lg text-on-surface-variant max-w-xl">
-        Cảm ơn quý khách <strong>@Model.PrimaryGuest.FullName</strong> đã lựa chọn Aura Resort. 
-        Mã đơn đặt phòng của quý khách là <strong class="text-primary">@Model.Code</strong>.
-    </p>
-
-    <div class="bg-surface-container p-space-lg rounded-xl w-full text-left flex flex-col gap-space-md shadow-sm">
-        <h2 class="font-headline-sm text-headline-sm text-primary border-b border-surface-dim pb-2">Thông tin đơn phòng</h2>
-        
-        <div class="grid grid-cols-2 gap-space-md">
-            <div class="flex flex-col gap-1">
-                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Mã đơn</span>
-                <span class="font-body-md text-body-md font-semibold text-on-surface">@Model.Code</span>
-            </div>
-            <div class="flex flex-col gap-1">
-                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Trạng thái</span>
-                <span class="font-body-md text-body-md font-semibold text-secondary">Chờ thanh toán / Đã xác nhận</span>
-            </div>
-            <div class="flex flex-col gap-1">
-                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Ngày nhận phòng</span>
-                <span class="font-body-md text-body-md font-semibold text-on-surface">@Model.CheckInDate.ToString("dd/MM/yyyy HH:mm")</span>
-            </div>
-            <div class="flex flex-col gap-1">
-                <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Ngày trả phòng</span>
-                <span class="font-body-md text-body-md font-semibold text-on-surface">@Model.CheckOutDate.ToString("dd/MM/yyyy HH:mm")</span>
-            </div>
+<div class="w-full max-w-5xl mx-auto px-margin py-space-xl flex flex-col items-center text-center gap-space-lg">
+    @if (remaining <= 0)
+    {
+        <div class="w-20 h-20 bg-green-100 text-green-700 rounded-full flex items-center justify-center shadow-md">
+            <span class="material-symbols-outlined text-[42px]">verified</span>
         </div>
-        
-        <div class="mt-4 pt-4 border-t border-surface-dim">
-            <h3 class="font-label-lg text-label-lg text-on-surface-variant uppercase mb-3">Chi tiết phòng đã đặt</h3>
-            <ul class="flex flex-col gap-2">
-                @foreach (var rr in Model.Rooms)
-                {
-                    <li class="bg-surface-container-low p-3 rounded-lg flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2">
-                        <div class="flex flex-col">
-                            <span class="font-body-md font-semibold text-primary">@rr.RoomType.Name</span>
-                            <span class="font-label-sm text-label-sm text-on-surface-variant">Phòng: @(rr.Room != null ? rr.Room.RoomNumber : "Đang chờ xếp phòng") | Số khách: @rr.Adults người</span>
-                        </div>
-                        <span class="font-numeric-table font-medium text-secondary">
-                            @(Model.EstimatedTotal.ToString("N0")) đ
+        <h1 class="font-display-lg text-display-lg text-primary">Thanh toán &amp; Đặt phòng thành công!</h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+            Cảm ơn quý khách <strong>@Model.PrimaryGuest.FullName</strong> đã hoàn tất thanh toán tại Aura Resort.
+            Mã đơn đặt phòng của quý khách là <strong class="text-primary">@Model.Code</strong>.
+        </p>
+    }
+    else if (showQrModal)
+    {
+        <div class="w-20 h-20 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center shadow-md">
+            <span class="material-symbols-outlined text-[40px]">qr_code_scanner</span>
+        </div>
+        <h1 class="font-display-lg text-display-lg text-primary">Thanh toán đơn đặt phòng #@Model.Code</h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+            Đơn đặt phòng của quý khách <strong>@Model.PrimaryGuest.FullName</strong> đã được khởi tạo.
+            Vui lòng chuyển khoản VietQR hoặc thanh toán thẻ ATM qua cổng VNPay bên dưới để hoàn tất thanh toán <strong class="text-secondary">@remaining.ToString("N0") đ</strong>.
+        </p>
+    }
+    else
+    {
+        <div class="w-20 h-20 bg-secondary-container text-on-secondary-container rounded-full flex items-center justify-center shadow-md">
+            <span class="material-symbols-outlined text-[40px]">check_circle</span>
+        </div>
+        <h1 class="font-display-lg text-display-lg text-primary">Đặt phòng thành công!</h1>
+        <p class="font-body-lg text-body-lg text-on-surface-variant max-w-2xl">
+            Cảm ơn quý khách <strong>@Model.PrimaryGuest.FullName</strong> đã lựa chọn Aura Resort.
+            Mã đơn đặt phòng của quý khách là <strong class="text-primary">@Model.Code</strong>.
+        </p>
+    }
+
+    @if (TempData["PaymentSuccess"] != null)
+    {
+        <div class="w-full bg-green-50 text-green-800 border border-green-300 px-5 py-4 rounded-xl font-medium flex items-center justify-center gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-green-700">verified</span>
+            <span>@TempData["PaymentSuccess"]</span>
+        </div>
+    }
+
+    @if (TempData["PaymentInfo"] != null)
+    {
+        <div class="w-full bg-amber-50 text-amber-900 border border-amber-300 px-5 py-4 rounded-xl font-medium flex items-center justify-center gap-2 shadow-sm">
+            <span class="material-symbols-outlined text-amber-700">hourglass_top</span>
+            <span>@TempData["PaymentInfo"]</span>
+        </div>
+    }
+
+    @if (TempData["PaymentError"] != null)
+    {
+        <div class="w-full bg-red-100 text-red-800 border border-red-300 px-5 py-4 rounded-xl font-medium flex items-center justify-center gap-2 shadow-sm">
+            <span class="material-symbols-outlined">error</span>
+            <span>@TempData["PaymentError"]</span>
+        </div>
+    }
+
+    @if (!string.IsNullOrEmpty(emailPreviewUrl))
+    {
+        <div class="w-full bg-surface-container-low border border-surface-dim px-4 py-3 rounded-xl text-sm flex flex-wrap items-center justify-between gap-2">
+            <span class="flex items-center gap-2 text-on-surface">
+                <span class="material-symbols-outlined text-primary">mail</span>
+                @if (emailSent) { <text>Hệ thống đã gửi Email xác nhận đặt phòng tới <strong>@(Model.PrimaryGuest.Email ?? "hộp thư của quý khách")</strong>.</text> } else { <text>Bản Email xác nhận đã được lưu nhưng <strong>chưa gửi tới hộp thư</strong>. @emailMessage</text> }
+            </span>
+            <a href="@emailPreviewUrl" target="_blank" class="text-primary font-semibold underline hover:text-secondary">
+                Xem nội dung Email &rarr;
+            </a>
+        </div>
+    }
+
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-space-lg w-full text-left items-start">
+        <!-- Cột thông tin đơn -->
+        <div class="@(remaining > 0 && qr != null ? "lg:col-span-6" : "lg:col-span-12") bg-surface-container p-space-lg rounded-2xl flex flex-col gap-space-md shadow-sm border border-surface-dim">
+            <h2 class="font-headline-sm text-headline-sm text-primary border-b border-surface-dim pb-2 flex items-center justify-between">
+                <span>Thông tin đơn phòng</span>
+                <span class="text-xs px-2.5 py-1 rounded-full bg-surface-container-lowest text-primary font-semibold">@Model.Code</span>
+            </h2>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-space-md">
+                <div class="flex flex-col gap-1">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Khách hàng</span>
+                    <span class="font-body-md text-body-md font-semibold text-on-surface">@Model.PrimaryGuest.FullName (@Model.PrimaryGuest.PhoneNumber)</span>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Trạng thái thanh toán</span>
+                    @if (remaining <= 0)
+                    {
+                        <span class="font-body-md text-body-md font-semibold text-green-700 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[18px]">paid</span> Đã thanh toán đủ (@depositPaid.ToString("N0") đ)
                         </span>
-                    </li>
-                }
-            </ul>
+                    }
+                    else if (depositPaid > 0)
+                    {
+                        <span class="font-body-md text-body-md font-semibold text-secondary">Đã cọc @depositPaid.ToString("N0") đ (Còn @remaining.ToString("N0") đ)</span>
+                    }
+                    else
+                    {
+                        <span class="font-body-md text-body-md font-semibold text-amber-700 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-[18px]">schedule</span> Chờ thanh toán (@remaining.ToString("N0") đ)
+                        </span>
+                    }
+                </div>
+                <div class="flex flex-col gap-1">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Ngày nhận phòng</span>
+                    <span class="font-body-md text-body-md font-semibold text-on-surface">@Model.CheckInDate.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+                <div class="flex flex-col gap-1">
+                    <span class="font-label-sm text-label-sm text-on-surface-variant uppercase">Ngày trả phòng</span>
+                    <span class="font-body-md text-body-md font-semibold text-on-surface">@Model.CheckOutDate.ToString("dd/MM/yyyy HH:mm")</span>
+                </div>
+            </div>
+
+            <div class="mt-2 pt-4 border-t border-surface-dim">
+                <h3 class="font-label-lg text-label-lg text-on-surface-variant uppercase mb-3">Chi tiết phòng đã đặt</h3>
+                <ul class="flex flex-col gap-2">
+                    @foreach (var rr in Model.Rooms)
+                    {
+                        <li class="bg-surface-container-low p-3 rounded-xl flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 border border-surface-dim/60">
+                            <div class="flex flex-col">
+                                <span class="font-body-md font-semibold text-primary">@rr.RoomType.Name</span>
+                                <span class="font-label-sm text-label-sm text-on-surface-variant">Phòng: @(rr.Room != null ? rr.Room.RoomNumber : "Đang chờ xếp phòng") | Số khách: @rr.Adults người</span>
+                            </div>
+                            <span class="font-numeric-table font-semibold text-secondary text-base">
+                                @(Model.EstimatedTotal.ToString("N0")) đ
+                            </span>
+                        </li>
+                    }
+                </ul>
+            </div>
+
+            @if (remaining <= 0)
+            {
+                <div class="bg-green-50 border border-green-200 rounded-xl p-4 text-xs text-green-900 space-y-1">
+                    <div class="font-semibold text-sm flex items-center gap-1.5 text-green-800">
+                        <span class="material-symbols-outlined text-[18px]">receipt</span> Biên lai thanh toán Ngân hàng NCB
+                    </div>
+                    <div class="flex justify-between"><span>Ngân hàng thụ hưởng:</span><strong>Ngân hàng NCB (970419)</strong></div>
+                    <div class="flex justify-between"><span>Số thẻ / TK:</span><strong>9704198526191432198 — NGUYEN VAN A</strong></div>
+                    <div class="flex justify-between"><span>Số tiền đã thanh toán:</span><strong class="text-green-700">@depositPaid.ToString("N0") đ</strong></div>
+                </div>
+            }
         </div>
+
+        <!-- Cột Cổng Thanh toán: VietQR (chờ Lễ tân đối soát) & VNPay (xác thực chữ ký) -->
+        @if (remaining > 0 && qr != null)
+        {
+            <div id="ncbPaymentBox" class="lg:col-span-6 bg-surface-container-lowest border-2 border-primary rounded-2xl p-space-lg flex flex-col gap-space-md shadow-lg">
+                <div class="flex items-center justify-between border-b border-surface-dim pb-3">
+                    <div class="flex items-center gap-2 text-primary font-bold text-base">
+                        <span class="material-symbols-outlined text-secondary">account_balance</span>
+                        <span>Thanh toán đơn @Model.Code</span>
+                    </div>
+                    <span class="text-xs px-2.5 py-1 rounded-full bg-secondary-container text-on-secondary-container font-semibold">
+                        @qr.Amount.ToString("N0") đ
+                    </span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-2 bg-surface-container-low p-1 rounded-xl">
+                    <button type="button" id="tabBtnQr" onclick="switchPayTab('qr')" class="py-2 px-3 rounded-lg text-xs font-semibold transition-all bg-primary text-on-primary shadow-sm flex items-center justify-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px]">qr_code_2</span>
+                        <span>Chuyển khoản VietQR</span>
+                    </button>
+                    <button type="button" id="tabBtnCard" onclick="switchPayTab('card')" class="py-2 px-3 rounded-lg text-xs font-semibold transition-all text-on-surface-variant hover:text-primary flex items-center justify-center gap-1.5">
+                        <span class="material-symbols-outlined text-[16px]">credit_card</span>
+                        <span>VNPay Sandbox (QR / Thẻ NCB)</span>
+                    </button>
+                </div>
+
+                <!-- TAB 1: CHUYỂN KHOẢN VIETQR — chỉ báo khách sạn, Lễ tân đối soát rồi mới ghi nhận -->
+                <div id="payPanelQr" class="flex flex-col items-center text-center gap-3">
+                    @if (transferReported)
+                    {
+                        <div class="w-full bg-amber-50 border border-amber-300 text-amber-900 rounded-xl p-3 text-xs text-left flex gap-2">
+                            <span class="material-symbols-outlined text-amber-700">hourglass_top</span>
+                            <span>
+                                <strong>Đang chờ khách sạn đối soát.</strong> Quý khách đã báo chuyển khoản; đơn sẽ chuyển sang
+                                "Đã thanh toán" khi Lễ tân xác nhận tiền đã về tài khoản. Nếu chưa chuyển, quý khách vẫn có thể quét mã bên dưới.
+                            </span>
+                        </div>
+                    }
+                    <p class="text-xs text-on-surface-variant">
+                        Mở ứng dụng ngân hàng, quét mã và <strong>giữ nguyên nội dung chuyển khoản</strong> để khách sạn đối soát nhanh.
+                    </p>
+
+                    <div class="bg-white p-3 rounded-2xl border border-surface-dim shadow-sm">
+                        <img src="@qr.QrImageUrl" alt="VietQR @Model.Code" class="w-56 h-auto mx-auto rounded-lg" />
+                    </div>
+
+                    <div class="w-full bg-surface-container-low p-3.5 rounded-xl text-left text-xs space-y-1.5 border border-surface-dim/60">
+                        <div class="flex justify-between"><span class="text-on-surface-variant">Ngân hàng:</span><strong class="text-on-surface">@qr.BankName</strong></div>
+                        <div class="flex justify-between"><span class="text-on-surface-variant">Số TK nhận:</span><strong class="text-on-surface font-mono">@qr.AccountNo</strong></div>
+                        <div class="flex justify-between"><span class="text-on-surface-variant">Chủ tài khoản:</span><strong class="text-on-surface">@qr.AccountName</strong></div>
+                        <div class="flex justify-between"><span class="text-on-surface-variant">Số tiền:</span><strong class="text-secondary text-sm">@qr.Amount.ToString("N0") đ</strong></div>
+                        <div class="flex justify-between"><span class="text-on-surface-variant">Nội dung CK:</span><strong class="text-primary font-mono">@qr.Memo</strong></div>
+                    </div>
+
+                    <form action="/Portal/ReportTransfer" method="post" class="w-full text-left space-y-2">
+                        <input type="hidden" name="reservationId" value="@Model.Id" />
+                        <input type="text" name="payerName" maxlength="100" placeholder="Tên tài khoản chuyển (không bắt buộc)" class="w-full px-3 py-2 rounded-lg border border-surface-dim bg-white text-xs" />
+                        <button type="submit" class="w-full h-11 px-4 bg-surface-container-high text-primary border border-primary/40 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-surface-dim transition-all cursor-pointer">
+                            <span class="material-symbols-outlined text-[20px]">notifications_active</span>
+                            <span>Tôi đã chuyển khoản — Báo khách sạn kiểm tra</span>
+                        </button>
+                        <p class="text-[11px] text-on-surface-variant text-center">
+                            Nút này chỉ gửi thông báo, <strong>không</strong> tự xác nhận thanh toán. Đơn chỉ được ghi nhận sau khi Lễ tân đối soát sao kê.
+                        </p>
+                    </form>
+                </div>
+
+                <!-- TAB 2: THẺ ATM QUA CỔNG VNPAY — thẻ nhập trên trang VNPay, server xác thực chữ ký trả về -->
+                <div id="payPanelCard" class="hidden flex-col gap-3 text-left">
+                    @if (vnPayEnabled)
+                    {
+                        <p class="text-xs text-on-surface-variant">
+                            Thanh toán qua <strong>cổng VNPay (môi trường Sandbox — không trừ tiền thật)</strong>.
+                            Khách sạn không lưu thông tin thẻ của quý khách.
+                        </p>
+                        <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900">
+                            <div class="font-semibold mb-1">Thẻ test VNPay Sandbox (nhập trên trang VNPay):</div>
+                            <div class="grid grid-cols-2 gap-1 font-mono text-[11px]">
+                                <span>Ngân hàng: <strong>NCB</strong></span>
+                                <span>Ngày phát hành: <strong>07/15</strong></span>
+                                <span class="col-span-2">Số thẻ: <strong>9704198526191432198</strong></span>
+                                <span>Chủ thẻ: <strong>NGUYEN VAN A</strong></span>
+                                <span>OTP: <strong>123456</strong></span>
+                            </div>
+                        </div>
+                        <form action="/Portal/PayWithVnPay" method="post" class="flex flex-col gap-2">
+                            <input type="hidden" name="reservationId" value="@Model.Id" />
+                            <button type="submit" name="method" value="ncb" class="w-full h-12 px-4 bg-primary text-on-primary rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-primary-container transition-all shadow-md cursor-pointer">
+                                <span class="material-symbols-outlined text-[20px]">credit_card</span>
+                                <span>Thanh toán thẻ ATM NCB (@qr.Amount.ToString("N0") đ)</span>
+                            </button>
+                            <button type="submit" name="method" value="qr" class="w-full h-11 px-4 bg-surface-container-high text-primary border border-primary/40 rounded-xl font-semibold text-sm flex items-center justify-center gap-2 hover:bg-surface-dim transition-all cursor-pointer">
+                                <span class="material-symbols-outlined text-[20px]">qr_code_2</span>
+                                <span>Hiển thị mã VNPAY-QR</span>
+                            </button>
+                            <button type="submit" name="method" value="all" class="text-xs text-on-surface-variant underline hover:text-primary cursor-pointer">
+                                Chọn phương thức khác trên trang VNPay
+                            </button>
+                        </form>
+                    }
+                    else
+                    {
+                        <div class="bg-surface-container-low border border-surface-dim rounded-xl p-4 text-xs text-on-surface-variant">
+                            Cổng thanh toán thẻ VNPay đang tạm ngưng. Quý khách vui lòng dùng hình thức <strong>Chuyển khoản VietQR</strong>
+                            hoặc thanh toán tại quầy lễ tân khi nhận phòng.
+                        </div>
+                    }
+                </div>
+            </div>
+        }
     </div>
 
-    <div class="flex items-center gap-space-md mt-space-md">
+    <div class="flex flex-wrap items-center justify-center gap-space-md mt-space-md">
+        <a href="/Profile/Index" class="h-11 px-space-md bg-primary text-on-primary rounded-lg font-label-md text-label-md font-semibold flex items-center gap-2 justify-center transition-colors">
+            <span class="material-symbols-outlined text-[18px]">receipt_long</span> Quản lý đơn đặt phòng của tôi
+        </a>
         <a href="/Portal/Index" class="h-11 px-space-md bg-surface-container-high hover:bg-surface-dim text-on-surface rounded-lg font-label-md text-label-md font-semibold flex items-center justify-center transition-colors">
             Về trang chủ
         </a>
     </div>
 </div>
+
+@section Scripts {
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            if (@(vnPayEnabled ? "true" : "false")) switchPayTab('card');
+        });
+        function switchPayTab(mode) {
+            const qrPanel = document.getElementById('payPanelQr');
+            const cardPanel = document.getElementById('payPanelCard');
+            const btnQr = document.getElementById('tabBtnQr');
+            const btnCard = document.getElementById('tabBtnCard');
+            if (!qrPanel || !cardPanel) return;
+
+            if (mode === 'card') {
+                qrPanel.classList.add('hidden');
+                qrPanel.classList.remove('flex');
+                cardPanel.classList.remove('hidden');
+                cardPanel.classList.add('flex');
+
+                btnCard.className = 'py-2 px-3 rounded-lg text-xs font-semibold transition-all bg-primary text-on-primary shadow-sm flex items-center justify-center gap-1.5';
+                btnQr.className = 'py-2 px-3 rounded-lg text-xs font-semibold transition-all text-on-surface-variant hover:text-primary flex items-center justify-center gap-1.5';
+            } else {
+                cardPanel.classList.add('hidden');
+                cardPanel.classList.remove('flex');
+                qrPanel.classList.remove('hidden');
+                qrPanel.classList.add('flex');
+
+                btnQr.className = 'py-2 px-3 rounded-lg text-xs font-semibold transition-all bg-primary text-on-primary shadow-sm flex items-center justify-center gap-1.5';
+                btnCard.className = 'py-2 px-3 rounded-lg text-xs font-semibold transition-all text-on-surface-variant hover:text-primary flex items-center justify-center gap-1.5';
+            }
+        }
+    </script>
+}

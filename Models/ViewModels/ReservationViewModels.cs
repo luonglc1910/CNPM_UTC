@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using HotelManagement.Web.Models.Entities;
+using HotelManagement.Web.Services;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace HotelManagement.Web.Models.ViewModels;
@@ -10,6 +11,8 @@ public class ReservationListItem
 {
     public int Id { get; set; }
     public string Code { get; set; } = string.Empty;
+    /// <summary>Thời điểm đơn được tạo (khách đặt trên Portal hoặc lễ tân tạo).</summary>
+    public DateTime CreatedAt { get; set; }
     public string GuestName { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public DateTime CheckInDate { get; set; }
@@ -320,6 +323,9 @@ public class ReservationDepositLine
 public class ReservationDetailsViewModel
 {
     public Reservation Reservation { get; set; } = null!;
+    public int GuestId { get; set; }
+    /// <summary>Khách đã đăng ký tài khoản trên Portal (có mật khẩu) — hiện nút mở hồ sơ khách.</summary>
+    public bool GuestHasAccount { get; set; }
     public string GuestName { get; set; } = string.Empty;
     public string PhoneNumber { get; set; } = string.Empty;
     public string? IdNumber { get; set; }
@@ -331,6 +337,7 @@ public class ReservationDetailsViewModel
 
     public decimal DepositPaid { get; set; }
     public decimal EstimatedRemaining { get; set; }
+    public string? GuestEmail { get; set; }
 
     // Cờ điều khiển nút theo trạng thái (SCR-C01)
     public bool CanEdit { get; set; }
@@ -353,6 +360,7 @@ public class DepositFormViewModel
     public decimal SuggestedAmount { get; set; }
 
     public bool HasOpenShift { get; set; }
+    public VietQrPayload? VietQr { get; set; }
 
     [Display(Name = "Số tiền cọc")]
     [Range(1, double.MaxValue, ErrorMessage = "Số tiền cọc phải lớn hơn 0.")]
@@ -481,6 +489,7 @@ public class RoomChartSegment
     public int Span { get; set; } = 1;
 
     public int? ReservationId { get; set; }
+    public int? StayId { get; set; }
     public string? ReservationCode { get; set; }
     public string? GuestName { get; set; }
     public int Guests { get; set; }
@@ -497,9 +506,11 @@ public class RoomChartSegment
 public class RoomChartRow
 {
     public int RoomId { get; set; }
+    public int RoomTypeId { get; set; }
     public string RoomNumber { get; set; } = string.Empty;
     public int Floor { get; set; }
     public string RoomTypeName { get; set; } = string.Empty;
+    public decimal BasePricePerNight { get; set; }
     public RoomStatus CurrentStatus { get; set; }
 
     public IReadOnlyList<RoomChartSegment> Segments { get; set; } = new List<RoomChartSegment>();

@@ -75,6 +75,14 @@ public class ProfileController : Controller
         ViewData["ProgressPercent"] = percent;
         ViewData["PointsNeeded"] = guest.Tier == HotelManagement.Web.Models.MemberTier.Diamond ? 0 : pointsNeeded;
 
+        ViewBag.MyReservations = await _db.Reservations.AsNoTracking()
+            .Where(r => r.PrimaryGuestId == guestId)
+            .Include(r => r.Rooms).ThenInclude(rr => rr.RoomType)
+            .Include(r => r.Rooms).ThenInclude(rr => rr.Room)
+            .Include(r => r.Deposits)
+            .OrderByDescending(r => r.CreatedAt)
+            .ToListAsync();
+
         return View(model);
     }
 
@@ -181,5 +189,28 @@ public class ProfileController : Controller
         {
             return Json(ApiResponse.Fail("Lỗi hệ thống khi lưu dữ liệu.", "DB_ERROR"));
         }
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> CancelMyBooking(int reservationId, string? reason)
+    {
+        var userIdString = User.FindFirstValue(ClaimTypes.NameIdentifier);
+        if (!int.TryParse(userIdString, out var guestId))
+            return RedirectToAction("Login", "ClientAuth");
+
+        var res = await _db.Reservations
+            .FirstOrDefaultAsync(r => r.Id == reservationId && r.PrimaryGuestId == guestId);
+
+        if (res != null && (res.Status == Models.ReservationStatus.Confirmed || res.Status == Models.ReservationStatus.Draft))
+        {
+            res.Status = Models.ReservationStatus.Cancelled;
+            res.CancelledAt = DateTime.Now;
+            res.CancellationReason = string.IsNullOrWhiteSpace(reason) ? "Khách tự hủy trên Portal" : reason.Trim();
+            await _db.SaveChangesAsync();
+            TempData["Success"] = $"Đã hủy đơn đặt phòng {res.Code}.";
+        }
+
+        return RedirectToAction(nameof(Index));
     }
 }
