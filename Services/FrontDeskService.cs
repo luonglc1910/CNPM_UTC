@@ -88,7 +88,7 @@ public class FrontDeskService : IFrontDeskService
             .Include(r => r.PrimaryGuest)
             .Include(r => r.Rooms).ThenInclude(rr => rr.RoomType)
             .Include(r => r.Deposits)
-            .OrderBy(r => r.CheckInDate)
+            .OrderByDescending(r => r.CreatedAt)
             .Select(r => new ArrivalItem
             {
                 ReservationId = r.Id,
@@ -98,32 +98,39 @@ public class FrontDeskService : IFrontDeskService
                 RoomTypeSummary = string.Join(", ", r.Rooms.Select(rr => rr.RoomType.Code)),
                 Guests = r.Rooms.Sum(rr => rr.Adults + rr.Children),
                 DepositPaid = r.Deposits.Where(d => d.Status == DepositStatus.Held).Sum(d => (decimal?)d.Amount) ?? 0m,
-                CanCheckIn = true
+                CanCheckIn = true,
+                CreatedAt = r.CreatedAt
             })
             .ToListAsync();
 
         var stays = await _db.Stays.AsNoTracking()
             .Where(s => s.Status == StayStatus.CheckedIn)
-            .Include(s => s.Room)
+            .Include(s => s.Room).ThenInclude(r => r.RoomType)
             .Include(s => s.PrimaryGuest)
+            .Include(s => s.Guests)
             .ToListAsync();
 
         var departures = new List<DepartureItem>();
         var inHouse = new List<InHouseItem>();
         foreach (var s in stays)
         {
+            var summary = await _billing.ComputeFolioSummaryAsync(s.Id);
+
             inHouse.Add(new InHouseItem
             {
                 StayId = s.Id,
                 RoomNumber = s.Room.RoomNumber,
+                RoomTypeName = s.Room.RoomType.Name,
                 GuestName = s.PrimaryGuest.FullName,
+                GuestsCount = s.Guests.Count,
+                RentalType = s.RentalType,
+                TotalAmount = summary?.Total ?? 0m,
                 ActualCheckIn = s.ActualCheckIn,
                 ExpectedCheckOut = s.ExpectedCheckOut
             });
 
             if (s.ExpectedCheckOut.Date <= today)
             {
-                var summary = await _billing.ComputeFolioSummaryAsync(s.Id);
                 departures.Add(new DepartureItem
                 {
                     StayId = s.Id,
@@ -186,7 +193,7 @@ public class FrontDeskService : IFrontDeskService
             CheckedInToday = checkedInToday,
             CheckedOutToday = checkedOutToday,
             AvailableCount = rooms.Count(s => s == RoomStatus.Available),
-            OccupiedCount = rooms.Count(s => s == RoomStatus.Occupied),
+            OccupiedCount = inHouse.Count,
             DirtyCount = rooms.Count(s => s == RoomStatus.Dirty),
             MaintenanceCount = rooms.Count(s => s == RoomStatus.Maintenance)
         };
@@ -311,6 +318,21 @@ public class FrontDeskService : IFrontDeskService
             }
         }
 
+        // Kiểm tra nếu đơn có khoản tiền giờ phòng cũ cộng thêm từ lúc đổi phòng trên đơn
+        var standardEstimatedTotal = 0m;
+        foreach (var rr in reservation.Rooms)
+        {
+            var rc = _pricing.RoomChargeFor(period, rr.PricePerNight, rr.PriceFirstHour, rr.PriceExtraHour, rr.PriceOvernight);
+            var eg = period.Nights > 0
+                ? _pricing.ExtraGuestSurcharge(rr.Adults + rr.Children, rr.RoomType.StandardCapacity, rr.RoomType.ExtraGuestFeePerNight, period.Nights)
+                : null;
+            standardEstimatedTotal += rc + (eg?.Amount ?? 0m);
+        }
+        var oldRoomExtraFromReservation = reservation.EstimatedTotal > standardEstimatedTotal
+            ? reservation.EstimatedTotal - standardEstimatedTotal
+            : 0m;
+        var oldRoomExtraAdded = false;
+
         await _tx.ExecuteAsync(async () =>
         {
             foreach (var line in form.Rooms)
@@ -356,6 +378,21 @@ public class FrontDeskService : IFrontDeskService
                 };
                 _db.Folios.Add(folio);
                 await _db.SaveChangesAsync();
+
+                if (!oldRoomExtraAdded && oldRoomExtraFromReservation > 0)
+                {
+                    _db.FolioItems.Add(new FolioItem
+                    {
+                        FolioId = folio.Id,
+                        ItemType = FolioItemType.Room,
+                        Description = "Tiền giờ phòng cũ — cộng thêm khi đổi phòng",
+                        Quantity = 1,
+                        UnitPrice = oldRoomExtraFromReservation,
+                        Amount = oldRoomExtraFromReservation,
+                        ChargedAt = actualCheckIn
+                    });
+                    oldRoomExtraAdded = true;
+                }
 
                 AddRoomChargeLine(folio.Id, rr.RoomType.Name, rr, period, actualCheckIn);
 
@@ -756,7 +793,7 @@ public class FrontDeskService : IFrontDeskService
         // BR-01/BR-13: phụ thu trễ giờ chưa được ghi vào folio (chỉ ghi khi CheckOutAsync chạy),
         // nhưng tạm tính phải hiển thị đúng số tiền thật sự phải thu để lễ tân và khách không bị bất ngờ.
         // Cộng trực tiếp vào bản xem trước — không thay đổi DB ở bước này.
-        if (preview.Surcharge is not null)
+        if (preview.Surcharge is not null && !summary.IsLocked)
         {
             var surchargeAmt = preview.Surcharge.Amount;
             var extraTax = Math.Round(surchargeAmt * summary.TaxRate, 2);
@@ -877,11 +914,12 @@ public class FrontDeskService : IFrontDeskService
             var roomLines = stay.Folio!.Items.Where(i => i.ItemType == FolioItemType.Room && !i.IsVoided).ToList();
 
             // Thuê theo giờ: lúc nhận phòng mới chỉ tạm tính theo số giờ khách báo, giờ mới biết
-            // thật sự ở bao lâu — viết lại dòng tiền phòng thay vì cộng thêm một dòng chênh lệch,
-            // để khách đọc hóa đơn thấy đúng một dòng khớp với thời gian đã ở.
-            if (stay.RentalType == RentalType.Hourly && roomLines.Count == 1)
+            // thật sự ở bao lâu — viết lại dòng tiền phòng hiện tại thay vì cộng thêm một dòng chênh lệch,
+            // vẫn giữ nguyên dòng tiền giờ phòng cũ (nếu trước đó khách có đổi phòng và tính giờ phòng cũ).
+            if (stay.RentalType == RentalType.Hourly && roomLines.Count >= 1)
             {
-                var rl = roomLines[0];
+                var rl = roomLines.LastOrDefault(x => !x.Description.Contains("tiền giờ phòng cũ", StringComparison.OrdinalIgnoreCase))
+                    ?? roomLines[^1];
                 var roomTypeName = stay.Room.RoomType.Name;
 
                 rl.Description = $"{roomTypeName} — theo giờ, {charges.Hours} giờ "

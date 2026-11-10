@@ -806,6 +806,518 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--st-maintenance);
 }
 
+/* ======================== Dashboard điều hành ======================== */
+
+.dashboard-page {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.dashboard-welcome {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 2rem;
+  padding: 1.65rem 1.8rem;
+  color: #fff;
+  background:
+    radial-gradient(circle at 88% 15%, rgba(216, 184, 120, 0.22), transparent 28%),
+    linear-gradient(125deg, var(--ink) 0%, var(--ink-2) 62%, var(--ink-3) 100%);
+  border-radius: 16px;
+}
+
+.dashboard-welcome::after {
+  content: "";
+  position: absolute;
+  right: -4rem;
+  bottom: -7rem;
+  width: 19rem;
+  height: 19rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 50%;
+}
+
+.dashboard-welcome > * {
+  position: relative;
+  z-index: 1;
+}
+
+.dashboard-eyebrow,
+.dashboard-section-kicker {
+  display: block;
+  margin-bottom: 0.25rem;
+  color: var(--brass-bright);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+}
+
+.dashboard-welcome h2 {
+  margin: 0;
+  color: #fff;
+  font-size: clamp(1.35rem, 2vw, 1.85rem);
+}
+
+.dashboard-welcome p {
+  margin: 0.4rem 0 0;
+  color: rgba(255, 255, 255, 0.72);
+  font-size: 0.88rem;
+}
+
+.dashboard-welcome-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+.dashboard-welcome-actions .btn {
+  padding: 0.58rem 0.9rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+.dashboard-section {
+  padding: 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--rule);
+  border-radius: 14px;
+}
+
+.dashboard-section-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.dashboard-section-kicker {
+  color: var(--brass);
+}
+
+.dashboard-section-head h3 {
+  margin: 0;
+  font-size: 1.08rem;
+  font-weight: 700;
+}
+
+.dashboard-detail-link {
+  color: var(--fg-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.dashboard-detail-link:hover {
+  color: var(--ink);
+}
+
+.occupancy-summary {
+  width: min(17rem, 100%);
+  color: var(--fg-muted);
+  font-size: 0.72rem;
+}
+
+.occupancy-summary strong {
+  color: var(--ink);
+}
+
+.occupancy-summary .progress {
+  height: 0.35rem;
+  margin: 0.35rem 0 0.25rem;
+  background: #e6ebe9;
+}
+
+.occupancy-summary .progress-bar {
+  background: var(--st-available);
+}
+
+.dashboard-room-grid {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 0.8rem;
+}
+
+.dashboard-room-card {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 6.15rem;
+  padding: 0.95rem;
+  color: var(--fg);
+  background: #f9fbfa;
+  border: 1px solid var(--rule);
+  border-radius: 11px;
+  text-decoration: none;
+  transition: transform 0.15s ease, border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dashboard-room-card:hover {
+  color: var(--fg);
+  border-color: var(--card-color);
+  box-shadow: 0 8px 20px rgba(20, 49, 44, 0.07);
+  transform: translateY(-2px);
+}
+
+.dashboard-room-card:focus-visible,
+.dashboard-finance-card:focus-visible,
+.dashboard-shortcuts a:focus-visible,
+.dashboard-activity-list a:focus-visible,
+.dashboard-pending-grid a:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+.dashboard-card-icon {
+  display: grid;
+  width: 2.45rem;
+  height: 2.45rem;
+  place-items: center;
+  color: var(--card-color);
+  background: var(--card-bg);
+  border-radius: 10px;
+  font-size: 1.05rem;
+}
+
+.dashboard-card-copy {
+  display: grid;
+  min-width: 0;
+}
+
+.dashboard-card-copy > span {
+  font-size: 0.8rem;
+  font-weight: 650;
+}
+
+.dashboard-card-copy small {
+  overflow: hidden;
+  color: var(--fg-muted);
+  font-size: 0.66rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-room-card > strong {
+  color: var(--card-color);
+  font-size: 1.85rem;
+  line-height: 1;
+}
+
+.dashboard-card-arrow {
+  position: absolute;
+  top: 0.55rem;
+  right: 0.65rem;
+  color: var(--fg-faint);
+  font-size: 0.72rem;
+}
+
+.room-available { --card-color: var(--st-available); --card-bg: #e4f1ea; }
+.room-reserved { --card-color: var(--st-reserved); --card-bg: #e6eef6; }
+.room-occupied { --card-color: var(--st-occupied); --card-bg: #fbeedd; }
+.room-dirty { --card-color: var(--st-dirty); --card-bg: #eceeed; }
+.room-maintenance { --card-color: var(--st-maintenance); --card-bg: #f7e5e5; }
+
+.dashboard-main-row {
+  --bs-gutter-y: 1.5rem;
+}
+
+.dashboard-finance-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+.dashboard-finance-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 10rem;
+  padding: 1rem;
+  color: var(--fg);
+  background: #f9fbfa;
+  border: 1px solid var(--rule);
+  border-radius: 11px;
+  text-decoration: none;
+  transition: border-color 0.15s ease, transform 0.15s ease;
+}
+
+.dashboard-finance-card:hover {
+  color: var(--fg);
+  border-color: var(--finance-color);
+  transform: translateY(-2px);
+}
+
+.finance-icon {
+  display: grid;
+  width: 2rem;
+  height: 2rem;
+  margin-bottom: 0.8rem;
+  place-items: center;
+  color: var(--finance-color);
+  background: var(--finance-bg);
+  border-radius: 50%;
+}
+
+.finance-label {
+  color: var(--fg-muted);
+  font-size: 0.7rem;
+  font-weight: 600;
+}
+
+.dashboard-finance-card > strong {
+  margin: 0.2rem 0;
+  color: var(--finance-color);
+  font-size: clamp(1.15rem, 1.7vw, 1.55rem);
+  letter-spacing: -0.03em;
+}
+
+.dashboard-finance-card > strong small {
+  font-size: 0.7em;
+}
+
+.finance-note {
+  margin-top: auto;
+  color: var(--fg-faint);
+  font-size: 0.62rem;
+  line-height: 1.4;
+}
+
+.finance-in { --finance-color: var(--st-available); --finance-bg: #e4f1ea; }
+.finance-out { --finance-color: var(--st-maintenance); --finance-bg: #f7e5e5; }
+.finance-net { --finance-color: var(--st-reserved); --finance-bg: #e6eef6; }
+
+.dashboard-shift-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  margin: -0.25rem 0 0.85rem;
+  padding: 0.65rem 0.75rem;
+  color: #8d4f13;
+  background: var(--bs-warning-bg-subtle);
+  border: 1px solid var(--bs-warning-border-subtle);
+  border-radius: 8px;
+  font-size: 0.7rem;
+  text-decoration: none;
+}
+
+.dashboard-shift-warning span {
+  flex: 1;
+}
+
+.dashboard-activity-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.dashboard-activity-list a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.7rem;
+  min-height: 3.9rem;
+  padding: 0.6rem 0.75rem;
+  color: var(--fg);
+  background: #f9fbfa;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  text-decoration: none;
+}
+
+.dashboard-activity-list a:hover {
+  border-color: var(--rule-strong);
+  background: #f5f8f7;
+}
+
+.activity-icon {
+  display: grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  place-items: center;
+  border-radius: 8px;
+}
+
+.activity-in { color: var(--st-available); background: #e4f1ea; }
+.activity-out { color: var(--st-reserved); background: #e6eef6; }
+.activity-pending { color: var(--st-occupied); background: #fbeedd; }
+
+.dashboard-activity-list a > span:nth-child(2) {
+  display: grid;
+}
+
+.dashboard-activity-list strong {
+  font-size: 0.77rem;
+}
+
+.dashboard-activity-list small {
+  color: var(--fg-muted);
+  font-size: 0.63rem;
+}
+
+.dashboard-activity-list b {
+  font-size: 1.25rem;
+}
+
+.dashboard-activity-list a > .bi:last-child {
+  color: var(--fg-faint);
+  font-size: 0.7rem;
+}
+
+.dashboard-shortcuts {
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.dashboard-shortcuts > a {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  min-width: 0;
+  padding: 0.8rem;
+  color: var(--fg);
+  background: #f9fbfa;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  text-decoration: none;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.dashboard-shortcuts > a:hover {
+  color: var(--ink);
+  background: #f3f7f5;
+  border-color: var(--ink-3);
+}
+
+.dashboard-shortcuts > a > i {
+  flex-shrink: 0;
+  color: var(--ink-3);
+  font-size: 1.15rem;
+}
+
+.dashboard-shortcuts span {
+  display: grid;
+  min-width: 0;
+}
+
+.dashboard-shortcuts strong {
+  overflow: hidden;
+  font-size: 0.7rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-shortcuts small {
+  overflow: hidden;
+  color: var(--fg-muted);
+  font-size: 0.58rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-pending-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+.dashboard-pending-grid a {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 0.7rem;
+  padding: 0.75rem;
+  color: var(--fg);
+  background: #f9fbfa;
+  border: 1px solid var(--rule);
+  border-radius: 9px;
+  text-decoration: none;
+}
+
+.dashboard-pending-grid a:hover,
+.dashboard-pending-grid a.has-work {
+  border-color: var(--rule-strong);
+}
+
+.dashboard-pending-grid a.has-work {
+  background: #fffaf4;
+}
+
+.pending-icon {
+  display: grid;
+  width: 2.15rem;
+  height: 2.15rem;
+  place-items: center;
+  color: var(--fg-muted);
+  background: #eceeed;
+  border-radius: 8px;
+}
+
+.dashboard-pending-grid .has-work .pending-icon {
+  color: var(--st-occupied);
+  background: #fbeedd;
+}
+
+.dashboard-pending-grid a > span:nth-child(2) {
+  display: grid;
+}
+
+.dashboard-pending-grid strong {
+  font-size: 0.75rem;
+}
+
+.dashboard-pending-grid small {
+  overflow: hidden;
+  color: var(--fg-muted);
+  font-size: 0.62rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dashboard-pending-grid b {
+  color: var(--fg-faint);
+  font-size: 1.2rem;
+}
+
+.dashboard-pending-grid .has-work b {
+  color: var(--st-maintenance);
+}
+
+.dashboard-pending-grid a > .bi:last-child {
+  color: var(--fg-faint);
+  font-size: 0.7rem;
+}
+
+@media (max-width: 1399.98px) {
+  .dashboard-room-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .dashboard-shortcuts { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+}
+
+@media (max-width: 767.98px) {
+  .dashboard-welcome,
+  .dashboard-section-head {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .dashboard-welcome-actions { width: 100%; }
+  .dashboard-welcome-actions .btn { flex: 1; }
+  .occupancy-summary { width: 100%; }
+  .dashboard-finance-grid { grid-template-columns: 1fr; }
+  .dashboard-finance-card { min-height: 8rem; }
+  .dashboard-pending-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 575.98px) {
+  .dashboard-room-grid,
+  .dashboard-shortcuts { grid-template-columns: 1fr; }
+}
+
 /* ============================ Sơ đồ phòng ============================
    SCR-C03. Ma trận phòng × ngày; một lượt đặt vẽ thành một dải liền nhờ colspan,
    nên mắt bắt được khoảng trống giữa hai đơn thay vì phải đếm từng ô.        */

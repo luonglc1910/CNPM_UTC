@@ -5,7 +5,7 @@
 
 <div class="card">
     <div class="card-body">
-        <form method="post" asp-action="Edit" asp-route-id="@Model.Id">
+        <form method="post" asp-action="Edit" asp-route-id="@Model.Id" enctype="multipart/form-data">
             <partial name="_Form" model="Model" />
         </form>
     </div>

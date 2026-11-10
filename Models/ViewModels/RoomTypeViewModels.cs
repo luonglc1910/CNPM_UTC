@@ -8,6 +8,7 @@ public class RoomTypeListItemViewModel
     public int Id { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? ImageUrl { get; set; }
     public int StandardCapacity { get; set; }
     public int MaxCapacity { get; set; }
     public decimal BasePricePerNight { get; set; }
@@ -95,6 +96,36 @@ public class RoomTypeFormViewModel
     [MaxLength(500, ErrorMessage = "Mô tả tối đa 500 ký tự.")]
     public string? Description { get; set; }
 
+    [Display(Name = "Hình ảnh chính (URL)")]
+    [MaxLength(1000, ErrorMessage = "URL hình ảnh tối đa 1000 ký tự.")]
+    public string? ImageUrl { get; set; }
+
+    [Display(Name = "URL SEO (Slug)")]
+    public string? Slug { get; set; }
+
+    [Display(Name = "Mô tả chi tiết (HTML)")]
+    public string? DetailDescription { get; set; }
+
+    [Display(Name = "Hướng nhìn (View)")]
+    public string? ViewType { get; set; }
+
+    [Display(Name = "Hình ảnh bổ sung (URL, cách nhau bằng dấu phẩy)")]
+    [MaxLength(2000, ErrorMessage = "URL hình ảnh bổ sung tối đa 2000 ký tự.")]
+    public string? AdditionalImageUrls { get; set; }
+
+    [Display(Name = "Loại giường")]
+    [MaxLength(50, ErrorMessage = "Loại giường tối đa 50 ký tự.")]
+    public string? BedType { get; set; }
+
+    [Display(Name = "Diện tích (m2)")]
+    public int SizeSqm { get; set; }
+
+    [Display(Name = "Miễn phí hủy phòng")]
+    public bool IsFreeCancellation { get; set; } = true;
+
+    [Display(Name = "Thanh toán tại khách sạn")]
+    public bool IsPayAtHotel { get; set; } = true;
+
     [Display(Name = "Đang sử dụng")]
     public bool IsActive { get; set; } = true;
 
@@ -102,6 +133,7 @@ public class RoomTypeFormViewModel
     public static readonly string[] AmenityOptions =
     {
         "Điều hòa", "TV", "Tủ lạnh", "Minibar", "Nóng lạnh", "Wifi",
-        "Bồn tắm", "Ban công", "Bàn làm việc", "Két sắt"
+        "Bồn tắm nằm & Jacuzzi", "Ban công riêng hướng vườn/biển", "Bàn làm việc", "Két sắt",
+        "Hướng biển trực diện", "Bao gồm ăn sáng thượng hạng", "Hồ bơi riêng biệt"
     };
 }

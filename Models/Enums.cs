@@ -76,6 +76,15 @@ public enum ServiceCategory
     Other = 9
 }
 
+/// <summary>Hạng thành viên của khách hàng (Loyalty/Rewards) — Phase 4.</summary>
+public enum MemberTier
+{
+    Standard = 1,
+    Silver = 2,
+    Gold = 3,
+    Diamond = 4
+}
+
 public enum InventoryTransactionType
 {
     Receive = 1,

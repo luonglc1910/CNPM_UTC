@@ -41,103 +41,15 @@ public class AccountController : Controller
     [AllowAnonymous]
     public IActionResult Login(string? returnUrl = null)
     {
-        if (User.Identity?.IsAuthenticated == true)
-        {
-            return RedirectToHome();
-        }
-
-        ViewData["ReturnUrl"] = returnUrl;
-        return View(new LoginViewModel());
+        return RedirectToAction("Login", "ClientAuth", new { returnUrl });
     }
 
     [HttpPost]
     [AllowAnonymous]
     [ValidateAntiForgeryToken]
-    public async Task<IActionResult> Login(LoginViewModel model, string? returnUrl = null)
+    public IActionResult Login()
     {
-        ViewData["ReturnUrl"] = returnUrl;
-
-        if (!ModelState.IsValid)
-        {
-            return View(model);
-        }
-
-        // Cắt bớt để không vượt AuditLog.UserName [MaxLength(100)] khi bị gửi chuỗi rác.
-        var attemptedUserName = model.UserName.Length > 100
-            ? model.UserName[..100]
-            : model.UserName;
-
-        var employee = await _db.Employees
-            .FirstOrDefaultAsync(e => e.UserName == model.UserName);
-
-        // Tài khoản không tồn tại vẫn phải tốn đúng chừng ấy thời gian băm, nếu không thì
-        // đo thời gian đáp ứng là biết được tài khoản nào có thật.
-        var passwordOk = employee is null
-            ? PasswordHasher.Verify(model.Password, DummyHash) && false
-            : PasswordHasher.Verify(model.Password, employee.PasswordHash);
-
-        // SCR-S01: kiểm mật khẩu TRƯỚC, kiểm trạng thái SAU.
-        // Docs vừa đòi thông báo giống hệt nhau, vừa đòi báo riêng khi tài khoản bị khóa —
-        // hai điều đó chỉ dung hòa được khi thông báo riêng chỉ hiện cho người đã nhập đúng
-        // mật khẩu. Kiểm trạng thái trước sẽ để lộ tài khoản nào tồn tại.
-        if (!passwordOk)
-        {
-            if (employee is not null)
-            {
-                // Vẫn đếm số lần sai; việc tự khóa sau 5 lần (FR-A08) để đợt sau.
-                employee.FailedLoginCount++;
-                _audit.LogForUser(AuditActions.LoginFailed, attemptedUserName, employee,
-                    $"Sai mật khẩu (lần thứ {employee.FailedLoginCount})");
-            }
-            else
-            {
-                _audit.LogForUser(AuditActions.LoginFailed, attemptedUserName, reason: "Tài khoản không tồn tại");
-            }
-
-            await _db.SaveChangesAsync();
-
-            ModelState.AddModelError(string.Empty, InvalidCredentialsMessage);
-            return View(model);
-        }
-
-        if (employee!.Status == EmployeeStatus.Locked)
-        {
-            _audit.LogForUser(AuditActions.LoginFailed, attemptedUserName, employee, "Tài khoản đang bị khóa");
-            await _db.SaveChangesAsync();
-
-            ModelState.AddModelError(string.Empty, "Tài khoản đã bị khóa. Liên hệ quản lý.");
-            return View(model);
-        }
-
-        if (employee.Status == EmployeeStatus.Resigned)
-        {
-            _audit.LogForUser(AuditActions.LoginFailed, attemptedUserName, employee, "Nhân viên đã nghỉ việc");
-            await _db.SaveChangesAsync();
-
-            ModelState.AddModelError(string.Empty, "Tài khoản không còn hiệu lực.");
-            return View(model);
-        }
-
-        employee.FailedLoginCount = 0;
-        employee.LastLoginAt = DateTime.Now;
-        _audit.LogForUser(AuditActions.LoginSucceeded, employee.UserName, employee);
-        await _db.SaveChangesAsync();
-
-        await SignInAsync(employee, model.RememberMe);
-
-        if (employee.MustChangePassword)
-        {
-            TempData["Info"] = "Đây là lần đăng nhập đầu tiên, vui lòng đổi mật khẩu trước khi sử dụng hệ thống.";
-            return RedirectToAction(nameof(ChangePassword));
-        }
-
-        // Url.IsLocalUrl bắt buộc phải kiểm — tránh bị lợi dụng chuyển hướng ra ngoài.
-        if (!string.IsNullOrEmpty(returnUrl) && Url.IsLocalUrl(returnUrl))
-        {
-            return Redirect(returnUrl);
-        }
-
-        return RedirectToHome(employee.Role);
+        return RedirectToAction("Login", "ClientAuth");
     }
 
     // AllowAnonymous để phiên đã hết hạn vẫn bấm Đăng xuất được thay vì bị đá về trang đăng nhập.
@@ -152,7 +64,7 @@ public class AccountController : Controller
                 User.GetEmployeeId()?.ToString());
         }
 
-        await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        await HttpContext.SignOutAsync(AppSchemes.Staff);
         return RedirectToAction(nameof(Login));
     }
 
@@ -181,7 +93,7 @@ public class AccountController : Controller
         if (employee is null)
         {
             // Cookie còn nhưng tài khoản không còn: buộc đăng nhập lại.
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await HttpContext.SignOutAsync(AppSchemes.Staff);
             return RedirectToAction(nameof(Login));
         }
 
@@ -238,7 +150,7 @@ public class AccountController : Controller
         };
 
         await HttpContext.SignInAsync(
-            CookieAuthenticationDefaults.AuthenticationScheme,
+            AppSchemes.Staff,
             new ClaimsPrincipal(identity),
             properties);
     }

@@ -1,0 +1,274 @@
+@model List<HotelManagement.Web.Models.Entities.Promotion>
+@{
+    Layout = "_PortalLayout";
+    ViewData["Title"] = "Ưu đãi";
+}
+<div class="flex flex-col w-full">
+<!-- BREADCRUMB & CANVAS WRAPPER -->
+<section class="w-full bg-[#f2f4f3] pt-6 pb-2">
+<div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
+<nav aria-label="Breadcrumb" class="flex items-center gap-2">
+<a class="font-label-md text-label-md text-[#5e6b68] hover:text-primary transition-colors flex items-center gap-1" data-path="trang-chu" href="#">
+<span class="material-symbols-outlined text-[16px]">home</span>
+          Trang chủ
+        </a>
+<span class="text-[#c1c8c5] font-label-md text-label-md">/</span>
+<span class="font-label-md text-label-md text-primary font-semibold tracking-wide">Ưu đãi</span>
+</nav>
+</div>
+</section>
+<!-- PAGE HERO -->
+<section class="w-full bg-[#f2f4f3] py-4">
+<div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
+<div class="bg-primary-container rounded-[10px] p-8 lg:p-12 text-surface-container-lowest shadow-[0_4px_20px_rgba(20,49,44,0.08)] relative overflow-hidden">
+<div class="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-center relative z-10">
+<!-- Text Column -->
+<div class="lg:col-span-7 flex flex-col items-start gap-4">
+<span class="font-label-sm text-label-sm tracking-[0.25em] uppercase text-secondary-fixed font-semibold">SPECIAL OFFERS</span>
+<h1 class="font-display-lg text-display-lg text-surface-container-lowest font-semibold tracking-tight">Ưu đãi đặc biệt</h1>
+<p class="font-body-lg text-body-lg text-[#d0ddd9] max-w-xl leading-relaxed">
+              Khám phá những ưu đãi hấp dẫn và trải nghiệm đặc biệt dành riêng cho khách lưu trú tại Aura Boutique Hotel &amp; Resort. Tận hưởng kỳ nghỉ trọn vẹn với giá trị tốt nhất khi đặt trực tiếp.
+            </p>
+<div class="mt-2 inline-flex items-center gap-2.5 px-4 py-2 rounded-lg bg-surface-container-lowest/10 backdrop-blur-sm text-surface-container-lowest text-label-md font-label-md">
+<span class="material-symbols-outlined text-secondary-fixed text-[18px]">verified</span>
+<span>Đảm bảo giá tốt nhất khi đặt trực tiếp · Tích luỹ Aura Privilege</span>
+</div>
+</div>
+<!-- Image Column -->
+<div class="lg:col-span-5 w-full">
+<div class="relative w-full aspect-[4/3] rounded-[10px] overflow-hidden shadow-[0_12px_32px_rgba(0,0,0,0.25)]">
+<img alt="Bữa sáng ban công biển tại Aura Resort" class="w-full h-full object-cover transform hover:scale-105 transition-transform duration-700 ease-out" src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2ef8Uih27CuOP0Y_XAKMOg0rwwCgn4M4dW-A0Scawxpu6cK3zEZHUnUaRP2t9tR5o3ggzcjIqvgKmUQaCG8Ez-Sq3IM_XciaZoSFLUjuH20_bAMLWEoD-feZu0txj5-t5GRJSsnb4cmjsqZ0FYgwjU87hi2slEm-TqeH-PRkSOaaA1uf1nTlLQYiRul5MJpHOosotiGnTE66uZBp4tw16BziKd532BSkfekkVwROTBbtVDHxADA"/>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+@{
+    var heroOffer = Model.FirstOrDefault(p => p.IsHeroOffer);
+}
+@if (heroOffer != null)
+{
+<!-- FEATURED OFFER -->
+<section class="w-full bg-[#f2f4f3] pt-8 pb-4">
+<div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
+<div class="bg-surface-container-lowest rounded-[10px] shadow-[0_1px_3px_rgba(20,49,44,0.04)] overflow-hidden">
+<div class="grid grid-cols-1 lg:grid-cols-12">
+<!-- Image Col -->
+<div class="lg:col-span-7 relative min-h-[360px] lg:min-h-[460px] overflow-hidden group">
+<img alt="@heroOffer.Title" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" src="@(string.IsNullOrEmpty(heroOffer.ImageUrl) ? "https://placehold.co/1200x800/eaf6f3/001c18?text=Hero+Offer" : heroOffer.ImageUrl)"/>
+<div class="absolute top-4 left-4 flex items-center gap-2">
+<span class="px-2.5 py-1 rounded bg-primary-container text-surface-container-lowest font-label-sm text-label-sm uppercase tracking-wider font-semibold">
+                NỔI BẬT
+              </span>
+</div>
+</div>
+<!-- Content Col -->
+<div class="lg:col-span-5 p-8 lg:p-10 flex flex-col justify-between bg-surface-container-lowest">
+<div class="flex flex-col gap-3">
+<div class="flex items-center justify-between">
+@if(!string.IsNullOrEmpty(heroOffer.PromoCode)) {
+<span class="font-label-sm text-label-sm font-semibold tracking-wider uppercase text-secondary">MÃ: @heroOffer.PromoCode</span>
+} else {
+<span class="font-label-sm text-label-sm font-semibold tracking-wider uppercase text-secondary">ƯU ĐÃI LỚN</span>
+}
+@if(heroOffer.DiscountDailyPercent > 0) {
+<span class="font-label-sm text-label-sm text-[#2e7d57] bg-[#2e7d57]/10 px-2 py-0.5 rounded font-semibold">Giảm đến @heroOffer.DiscountDailyPercent.ToString("0.##")%</span>
+}
+</div>
+<h2 class="font-headline-lg text-headline-lg text-primary font-semibold leading-snug">
+                @heroOffer.Title
+              </h2>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+                @heroOffer.Description
+              </p>
+<div class="flex items-center gap-2 text-secondary font-label-md text-label-md mt-2">
+<span class="material-symbols-outlined text-[18px]">calendar_month</span>
+<span>Áp dụng đến: @heroOffer.EndDate.ToString("dd/MM/yyyy")</span>
+</div>
+<!-- Price Box -->
+@if(heroOffer.DiscountHourlyPercent > 0 || heroOffer.DiscountOvernightPercent > 0) {
+<div class="p-4 rounded-lg bg-surface-container-low mt-2 flex items-baseline justify-between">
+<span class="font-label-sm text-label-sm text-on-surface-variant font-medium">Lưu ý:</span>
+<div class="flex items-baseline gap-2">
+<span class="font-label-sm text-label-sm text-secondary font-bold">Cũng áp dụng cho thuê giờ & qua đêm</span>
+</div>
+</div>
+}
+</div>
+
+</div>
+</div>
+</div>
+</div>
+</section>
+}
+<!-- FILTER & SORT CONTROLS -->
+<section class="w-full bg-[#f2f4f3] pt-10 pb-4">
+<div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
+<div class="flex justify-end">
+<!-- Sort Select -->
+<div class="flex items-center gap-2">
+<span class="font-label-sm text-label-sm text-on-surface-variant">Sắp xếp:</span>
+<div class="relative">
+<select id="sortOffers" class="appearance-none bg-surface-container-lowest text-primary font-label-md text-label-md pl-3 pr-8 py-2 rounded-lg shadow-sm focus:outline-none focus:ring-1 focus:ring-primary cursor-pointer" onchange="sortOffersGrid()">
+<option value="newest">Mới nhất</option>
+<option value="expiring">Sắp kết thúc</option>
+</select>
+<span class="material-symbols-outlined absolute right-2 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none text-[18px]">expand_more</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ALL OFFERS GRID -->
+<section class="w-full bg-[#f2f4f3] py-6">
+<div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
+<div id="offers-grid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+@foreach (var offer in Model.OrderByDescending(o => o.Id))
+{
+    var daysToExpiry = (offer.EndDate - DateTime.Now).TotalDays;
+    <div class="offer-item bg-surface-container-lowest rounded-[10px] overflow-hidden shadow-[0_1px_3px_rgba(20,49,44,0.04)] hover:shadow-[0_4px_12px_rgba(20,49,44,0.06)] transition-all flex flex-col justify-between group" data-newest="@offer.Id" data-expiring="@daysToExpiry">
+        <div>
+            <div class="relative h-56 w-full overflow-hidden">
+                <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="@(string.IsNullOrEmpty(offer.ImageUrl) ? "https://placehold.co/600x400/eaf6f3/001c18?text=Offer" : offer.ImageUrl)" />
+                @if (offer.IsHeroOffer) {
+                    <div class="absolute top-3 left-3 flex gap-2">
+                        <span class="bg-[#2a6098] text-surface-container-lowest font-label-sm text-label-sm px-2.5 py-0.5 rounded font-semibold uppercase tracking-wider">
+                            NỔI BẬT
+                        </span>
+                    </div>
+                }
+            </div>
+            <div class="p-6 flex flex-col gap-2.5">
+                @if (!string.IsNullOrEmpty(offer.PromoCode)) {
+                    <span class="font-label-sm text-label-sm uppercase font-semibold text-secondary tracking-wider">MÃ: @offer.PromoCode</span>
+                } else {
+                    <span class="font-label-sm text-label-sm uppercase font-semibold text-secondary tracking-wider">ƯU ĐÃI</span>
+                }
+                <h3 class="font-headline-sm text-headline-sm text-primary font-semibold leading-snug line-clamp-2">
+                    @offer.Title
+                </h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant line-clamp-2">
+                    @offer.Description
+                </p>
+                <div class="flex items-center gap-1.5 text-secondary font-label-sm text-label-sm pt-1">
+                    <span class="material-symbols-outlined text-[16px]">calendar_today</span>
+                    <span>Áp dụng đến: @offer.EndDate.ToString("dd/MM/yyyy")</span>
+                </div>
+            </div>
+        </div>
+        <div class="p-6 pt-0 flex flex-col gap-4">
+            <div class="flex flex-col pt-3 bg-surface-container-low px-3.5 py-2.5 rounded-lg min-h-[56px] justify-center">
+                @if(offer.DiscountDailyPercent > 0) {
+                    <span class="font-label-md text-label-md text-secondary font-bold">Giảm ngày: @offer.DiscountDailyPercent.ToString("0.##")%</span>
+                }
+                @if(offer.DiscountHourlyPercent > 0) {
+                    <span class="font-label-md text-label-md text-secondary font-bold">Giảm giờ: @offer.DiscountHourlyPercent.ToString("0.##")%</span>
+                }
+                @if(offer.DiscountOvernightPercent > 0) {
+                    <span class="font-label-md text-label-md text-secondary font-bold">Giảm qua đêm: @offer.DiscountOvernightPercent.ToString("0.##")%</span>
+                }
+            </div>
+
+        </div>
+    </div>
+}
+</div>
+</div>
+</section>
+<!-- TRUST SECTION -->
+<section class="w-full bg-[#f2f4f3] py-10">
+<div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
+<div class="bg-surface-container-lowest rounded-[10px] p-8 md:p-12 shadow-[0_1px_3px_rgba(20,49,44,0.04)]">
+<div class="text-center max-w-2xl mx-auto mb-10">
+<span class="font-label-sm text-label-sm font-semibold tracking-[0.2em] uppercase text-secondary">AURA PRIVILEGE DIRECT</span>
+<h2 class="font-headline-lg text-headline-lg text-primary font-semibold mt-1">Đặc quyền khi đặt ưu đãi trực tiếp tại website Aura</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+<!-- Col 1 -->
+<div class="flex flex-col items-center text-center p-6 rounded-lg bg-surface-container-low">
+<div class="w-14 h-14 rounded-full bg-surface-container-lowest flex items-center justify-center mb-4 shadow-sm text-secondary">
+<span class="material-symbols-outlined text-[28px]">payments</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary font-semibold mb-2">Cam kết giá tốt nhất</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Không qua trung gian hay đại lý thứ ba, đảm bảo mức giá phòng và gói ưu đãi cạnh tranh nhất cho kỳ nghỉ của quý khách.
+            </p>
+</div>
+<!-- Col 2 -->
+<div class="flex flex-col items-center text-center p-6 rounded-lg bg-surface-container-low">
+<div class="w-14 h-14 rounded-full bg-surface-container-lowest flex items-center justify-center mb-4 shadow-sm text-secondary">
+<span class="material-symbols-outlined text-[28px]">event_repeat</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary font-semibold mb-2">Chính sách linh hoạt</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Dễ dàng điều chỉnh lịch trình hoặc đổi ngày lưu trú; áp dụng chính sách hủy phòng miễn phí trước 48 giờ nhận phòng.
+            </p>
+</div>
+<!-- Col 3 -->
+<div class="flex flex-col items-center text-center p-6 rounded-lg bg-surface-container-low">
+<div class="w-14 h-14 rounded-full bg-surface-container-lowest flex items-center justify-center mb-4 shadow-sm text-secondary">
+<span class="material-symbols-outlined text-[28px]">workspace_premium</span>
+</div>
+<h3 class="font-headline-sm text-headline-sm text-primary font-semibold mb-2">Đặc quyền hội viên Privilege</h3>
+<p class="font-body-md text-body-md text-on-surface-variant leading-relaxed">
+              Tích lũy điểm thưởng thăng hạng, ưu tiên nhận phòng sớm / trả phòng trễ và đồ uống chào mừng thượng hạng tại lounge riêng.
+            </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- FINAL CTA -->
+<section class="w-full bg-[#f2f4f3] pb-16">
+<div class="max-w-[1360px] mx-auto px-margin-sm md:px-margin">
+<div class="bg-primary-container rounded-[10px] p-10 md:p-14 text-center text-surface-container-lowest shadow-[0_8px_30px_rgba(20,49,44,0.12)] relative overflow-hidden">
+<div class="max-w-2xl mx-auto flex flex-col items-center gap-4 relative z-10">
+<span class="font-label-sm text-label-sm tracking-[0.25em] uppercase text-secondary-fixed font-semibold">TẬN HƯỞNG TRỌN VẸN</span>
+<h2 class="font-headline-lg text-headline-lg text-surface-container-lowest font-semibold">Tìm kỳ nghỉ phù hợp với bạn</h2>
+<p class="font-body-md text-body-md text-[#d0ddd9] leading-relaxed">
+            Khám phá phòng và lựa chọn thời gian lưu trú phù hợp với nhu cầu của bạn để tận hưởng những đặc quyền thượng lưu nhất.
+          </p>
+<div class="pt-4">
+<button class="px-8 py-3 bg-[#d8b878] hover:bg-[#e6c88b] active:bg-[#c4a465] text-primary-container font-headline-sm text-headline-sm font-semibold rounded-lg shadow-md transition-colors flex items-center gap-2" type="button">
+<span>Xem phòng trống &amp; Đặt ngay</span>
+<span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<script>
+  (function () {
+    // Highlight "Ưu đãi" link in shell header
+    const navLinks = document.querySelectorAll('header nav a[data-path="uu-dai"]');
+    navLinks.forEach((link) => {
+      link.classList.remove('text-on-surface-variant');
+      link.classList.add('text-primary', 'font-semibold', 'relative');
+      const underline = document.createElement('div');
+      underline.className = 'absolute bottom-[-4px] left-0 right-0 h-[2px] bg-secondary';
+      link.appendChild(underline);
+    });
+  })();
+
+  function sortOffersGrid() {
+      const grid = document.getElementById('offers-grid');
+      const sortType = document.getElementById('sortOffers').value;
+      if(!grid) return;
+      
+      const items = Array.from(grid.getElementsByClassName('offer-item'));
+      items.sort((a, b) => {
+          if(sortType === 'newest') {
+              return parseInt(b.dataset.newest) - parseInt(a.dataset.newest);
+          } else if (sortType === 'expiring') {
+              return parseFloat(a.dataset.expiring) - parseFloat(b.dataset.expiring);
+          }
+          return 0;
+      });
+      
+      items.forEach(item => grid.appendChild(item));
+  }
+</script>

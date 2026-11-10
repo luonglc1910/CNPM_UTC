@@ -58,7 +58,7 @@ public class EmployeeCookieEvents : CookieAuthenticationEvents
     /// </summary>
     public override Task RedirectToLogin(RedirectContext<CookieAuthenticationOptions> context)
     {
-        if (context.Request.Cookies.ContainsKey("HotelAuth"))
+        if (context.Request.Cookies.ContainsKey("StaffAuth"))
         {
             context.RedirectUri = QueryHelpers.AddQueryString(context.RedirectUri, "expired", "1");
         }
@@ -70,6 +70,6 @@ public class EmployeeCookieEvents : CookieAuthenticationEvents
     private static async Task RejectAsync(CookieValidatePrincipalContext context)
     {
         context.RejectPrincipal();
-        await context.HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+        await context.HttpContext.SignOutAsync(AppSchemes.Staff);
     }
 }

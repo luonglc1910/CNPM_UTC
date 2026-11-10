@@ -1,0 +1,681 @@
+@using Microsoft.AspNetCore.Authentication
+@using HotelManagement.Web.Security
+@model HotelManagement.Web.Models.Entities.RoomType
+@{
+    Layout = "_PortalLayout";
+    ViewData["Title"] = "Chi tiết phòng";
+    var clientAuth = await Context.AuthenticateAsync(AppSchemes.Client);
+    var staffAuth = await Context.AuthenticateAsync(AppSchemes.Staff);
+    var isUserLoggedIn = clientAuth.Succeeded || staffAuth.Succeeded || User.Identity?.IsAuthenticated == true;
+    var loggedInName = staffAuth.Succeeded 
+        ? (staffAuth.Principal?.Identity?.Name ?? "Nhân viên") 
+        : (clientAuth.Succeeded 
+            ? (clientAuth.Principal?.FindFirst(System.Security.Claims.ClaimTypes.GivenName)?.Value ?? clientAuth.Principal?.Identity?.Name ?? "Khách") 
+            : (User.Identity?.Name ?? "Khách"));
+    var occupiedRoomIds = ViewBag.OccupiedRoomIds as List<int> ?? new List<int>();
+    var availableRoomList = Model.Rooms.Where(r => r.IsActive && r.Status == HotelManagement.Web.Models.RoomStatus.Available && !occupiedRoomIds.Contains(r.Id)).ToList();
+    int availableRooms = availableRoomList.Count;
+    var suggestedPromos = ViewBag.SuggestedPromotions as List<HotelManagement.Web.Models.Entities.Promotion> ?? new List<HotelManagement.Web.Models.Entities.Promotion>();
+    var currentUrl = Context.Request.Path + Context.Request.QueryString;
+}
+<div class="flex flex-col w-full">
+<!-- BREADCRUMB SECTION -->
+<div class="w-full bg-surface-container-low/60">
+<div class="max-w-[1280px] mx-auto px-margin-sm md:px-margin py-3.5">
+<nav class="flex items-center gap-2 font-label-md text-label-md text-on-surface-variant">
+<a class="hover:text-primary transition-colors flex items-center gap-1" href="#">
+<span class="material-symbols-outlined text-[16px]">home</span>
+<span class="">Trang chủ</span>
+</a>
+<span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+<a class="hover:text-primary transition-colors" href="#">Phòng nghỉ</a>
+<span class="material-symbols-outlined text-[14px] text-outline-variant">chevron_right</span>
+<span class="text-primary font-semibold">@Model.Name</span>
+</nav>
+</div>
+</div>
+<!-- MAIN CONTAINER -->
+<div class="max-w-[1280px] mx-auto px-margin-sm md:px-margin py-space-md md:py-space-lg w-full flex flex-col gap-space-xl">
+<!-- ROOM HERO & BOOKING SPLIT -->
+<section class="grid grid-cols-1 lg:grid-cols-12 gap-gutter-lg items-start">
+<!-- LEFT: PHOTOGRAPHIC GALLERY (approx 62%) -->
+<div class="lg:col-span-7 flex flex-col gap-space-sm">
+<!-- Main Large Image -->
+<div class="relative w-full aspect-[16/10] overflow-hidden rounded-[10px] bg-surface-container group shadow-sm">
+<img class="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-[1.02]" data-alt="@Model.Name" id="mainGalleryImage" src="@Model.ImageUrl">
+
+
+</div>
+<!-- 4 Sub Thumbnails -->
+<div class="grid grid-cols-4 gap-space-xs sm:gap-space-sm">
+    @{
+        var additionalImages = string.IsNullOrWhiteSpace(Model.AdditionalImageUrls)
+            ? new List<string>()
+            : Model.AdditionalImageUrls.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        
+        for (int i = 0; i < Math.Min(4, additionalImages.Count); i++)
+        {
+            <div class="aspect-[4/3] rounded-[6px] overflow-hidden relative group cursor-pointer bg-surface-container shadow-sm" onclick="swapGallery(this)">
+                <img class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300" src="@additionalImages[i]">
+                @if (i == 3 && additionalImages.Count > 4)
+                {
+                    <div class="absolute inset-0 bg-primary-container/60 hover:bg-primary-container/70 flex flex-col items-center justify-center text-surface-container-lowest gap-0.5 p-1 text-center transition-colors">
+                        <span class="material-symbols-outlined text-[20px] text-secondary-fixed">collections</span>
+                        <span class="font-label-sm text-label-sm font-semibold tracking-tight">@additionalImages.Count bức ảnh</span>
+                    </div>
+                }
+            </div>
+        }
+    }
+</div>
+</div>
+<!-- RIGHT: ROOM DETAILS & DIRECT BOOKING CARD (approx 38%) -->
+<div class="lg:col-span-5 flex flex-col gap-space-md">
+<div class="bg-surface-container-lowest p-space-lg rounded-[10px] shadow-sm flex flex-col gap-space-md">
+<!-- Eyebrow & Badges -->
+<div class="flex items-center justify-between gap-space-sm flex-wrap">
+</div>
+<!-- Title & PMS Inventory Badge -->
+<div class="flex flex-col gap-1.5">
+<h1 class="font-headline-lg text-headline-lg text-primary font-semibold leading-tight">
+              @Model.Name
+            </h1>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Phòng @Model.Name đẳng cấp</p>
+<div class="pt-1 flex items-center gap-2">
+@if(availableRooms > 0)
+{
+    <span class="inline-flex items-center gap-1.5 bg-[#2e7d57]/10 text-[#2e7d57] px-2.5 py-0.5 rounded-[4px] font-label-sm text-label-sm font-medium">
+        <span class="w-1.5 h-1.5 rounded-full bg-[#2e7d57] animate-pulse"></span>
+        Hệ thống còn @availableRooms phòng trống
+    </span>
+}
+else
+{
+    <span class="inline-flex items-center gap-1.5 bg-red-500/10 text-red-600 px-2.5 py-0.5 rounded-[4px] font-label-sm text-label-sm font-medium">
+        Hết phòng trống
+    </span>
+}
+<span class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-0.5">
+<span class="material-symbols-outlined text-[14px] text-secondary">bolt</span>
+                Đặt nhanh giữ phòng
+              </span>
+</div>
+</div>
+<!-- Pricing Display -->
+<div class="bg-surface-container-low p-space-md rounded-[8px] flex flex-col gap-1">
+<div class="flex items-baseline gap-2">
+<span id="displayMainPrice" class="font-headline-lg text-headline-lg font-bold text-primary tracking-tight">@Model.BasePricePerNight.ToString("N0") ₫</span>
+<span id="displayMainSuffix" class="font-label-md text-label-md text-on-surface-variant">/ đêm</span>
+</div>
+<p class="font-label-sm text-label-sm text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px] text-secondary">check_circle</span>
+              Đã bao gồm bữa sáng buffet cao cấp, thuế GTGT &amp; phí phục vụ 5 sao.
+            </p>
+</div>
+
+<!-- Customer Auth & Account Management CTA Banner -->
+@if (isUserLoggedIn)
+{
+    <div class="bg-emerald-50 border border-emerald-200 rounded-[8px] p-2.5 flex items-center gap-2 text-xs text-emerald-800">
+        <span class="material-symbols-outlined text-emerald-600 shrink-0 text-lg">verified_user</span>
+        <span>Xin chào <strong>@loggedInName</strong>! Đơn đặt phòng này sẽ được liên kết trực tiếp vào tài khoản cá nhân của bạn.</span>
+    </div>
+}
+<!-- Interactive Booking Widget Inside Card -->
+<form class="flex flex-col gap-space-sm" action="/Portal/BookRoom" method="GET">
+<!-- Room Selector -->
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary relative cursor-pointer" onclick="try{ document.getElementById('selectedRoom').showPicker(); } catch(e){}">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="selectedRoom">Chọn phòng trống</label>
+<select id="selectedRoom" name="roomId" class="mt-0.5 w-full text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer appearance-none pr-8" onclick="event.stopPropagation()">
+    @if(availableRoomList.Any())
+    {
+        foreach(var room in availableRoomList)
+        {
+            <option value="@room.Id">Phòng @room.RoomNumber</option>
+        }
+    }
+    else
+    {
+        <option value="" disabled selected>Hết phòng trống</option>
+    }
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none transition-transform group-focus-within:text-primary">expand_more</span>
+</div>
+<!-- Rental Type Selector -->
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary relative cursor-pointer" onclick="try{ document.getElementById('rentalType').showPicker(); } catch(e){}">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="rentalType">Hình thức thuê</label>
+<select id="rentalType" name="rentalType" class="mt-0.5 w-full text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer appearance-none pr-8" onchange="calculatePrice()" onclick="event.stopPropagation()">
+    <option value="Daily">Theo ngày (@Model.BasePricePerNight.ToString("N0") ₫)</option>
+    <option value="Hourly">Theo giờ (Giờ đầu: @Model.PriceFirstHour.ToString("N0") ₫)</option>
+    <option value="Overnight">Qua đêm (@Model.PriceOvernight.ToString("N0") ₫)</option>
+</select>
+<span class="material-symbols-outlined absolute right-2.5 top-1/2 -translate-y-1/2 text-on-surface-variant pointer-events-none transition-transform group-focus-within:text-primary">expand_more</span>
+</div>
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary cursor-pointer" onclick="try{ document.getElementById('checkInDate').showPicker(); } catch(e){}">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="checkInDate">Nhận phòng</label>
+<input type="date" id="checkInDate" name="checkIn" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer w-full" onchange="calculatePrice()" onclick="event.stopPropagation()" value="@DateTime.Now.ToString("yyyy-MM-dd")">
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary cursor-pointer" onclick="try{ document.getElementById('checkOutDate').showPicker(); } catch(e){}">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider cursor-pointer" for="checkOutDate">Trả phòng</label>
+<input type="date" id="checkOutDate" name="checkOut" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none cursor-pointer w-full" onchange="calculatePrice()" onclick="event.stopPropagation()" value="@DateTime.Now.AddDays(1).ToString("yyyy-MM-dd")">
+</div>
+</div>
+<!-- Khách & Giường phụ -->
+<div class="grid grid-cols-2 gap-2">
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col group hover:bg-surface-container transition-colors focus-within:ring-2 focus-within:ring-primary">
+<label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider" for="guestCount">Số khách</label>
+<input type="number" id="guestCount" name="guests" class="mt-0.5 text-on-surface font-label-lg text-label-lg font-medium bg-transparent border-none outline-none w-full" value="@Model.StandardCapacity" min="1" max="@Model.MaxCapacity" onchange="calculatePrice()">
+@if(Model.ExtraGuestFeePerNight > 0)
+{
+    <span class="text-[11px] text-on-surface-variant mt-1">Phụ thu > @Model.StandardCapacity người: +@Model.ExtraGuestFeePerNight.ToString("N0") ₫/đêm</span>
+}
+</div>
+<div class="bg-surface-container-lowest p-2.5 rounded-[6px] shadow-sm flex flex-col justify-center items-start group hover:bg-surface-container transition-colors cursor-pointer" onclick="document.getElementById('extraBed').click()">
+<label class="flex items-center gap-2 cursor-pointer w-full">
+<input type="checkbox" id="extraBed" name="extraBed" value="true" class="w-4 h-4 text-primary rounded border-outline focus:ring-primary" onchange="calculatePrice(); event.stopPropagation()" onclick="event.stopPropagation()">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Thêm giường phụ</span>
+</label>
+@if(Model.ExtraBedFeePerNight > 0)
+{
+    <span class="text-[11px] text-on-surface-variant mt-1 ml-6">Phí: +@Model.ExtraBedFeePerNight.ToString("N0") ₫/đêm</span>
+}
+</div>
+</div>
+<!-- Promo Code & Suggestions -->
+<div class="flex flex-col gap-2.5 mt-2 pt-2 border-t border-outline-variant/30">
+    <div class="flex items-center justify-between">
+        <label class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5" for="promoCode">
+            <span class="material-symbols-outlined text-[18px] text-secondary">local_offer</span>
+            Mã ưu đãi &amp; Voucher
+        </label>
+        @if (suggestedPromos.Any())
+        {
+            <span class="text-[12px] font-medium text-secondary bg-secondary-container/40 px-2 py-0.5 rounded-full">
+                @suggestedPromos.Count ưu đãi gợi ý
+            </span>
+        }
+    </div>
+
+    <!-- Suggested Vouchers for this Room Type -->
+    @if (suggestedPromos.Any())
+    {
+        <div class="flex flex-col gap-2 max-h-[190px] overflow-y-auto pr-1 custom-scrollbar">
+            @foreach (var promo in suggestedPromos)
+            {
+                var maxDiscount = Math.Min(100, Math.Max(promo.DiscountDailyPercent, Math.Max(promo.DiscountHourlyPercent, promo.DiscountOvernightPercent)));
+                <div class="suggested-promo-card bg-surface-container-low/70 hover:bg-surface-container border border-outline-variant/40 hover:border-secondary/50 rounded-lg p-2.5 transition-all cursor-pointer flex items-center justify-between gap-2 group"
+                     onclick="selectSuggestedPromo('@promo.PromoCode')" id="promo-card-@promo.PromoCode" data-code="@promo.PromoCode">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                        <div class="w-9 h-9 rounded-md bg-secondary/10 text-secondary flex items-center justify-center font-bold text-[13px] flex-shrink-0 group-hover:bg-secondary group-hover:text-surface-container-lowest transition-colors">
+                            -@maxDiscount.ToString("0")%
+                        </div>
+                        <div class="flex flex-col min-w-0">
+                            <div class="flex items-center gap-1.5">
+                                <span class="font-semibold text-primary font-mono text-sm tracking-wide bg-surface-container-lowest px-1.5 py-0.5 rounded border border-outline-variant/40">@promo.PromoCode</span>
+                                <span class="text-[12px] font-medium text-on-surface truncate">@promo.Title</span>
+                            </div>
+                            <span class="text-[11px] text-on-surface-variant/80 truncate mt-0.5">
+                                Hạn dùng: @promo.EndDate.ToString("dd/MM/yyyy")
+                            </span>
+                        </div>
+                    </div>
+                    <button type="button" class="promo-apply-btn text-[12px] font-semibold px-2.5 py-1 rounded bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-on-secondary transition-colors flex-shrink-0"
+                            onclick="event.stopPropagation(); selectSuggestedPromo('@promo.PromoCode')">
+                        Dùng mã
+                    </button>
+                </div>
+            }
+        </div>
+    }
+    else
+    {
+        <div class="text-[12px] text-on-surface-variant bg-surface-container-low/50 p-2.5 rounded-md flex items-center gap-2">
+            <span class="material-symbols-outlined text-[16px] text-outline">info</span>
+            <span>Không có mã ưu đãi gợi ý cho loại phòng này. Bạn có thể nhập mã cá nhân nếu có.</span>
+        </div>
+    }
+
+    <!-- Manual Code Input -->
+    <div class="flex gap-2 mt-0.5">
+        <div class="relative flex-1">
+            <input type="text" id="promoCode" name="promoCode" class="w-full bg-surface-container-lowest p-2.5 pr-8 rounded-[6px] shadow-sm text-on-surface font-body-md border border-outline-variant/40 focus:border-primary outline-none focus:ring-1 focus:ring-primary uppercase tracking-wider font-mono" placeholder="Nhập mã ưu đãi khác..." onkeyup="this.value = this.value.toUpperCase()">
+            <button type="button" id="clearPromoBtn" class="hidden absolute right-2.5 top-1/2 -translate-y-1/2 text-outline-variant hover:text-on-surface transition-colors" onclick="clearPromoCode()">
+                <span class="material-symbols-outlined text-[18px]">cancel</span>
+            </button>
+        </div>
+        <button type="button" class="bg-primary hover:bg-primary-container text-surface-container-lowest font-label-md px-4 rounded-[6px] transition-colors flex items-center gap-1" onclick="applyPromo()">
+            <span>Áp dụng</span>
+        </button>
+    </div>
+    <span id="promoMessage" class="text-sm font-medium"></span>
+    
+    @if (!isUserLoggedIn)
+    {
+        <div id="loginBannerContainer" style="display: none;" class="bg-red-50 border border-red-200 rounded-[8px] p-3.5 flex-col gap-2.5 shadow-xs mt-2">
+            <div class="flex items-start gap-2.5">
+                <span class="material-symbols-outlined text-red-600 font-bold shrink-0 text-xl mt-0.5">account_circle</span>
+                <div class="flex flex-col gap-0.5">
+                    <span class="font-bold text-red-700 text-sm tracking-wide uppercase">Đăng ký &amp; Đăng nhập ngay!</span>
+                    <p class="text-red-600 text-xs leading-relaxed">
+                        Ưu đãi chỉ sử dụng được khi khách hàng đã đăng nhập. Vui lòng đăng nhập để áp dụng mã hoặc nhấn dấu X để hủy ưu đãi và tiếp tục.
+                    </p>
+                </div>
+            </div>
+            <div class="flex items-center gap-2 pt-0.5 mt-2">
+                <a href="/ClientAuth/Register?returnUrl=@System.Net.WebUtility.UrlEncode(currentUrl)" class="flex-1 text-center bg-red-600 hover:bg-red-700 text-white font-semibold text-xs py-2 px-3 rounded-[6px] transition-colors shadow-xs flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">person_add</span>
+                    <span>Đăng ký</span>
+                </a>
+                <a href="/ClientAuth/Login?returnUrl=@System.Net.WebUtility.UrlEncode(currentUrl)" class="flex-1 text-center bg-white border border-red-300 text-red-700 hover:bg-red-100 font-semibold text-xs py-2 px-3 rounded-[6px] transition-colors flex items-center justify-center gap-1">
+                    <span class="material-symbols-outlined text-[16px]">login</span>
+                    <span>Đăng nhập</span>
+                </a>
+            </div>
+        </div>
+    }
+</div>
+<!-- Price Breakdown Summary -->
+<div class="py-2 flex items-center justify-between font-label-md text-label-md">
+<span class="text-on-surface-variant">Tổng dự kiến (<span id="nightsCount">1</span> đêm lưu trú):</span>
+<span class="font-headline-sm text-headline-sm font-bold text-primary" id="totalPrice">@Model.BasePricePerNight.ToString("N0") ₫</span>
+</div>
+<!-- Primary CTA -->
+<button id="submitBookingBtn" class="w-full h-11 bg-primary-container hover:bg-primary text-surface-container-lowest rounded-[6px] font-label-lg text-label-lg font-semibold tracking-wide transition-all shadow-sm flex items-center justify-center gap-2" type="submit">
+<span class="">Đặt phòng ngay</span>
+<span class="material-symbols-outlined text-[18px]">arrow_forward</span>
+</button>
+</form>
+<!-- Direct Booking Guarantees -->
+<div class="pt-space-sm flex flex-col gap-2 font-label-sm text-label-sm text-on-surface-variant">
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">verified_user</span>
+<span class=""><strong>Miễn phí hủy phòng</strong> trước 48 giờ đón tiếp không rủi ro.</span>
+</div>
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">price_check</span>
+<span class=""><strong>Cam kết giá tốt nhất</strong> &amp; bảo lưu quyền lợi khi đặt trực tiếp tại website.</span>
+</div>
+<div class="flex items-start gap-2">
+<span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">local_bar</span>
+<span class=""><strong>Đặc quyền:</strong> Tặng 02 cocktail đón chào tại Sky Bar &amp; chuẩn bị trà thảo mộc.</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- ROOM SPECIFICATIONS GRID (4 Columns) -->
+<section class="grid grid-cols-2 md:grid-cols-4 gap-gutter-sm md:gap-gutter">
+<div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-[8px] bg-surface-container-low flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[24px]">aspect_ratio</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Diện tích</span>
+<span class="font-headline-sm text-headline-sm text-primary font-semibold">@Model.SizeSqm m²</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Rộng rãi, thoáng đãng</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-[8px] bg-surface-container-low flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[24px]">bed</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Loại giường</span>
+<span class="font-headline-sm text-headline-sm text-primary font-semibold">@Model.BedType</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Êm ái, thoải mái</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-[8px] bg-surface-container-low flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[24px]">group</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Sức chứa</span>
+<span class="font-headline-sm text-headline-sm text-primary font-semibold">Tối đa @Model.MaxCapacity khách</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Tiêu chuẩn @Model.StandardCapacity khách</span>
+</div>
+</div>
+<div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex items-center gap-space-sm">
+<div class="w-12 h-12 rounded-[8px] bg-surface-container-low flex items-center justify-center flex-shrink-0 text-secondary">
+<span class="material-symbols-outlined text-[24px]">beach_access</span>
+</div>
+<div class="flex flex-col min-w-0">
+<span class="font-label-sm text-label-sm text-on-surface-variant uppercase tracking-wider">Tầm nhìn</span>
+<span class="font-headline-sm text-headline-sm text-primary font-semibold">Biển &amp; Vườn</span>
+<span class="font-body-sm text-body-sm text-on-surface-variant truncate">Toàn cảnh biển Đông</span>
+</div>
+</div>
+</section>
+<!-- ROOM OVERVIEW & ARCHITECTURAL PHILOSOPHY -->
+<section class="bg-surface-container-lowest p-space-lg md:p-space-xl rounded-[10px] shadow-sm flex flex-col gap-space-xl">
+<div class="flex flex-col gap-space-sm">
+<span class="font-label-sm text-label-sm uppercase tracking-[0.2em] text-secondary font-semibold">
+          Kiến trúc &amp; Không gian
+        </span>
+<h2 class="font-headline-lg text-headline-lg text-primary font-semibold">
+          Tổng quan phòng nghỉ
+        </h2>
+<div class="font-body-lg text-body-lg text-on-surface leading-relaxed mt-1 prose prose-stone max-w-none">
+          @Html.Raw(Model.DetailDescription ?? Model.Description)
+        </div>
+</div>
+</section>
+<!-- DETAILED ROOM AMENITIES (4 CATEGORIES) -->
+<section class="flex flex-col gap-space-md">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-[0.2em] text-secondary font-semibold">Chuẩn mực 5 sao</span>
+<h2 class="font-headline-lg text-headline-lg text-primary font-semibold">Tiện nghi phòng đẳng cấp</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-gutter-sm md:gap-gutter">
+<div class="bg-surface-container-lowest p-space-md rounded-[10px] shadow-sm flex flex-col gap-space-sm w-full md:col-span-2 lg:col-span-4">
+<h3 class="font-headline-sm text-headline-sm text-primary font-semibold">Các tiện nghi hiện có</h3>
+<ul class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 font-body-sm text-body-sm text-on-surface-variant">
+    @{
+        var amenitiesList = string.IsNullOrWhiteSpace(Model.Amenities) 
+            ? new List<string>() 
+            : Model.Amenities.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries).ToList();
+        
+        foreach (var item in amenitiesList)
+        {
+            <li class="flex items-start gap-2">
+            <span class="material-symbols-outlined text-[16px] text-secondary mt-0.5">check_circle</span>
+            <span class="">@item</span>
+            </li>
+        }
+    }
+</ul>
+</div>
+</div>
+</section>
+<!-- ROOM POLICIES (2 COLUMNS INTERACTIVE ACCORDION / GRID) -->
+<section class="bg-surface-container-lowest p-space-lg md:p-space-xl rounded-[10px] shadow-sm flex flex-col gap-space-md">
+<div class="flex flex-col">
+<span class="font-label-sm text-label-sm uppercase tracking-[0.2em] text-secondary font-semibold">Quy chuẩn lưu trú</span>
+<h2 class="font-headline-lg text-headline-lg text-primary font-semibold">Chính sách phòng &amp; Lưu ý quan trọng</h2>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-space-lg">
+<div class="flex flex-col gap-space-md">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center flex-shrink-0 text-primary">
+<span class="material-symbols-outlined text-[18px]">schedule</span>
+</div>
+<div class="flex flex-col">
+<h4 class="font-headline-sm text-headline-sm text-primary font-semibold">Giờ nhận &amp; Trả phòng</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+<strong>Nhận phòng:</strong> Từ 14:00 mỗi ngày.<br>
+<strong>Trả phòng:</strong> Trước 12:00 trưa hôm khởi hành.<br>
+<span class="text-on-surface-variant/80 text-body-sm italic">Khách sạn hỗ trợ nhận phòng sớm hoặc trả phòng muộn miễn phí tùy theo tình trạng phòng trống thực tế trong ngày.</span>
+</p>
+</div>
+</div>
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center flex-shrink-0 text-primary">
+<span class="material-symbols-outlined text-[18px]">event_busy</span>
+</div>
+<div class="flex flex-col">
+<h4 class="font-headline-sm text-headline-sm text-primary font-semibold">Chính sách hủy &amp; Đổi lịch</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+                Miễn phí hủy hoặc đổi ngày lưu trú trước <strong>48 giờ</strong> so với thời điểm nhận phòng. Hủy sau thời gian này hoặc vắng mặt không báo trước sẽ tính phí đêm đầu tiên.
+              </p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-space-md">
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center flex-shrink-0 text-primary">
+<span class="material-symbols-outlined text-[18px]">child_care</span>
+</div>
+<div class="flex flex-col">
+<h4 class="font-headline-sm text-headline-sm text-primary font-semibold">Trẻ em &amp; Giường phụ</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+                Miễn phí hoàn toàn tiền phòng và bữa sáng cho <strong>01 trẻ em dưới 6 tuổi</strong> ngủ chung giường với bố mẹ. Nôi trẻ em sơ sinh được cung cấp miễn phí theo yêu cầu đặt trước.
+              </p>
+</div>
+</div>
+<div class="flex items-start gap-space-sm">
+<div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center flex-shrink-0 text-primary">
+<span class="material-symbols-outlined text-[18px]">smoke_free</span>
+</div>
+<div class="flex flex-col">
+<h4 class="font-headline-sm text-headline-sm text-primary font-semibold">Quy định chung &amp; Môi trường</h4>
+<p class="font-body-md text-body-md text-on-surface-variant mt-1">
+                Nghiêm cấm hút thuốc trong khuôn viên phòng (có khu vực hút thuốc riêng biệt ngoài ban công thoáng khí). Không mang theo thú cưng để đảm bảo tính an toàn và tĩnh dưỡng chung.
+              </p>
+</div>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Micro-interaction JS Script -->
+<script>
+    function swapGallery(element) {
+      const img = element.querySelector('img');
+      const mainImg = document.getElementById('mainGalleryImage');
+      if (img && mainImg) {
+        const tempSrc = mainImg.src;
+        const tempAlt = mainImg.getAttribute('data-alt');
+        mainImg.src = img.src;
+        mainImg.setAttribute('data-alt', img.getAttribute('data-alt'));
+        img.src = tempSrc;
+        img.setAttribute('data-alt', tempAlt);
+      }
+    }
+
+    function openFullGallery() {
+      alert('Đang mở bộ sưu tập 12 hình ảnh độ phân giải cao của phòng Deluxe King Ocean View...');
+    }
+
+    // Dynamic Pricing Logic
+    const dailyPrice = @Model.BasePricePerNight.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    const hourlyFirstPrice = @Model.PriceFirstHour.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    const overnightPrice = @Model.PriceOvernight.ToString(System.Globalization.CultureInfo.InvariantCulture);
+    const promotions = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.Promotions ?? new List<object>()));
+    let appliedDiscount = 0; // percentage
+
+    function calculatePrice(updatePromo = true) {
+        if (updatePromo) {
+            applyPromo(false);
+        }
+        const checkInEl = document.getElementById('checkInDate');
+        const checkOutEl = document.getElementById('checkOutDate');
+        const rentalTypeEl = document.getElementById('rentalType');
+        if (!checkInEl || !checkOutEl || !rentalTypeEl) return;
+        
+        const rentalType = rentalTypeEl.value;
+        const checkIn = new Date(checkInEl.value);
+        const checkOut = new Date(checkOutEl.value);
+        
+        let nights = 1;
+        if (checkIn && checkOut && checkOut > checkIn) {
+            nights = Math.floor((checkOut - checkIn) / (1000 * 60 * 60 * 24));
+        } else {
+            checkOutEl.value = checkInEl.value;
+            checkOutEl.stepUp();
+        }
+        
+        const nightsCountEl = document.getElementById('nightsCount');
+        if (nightsCountEl) {
+            if (rentalType === 'Daily') nightsCountEl.innerText = nights;
+            else if (rentalType === 'Hourly') nightsCountEl.innerText = '1 (Giờ đầu)';
+            else nightsCountEl.innerText = '1 (Qua đêm)';
+        }
+        
+        let basePrice = dailyPrice;
+        if (rentalType === 'Hourly') basePrice = hourlyFirstPrice;
+        else if (rentalType === 'Overnight') basePrice = overnightPrice;
+
+        const displayMainPriceEl = document.getElementById('displayMainPrice');
+        const displayMainSuffixEl = document.getElementById('displayMainSuffix');
+        if (displayMainPriceEl && displayMainSuffixEl) {
+            displayMainPriceEl.innerText = basePrice.toLocaleString('vi-VN') + ' ₫';
+            if (rentalType === 'Daily') displayMainSuffixEl.innerText = '/ đêm';
+            else if (rentalType === 'Hourly') displayMainSuffixEl.innerText = '/ giờ đầu';
+            else displayMainSuffixEl.innerText = '/ đêm (Qua đêm)';
+        }
+        
+        const guestCountEl = document.getElementById('guestCount');
+        const extraBedEl = document.getElementById('extraBed');
+        const guests = guestCountEl ? parseInt(guestCountEl.value) || @Model.StandardCapacity : @Model.StandardCapacity;
+        const hasExtraBed = extraBedEl ? extraBedEl.checked : false;
+        
+        let extraGuestFee = 0;
+        if (guests > @Model.StandardCapacity) {
+            extraGuestFee = (guests - @Model.StandardCapacity) * @Model.ExtraGuestFeePerNight.ToString(System.Globalization.CultureInfo.InvariantCulture);
+        }
+        let extraBedFee = hasExtraBed ? @Model.ExtraBedFeePerNight.ToString(System.Globalization.CultureInfo.InvariantCulture) : 0;
+        
+        let multiplier = rentalType === 'Daily' ? nights : 1;
+        
+        let total = (basePrice + extraGuestFee + extraBedFee) * multiplier;
+        let originalTotal = total;
+        
+        if (appliedDiscount > 0) {
+            total = total - (total * (appliedDiscount / 100));
+        }
+
+        const origPriceEl = document.getElementById('originalPrice');
+        if (origPriceEl) {
+            if (total < originalTotal) {
+                origPriceEl.classList.remove('hidden');
+                origPriceEl.innerText = originalTotal.toLocaleString('vi-VN') + ' ₫';
+            } else {
+                origPriceEl.classList.add('hidden');
+            }
+        }
+        
+        const totalPriceEl = document.getElementById('totalPrice');
+        if (totalPriceEl) totalPriceEl.innerText = total.toLocaleString('vi-VN') + ' ₫';
+    }
+
+    function selectSuggestedPromo(code) {
+        const input = document.getElementById('promoCode');
+        if (!input) return;
+        input.value = code;
+        updateSuggestedPromoCardUI(code);
+        applyPromo();
+    }
+
+    function clearPromoCode() {
+        const input = document.getElementById('promoCode');
+        if (input) input.value = '';
+        updateSuggestedPromoCardUI('');
+        applyPromo();
+    }
+
+    function updateSuggestedPromoCardUI(selectedCode) {
+        const clearBtn = document.getElementById('clearPromoBtn');
+        if (clearBtn) {
+            if (selectedCode) clearBtn.classList.remove('hidden');
+            else clearBtn.classList.add('hidden');
+        }
+
+        document.querySelectorAll('.suggested-promo-card').forEach(card => {
+            const cardCode = card.getAttribute('data-code');
+            const btn = card.querySelector('.promo-apply-btn');
+            if (cardCode === selectedCode) {
+                card.classList.add('border-secondary', 'bg-secondary/10', 'ring-1', 'ring-secondary');
+                if (btn) {
+                    btn.innerText = 'Đã chọn';
+                    btn.className = 'promo-apply-btn text-[12px] font-semibold px-2.5 py-1 rounded bg-secondary text-surface-container-lowest transition-colors flex-shrink-0';
+                }
+            } else {
+                card.classList.remove('border-secondary', 'bg-secondary/10', 'ring-1', 'ring-secondary');
+                if (btn) {
+                    btn.innerText = 'Dùng mã';
+                    btn.className = 'promo-apply-btn text-[12px] font-semibold px-2.5 py-1 rounded bg-secondary-container hover:bg-secondary text-on-secondary-container hover:text-on-secondary transition-colors flex-shrink-0';
+                }
+            }
+        });
+    }
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const promoInput = document.getElementById('promoCode');
+        if (promoInput) {
+            promoInput.addEventListener('input', function() {
+                const val = this.value.trim().toUpperCase();
+                updateSuggestedPromoCardUI(val);
+            });
+        }
+    });
+
+    function applyPromo(updatePrice = true) {
+        const codeInput = document.getElementById('promoCode');
+        const messageEl = document.getElementById('promoMessage');
+        const checkInEl = document.getElementById('checkInDate');
+        if (!codeInput || !messageEl || !checkInEl) return;
+        
+        const code = codeInput.value.trim().toUpperCase();
+        const checkIn = new Date(checkInEl.value);
+        if (isNaN(checkIn.getTime())) return;
+        checkIn.setHours(0, 0, 0, 0);
+        
+        if (!code) {
+            appliedDiscount = 0;
+            messageEl.innerText = "";
+        } else {
+            const promo = promotions ? promotions.find(p => p.PromoCode && p.PromoCode.toUpperCase() === code) : null;
+            if (promo) {
+                const startDate = new Date(promo.StartDate);
+                startDate.setHours(0, 0, 0, 0);
+                const endDate = new Date(promo.EndDate);
+                endDate.setHours(23, 59, 59, 999);
+                
+                if (checkIn < startDate || checkIn > endDate) {
+                    appliedDiscount = 0;
+                    messageEl.innerText = `Mã này chỉ áp dụng từ ${startDate.toLocaleDateString('vi-VN')} đến ${endDate.toLocaleDateString('vi-VN')}!`;
+                    messageEl.className = "text-sm font-medium mt-1 text-red-500";
+                } else if (promo.ApplicableRoomTypeIds && !promo.ApplicableRoomTypeIds.split(',').map(x => x.trim()).includes('@Model.Id.ToString()')) {
+                    appliedDiscount = 0;
+                    messageEl.innerText = "Mã này không áp dụng cho loại phòng này!";
+                    messageEl.className = "text-sm font-medium mt-1 text-red-500";
+                } else {
+                    const rentalType = document.getElementById('rentalType').value;
+                    if (rentalType === 'Daily') {
+                        appliedDiscount = promo.DiscountDailyPercent || 0;
+                    } else if (rentalType === 'Hourly') {
+                        appliedDiscount = promo.DiscountHourlyPercent || 0;
+                    } else {
+                        appliedDiscount = promo.DiscountOvernightPercent || 0;
+                    }
+                    
+                    if (appliedDiscount > 0) {
+                        messageEl.innerText = `Áp dụng thành công (Giảm ${appliedDiscount}%)!`;
+                        messageEl.className = "text-sm font-medium mt-1 text-[#2e7d57]";
+                    } else {
+                        appliedDiscount = 0;
+                        messageEl.innerText = "Mã này không có ưu đãi cho hình thức thuê đã chọn!";
+                        messageEl.className = "text-sm font-medium mt-1 text-red-500";
+                    }
+                }
+            } else {
+                appliedDiscount = 0;
+                messageEl.innerText = "Mã không hợp lệ hoặc không tồn tại!";
+                messageEl.className = "text-sm font-medium mt-1 text-red-500";
+            }
+        }
+        
+        if (updatePrice) calculatePrice(false);
+
+        // Update login banner and submit button state
+        const isUserLoggedIn = @(isUserLoggedIn ? "true" : "false");
+        const loginBanner = document.getElementById('loginBannerContainer');
+        const submitBtn = document.getElementById('submitBookingBtn');
+        
+        if (!isUserLoggedIn && appliedDiscount > 0) {
+            if (loginBanner) loginBanner.style.display = 'flex';
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.classList.add('opacity-50', 'cursor-not-allowed');
+            }
+        } else {
+            if (loginBanner) loginBanner.style.display = 'none';
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.classList.remove('opacity-50', 'cursor-not-allowed');
+            }
+        }
+    }
+  </script>
+</div>

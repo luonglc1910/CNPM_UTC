@@ -1,0 +1,102 @@
+@model IEnumerable<HotelManagement.Web.Models.Entities.HotelGalleryImage>
+@{
+    ViewData["Title"] = "Thư viện ảnh khách sạn";
+    var isAdmin = User.IsInRole(Roles.Admin);
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h4 class="mb-1"><i class="bi bi-images me-2"></i>Thư viện ảnh khách sạn</h4>
+        <p class="text-muted small mb-0">Quản lý các hình ảnh hiển thị trên không gian truyền thông trang chủ frontend</p>
+    </div>
+    @if (isAdmin)
+    {
+        <a asp-action="Create" class="btn btn-primary">
+            <i class="bi bi-plus-lg me-1"></i>Thêm hình ảnh mới
+        </a>
+    }
+</div>
+
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show mb-3" role="alert">
+        <i class="bi bi-check-circle-fill me-2"></i>@TempData["Success"]
+        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+    </div>
+}
+
+<div class="card shadow-sm">
+    <div class="card-body p-0">
+        @if (!Model.Any())
+        {
+            <div class="text-center py-5 text-muted">
+                <i class="bi bi-image fs-1 d-block mb-2"></i>
+                Chưa có hình ảnh nào trong thư viện.
+            </div>
+        }
+        else
+        {
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width: 80px;">Xem trước</th>
+                            <th>Tiêu đề / Mô tả</th>
+                            <th style="width: 100px;" class="text-center">Thứ tự</th>
+                            <th style="width: 140px;" class="text-center">Trạng thái</th>
+                            <th style="width: 160px;" class="text-end">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr class="@(!item.IsActive ? "table-secondary text-muted" : "")">
+                                <td>
+                                    <div class="rounded border overflow-hidden" style="width: 70px; height: 50px;">
+                                        <img src="@item.ImageUrl" alt="@item.Title" class="w-100 h-100 object-fit-cover" />
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark">@(string.IsNullOrWhiteSpace(item.Title) ? "Chưa có tiêu đề" : item.Title)</div>
+                                    <small class="text-muted text-break">@item.ImageUrl</small>
+                                </td>
+                                <td class="text-center">
+                                    <span class="badge bg-light text-dark border">@item.SortOrder</span>
+                                </td>
+                                <td class="text-center">
+                                    @if (item.IsActive)
+                                    {
+                                        <span class="badge bg-success-subtle text-success border border-success-subtle">Đang hiển thị</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle">Đã ẩn</span>
+                                    }
+                                </td>
+                                <td class="text-end">
+                                    @if (isAdmin)
+                                    {
+                                        <div class="d-inline-flex gap-1">
+                                            <form asp-action="ToggleActive" asp-route-id="@item.Id" method="post" class="d-inline">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm @(item.IsActive ? "btn-outline-warning" : "btn-outline-success")" title="@(item.IsActive ? "Ẩn ảnh" : "Hiện ảnh")">
+                                                    <i class="bi @(item.IsActive ? "bi-eye-slash" : "bi-eye")"></i>
+                                                </button>
+                                            </form>
+                                            <form asp-action="Delete" asp-route-id="@item.Id" method="post" class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa hình ảnh này không?');">
+                                                @Html.AntiForgeryToken()
+                                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        </div>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

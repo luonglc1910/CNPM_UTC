@@ -12,10 +12,12 @@ namespace HotelManagement.Web.Controllers;
 public class BillingController : AdminControllerBase
 {
     private readonly IBillingService _service;
+    private readonly IEmailService _email;
 
-    public BillingController(IBillingService service)
+    public BillingController(IBillingService service, IEmailService email)
     {
         _service = service;
+        _email = email;
     }
 
     // SCR-F01
@@ -209,6 +211,87 @@ public class BillingController : AdminControllerBase
 
         TempData["Success"] = result.Message;
         return RedirectToAction("CheckOut", "FrontDesk", new { stayId = form.StayId });
+    }
+
+    // ---------- Chuyển / Gộp chi phí liên phòng & Thanh toán gộp (Master Folio / Group Checkout) ----------
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> TransferFolio(
+        int fromStayId, int toStayId, int? folioItemId, bool includeRoomCharges = false, string reason = "")
+    {
+        var result = await _service.TransferFolioAsync(
+            fromStayId, toStayId, folioItemId, includeRoomCharges, reason, CurrentEmployeeId);
+        SetMessage(result);
+        return RedirectToAction(nameof(Folio), new { stayId = fromStayId });
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> GroupPayment(int? reservationId = null, string? stayIds = null)
+    {
+        var vm = await _service.BuildGroupPaymentAsync(reservationId, stayIds, CurrentEmployeeId, IsAdmin);
+        if (vm is null)
+        {
+            TempData["Error"] = "Không tìm thấy phòng đang lưu trú trong nhóm/đoàn để thanh toán gộp.";
+            return RedirectToAction(nameof(Index));
+        }
+
+        return View(vm);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> PrepareGroupCheckout(int? reservationId, string? stayIdsCsv)
+    {
+        var result = await _service.PrepareGroupCheckoutAsync(reservationId, stayIdsCsv, CurrentEmployeeId);
+        SetMessage(result);
+        return RedirectToAction(nameof(GroupPayment), new { reservationId, stayIds = stayIdsCsv });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ActionName(nameof(GroupPayment))]
+    public async Task<IActionResult> GroupPaymentPost(GroupPaymentViewModel form)
+    {
+        var (result, firstInvoiceId) = await _service.PayGroupAsync(form, CurrentEmployeeId, IsAdmin);
+        if (!result.Succeeded)
+        {
+            TempData["Error"] = result.Error;
+            return RedirectToAction(nameof(GroupPayment), new { reservationId = form.ReservationId, stayIds = form.StayIdsCsv });
+        }
+
+        TempData["Success"] = result.Message;
+        return firstInvoiceId > 0
+            ? RedirectToAction(nameof(Invoice), new { id = firstInvoiceId })
+            : RedirectToAction(nameof(Index), new { IsInvoiceTab = true });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SettleDebt(int invoiceId, PaymentMethod method, string? transactionRef)
+    {
+        var result = await _service.SettleDebtAsync(invoiceId, method, transactionRef, CurrentEmployeeId);
+        SetMessage(result);
+        return RedirectToAction(nameof(Invoice), new { id = invoiceId });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SendInvoiceEmail(int invoiceId)
+    {
+        var email = await _email.SendInvoiceEmailAsync(invoiceId);
+        if (email.Sent)
+        {
+            TempData["Success"] = "Đã gửi email hóa đơn điện tử cho khách và lưu bản xem trước!";
+        }
+        else
+        {
+            TempData["Error"] = $"Chưa gửi được email hóa đơn: {email.Message}";
+        }
+        if (!string.IsNullOrWhiteSpace(email.PreviewUrl))
+            TempData["EmailPreviewUrl"] = email.PreviewUrl;
+
+        return RedirectToAction(nameof(Invoice), new { id = invoiceId });
     }
 
     private int CurrentEmployeeId => User.GetEmployeeId() ?? 0;

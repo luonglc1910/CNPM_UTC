@@ -12,11 +12,20 @@ public class HomeController : Controller
 {
     private readonly IAuditService _audit;
     private readonly IDashboardService _dashboard;
+    private readonly INotificationService _notifications;
 
-    public HomeController(IAuditService audit, IDashboardService dashboard)
+    public HomeController(IAuditService audit, IDashboardService dashboard, INotificationService notifications)
     {
         _audit = audit;
         _dashboard = dashboard;
+        _notifications = notifications;
+    }
+
+    [HttpPost]
+    public IActionResult MarkNotificationsRead()
+    {
+        _notifications.MarkAllRead();
+        return Ok(new { ok = true });
     }
 
     // SCR-S04 — tổng quan. Vai trò quyết định thẻ doanh thu hiển thị phạm vi nào,

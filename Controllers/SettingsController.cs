@@ -133,6 +133,83 @@ public class SettingsController : AdminControllerBase
 
     [HttpPost]
     [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SavePayment([Bind(Prefix = "Payment")] PaymentAndEmailSettings form)
+    {
+        if (!ModelState.IsValid)
+        {
+            return await Reload(SystemSettingDefaults.Groups.Payment, vm => vm.Payment = form);
+        }
+
+        var result = await _service.SavePaymentAsync(form);
+        return await Finish(result, SystemSettingDefaults.Groups.Payment, vm => vm.Payment = form);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SaveDynamicPricing([Bind(Prefix = "DynamicPricing")] DynamicPricingSettings form)
+    {
+        if (!ModelState.IsValid)
+        {
+            return await Reload(SystemSettingDefaults.Groups.DynamicPricing, vm => vm.DynamicPricing = form);
+        }
+
+        var result = await _service.SaveDynamicPricingAsync(form);
+        return await Finish(result, SystemSettingDefaults.Groups.DynamicPricing, vm => vm.DynamicPricing = form);
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> AddSeasonalRule(AddSeasonalRuleInput input)
+    {
+        var result = await _service.AddSeasonalRuleAsync(input);
+        if (result.Succeeded)
+        {
+            TempData["Success"] = result.Message;
+        }
+        else
+        {
+            TempData["Error"] = result.Error;
+        }
+
+        return RedirectToAction(nameof(Index), new { group = SystemSettingDefaults.Groups.DynamicPricing });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> ToggleSeasonalRule(string id)
+    {
+        var result = await _service.ToggleSeasonalRuleAsync(id);
+        if (result.Succeeded)
+        {
+            TempData["Success"] = result.Message;
+        }
+        else
+        {
+            TempData["Error"] = result.Error;
+        }
+
+        return RedirectToAction(nameof(Index), new { group = SystemSettingDefaults.Groups.DynamicPricing });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> DeleteSeasonalRule(string id)
+    {
+        var result = await _service.DeleteSeasonalRuleAsync(id);
+        if (result.Succeeded)
+        {
+            TempData["Success"] = result.Message;
+        }
+        else
+        {
+            TempData["Error"] = result.Error;
+        }
+
+        return RedirectToAction(nameof(Index), new { group = SystemSettingDefaults.Groups.DynamicPricing });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> ResetGroup(string group)
     {
         var result = await _service.ResetGroupAsync(group);

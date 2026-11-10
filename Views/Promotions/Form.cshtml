@@ -1,0 +1,101 @@
+@model PromotionFormViewModel
+@{
+    var isNew = Model.Id == 0;
+    ViewData["Title"] = isNew ? "Thêm Ưu đãi mới" : $"Sửa Ưu đãi: {Model.Title}";
+}
+
+<div class="mb-3">
+    <a asp-action="Index" class="text-decoration-none"><i class="bi bi-arrow-left"></i> Quay lại danh sách</a>
+</div>
+
+<div class="card" style="max-width: 800px">
+    <div class="card-body">
+        <form method="post">
+            <div class="row g-3">
+                <div class="col-12">
+                    <label asp-for="Title" class="form-label"></label>
+                    <input asp-for="Title" class="form-control" />
+                    <span asp-validation-for="Title" class="text-danger small"></span>
+                </div>
+                
+                <div class="col-12">
+                    <label asp-for="Description" class="form-label"></label>
+                    <textarea asp-for="Description" class="form-control" rows="4"></textarea>
+                    <span asp-validation-for="Description" class="text-danger small"></span>
+                </div>
+
+                <div class="col-12">
+                    <label asp-for="ImageUrl" class="form-label"></label>
+                    <input asp-for="ImageUrl" class="form-control" placeholder="https://..." />
+                    <div class="form-text">Nhập link ảnh (URL) để làm banner.</div>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="PromoCode" class="form-label"></label>
+                    <input asp-for="PromoCode" class="form-control text-uppercase" placeholder="VD: SUMMER2026" />
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="DiscountDailyPercent" class="form-label"></label>
+                    <div class="input-group">
+                        <input asp-for="DiscountDailyPercent" class="form-control text-end" type="number" step="0.1" />
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+                
+                <div class="col-md-3">
+                    <label asp-for="DiscountHourlyPercent" class="form-label"></label>
+                    <div class="input-group">
+                        <input asp-for="DiscountHourlyPercent" class="form-control text-end" type="number" step="0.1" />
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+
+                <div class="col-md-3">
+                    <label asp-for="DiscountOvernightPercent" class="form-label"></label>
+                    <div class="input-group">
+                        <input asp-for="DiscountOvernightPercent" class="form-control text-end" type="number" step="0.1" />
+                        <span class="input-group-text">%</span>
+                    </div>
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="StartDate" class="form-label"></label>
+                    <input asp-for="StartDate" class="form-control" />
+                </div>
+
+                <div class="col-md-4">
+                    <label asp-for="EndDate" class="form-label"></label>
+                    <input asp-for="EndDate" class="form-control" />
+                </div>
+
+                <div class="col-12">
+                    <label class="form-label fw-semibold">Áp dụng cho các loại phòng</label>
+                    <div class="d-flex flex-wrap gap-3 p-3 border rounded bg-light">
+                        @foreach (var rt in (SelectList)ViewBag.RoomTypes)
+                        {
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="SelectedRoomTypeIds" value="@rt.Value" id="rt_@rt.Value" @(Model.SelectedRoomTypeIds.Contains(int.Parse(rt.Value)) ? "checked" : "") />
+                                <label class="form-check-label" for="rt_@rt.Value">
+                                    @rt.Text
+                                </label>
+                            </div>
+                        }
+                    </div>
+                    <div class="form-text">Đánh dấu tick vào các loại phòng được áp dụng. Nếu <strong>không tick ô nào</strong>, hệ thống sẽ mặc định áp dụng cho <strong>TẤT CẢ</strong> các loại phòng.</div>
+                </div>
+
+                <div class="col-12">
+                    <div class="form-check mt-2">
+                        <input asp-for="IsHeroOffer" class="form-check-input" />
+                        <label asp-for="IsHeroOffer" class="form-check-label fw-semibold"></label>
+                        <div class="form-text">Nếu đánh dấu, ưu đãi này sẽ hiển thị to nhất ở đầu trang Khuyến mãi.</div>
+                    </div>
+                </div>
+            </div>
+
+            <hr class="my-4" />
+            <button type="submit" class="btn btn-primary"><i class="bi bi-check-lg"></i> Lưu thay đổi</button>
+        </form>
+    </div>
+</div>

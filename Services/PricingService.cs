@@ -39,6 +39,37 @@ public class PricingSettings
     public decimal CancelFeeUnder24hRate { get; init; }
 
     public int ChildAgeLimit { get; init; } = 12;
+
+    // Bảng giá linh hoạt (Dynamic Pricing — Chức năng 5)
+    public bool EnableDynamicPricing { get; init; } = true;
+    public decimal WeekendSurchargeRate { get; init; } = 0.15m;
+    public string WeekendDays { get; init; } = "Friday,Saturday";
+    public IReadOnlyList<SeasonalPricingRule> SeasonalRules { get; init; } = Array.Empty<SeasonalPricingRule>();
+}
+
+/// <summary>Quy tắc giá theo mùa / lễ Tết — Chức năng 5.</summary>
+public class SeasonalPricingRule
+{
+    public string Id { get; set; } = string.Empty;
+    public string Name { get; set; } = string.Empty;
+    public DateTime StartDate { get; set; }
+    public DateTime EndDate { get; set; }
+    /// <summary>Phần trăm thay đổi so với giá cơ bản (VD: 20 = +20%, -10 = -10%).</summary>
+    public decimal PercentChange { get; set; }
+    /// <summary>Danh sách ID loại phòng cách nhau dấu phẩy; rỗng = áp dụng mọi loại phòng.</summary>
+    public string RoomTypeIds { get; set; } = string.Empty;
+    public bool IsActive { get; set; } = true;
+}
+
+/// <summary>Chi tiết giá của từng đêm lưu trú sau khi áp dụng bảng giá linh hoạt.</summary>
+public class NightPriceBreakdown
+{
+    public DateTime Date { get; set; }
+    public decimal BasePrice { get; set; }
+    public decimal AppliedPrice { get; set; }
+    public decimal PercentDiff { get; set; }
+    public string RateLabel { get; set; } = "Ngày thường";
+    public bool IsSpecialRate => PercentDiff != 0;
 }
 
 /// <summary>Một dòng phụ thu tính được — BR-03.</summary>
@@ -167,7 +198,12 @@ public interface IPricingService
 
     /// <summary>Tiền phòng của cả khoảng thuê, chọn đúng bảng giá theo hình thức — BR-13.</summary>
     decimal RoomChargeFor(RentalPeriod period, decimal pricePerNight,
-        decimal priceFirstHour, decimal priceExtraHour, decimal priceOvernight);
+        decimal priceFirstHour, decimal priceExtraHour, decimal priceOvernight,
+        PricingSettings? s = null, int? roomTypeId = null);
+
+    /// <summary>Chi tiết giá từng đêm (áp dụng giá cuối tuần / mùa lễ nếu bật Dynamic Pricing).</summary>
+    IReadOnlyList<NightPriceBreakdown> GetNightlyBreakdown(
+        DateTime checkIn, int nights, decimal basePricePerNight, PricingSettings s, int? roomTypeId = null);
 
     /// <summary>
     /// Phụ thu ở quá giờ kết thúc gói qua đêm, tính theo giờ với cùng luật làm tròn — BR-13.
@@ -304,13 +340,78 @@ public class PricingService : IPricingService
     }
 
     public decimal RoomChargeFor(RentalPeriod period, decimal pricePerNight,
-        decimal priceFirstHour, decimal priceExtraHour, decimal priceOvernight)
+        decimal priceFirstHour, decimal priceExtraHour, decimal priceOvernight,
+        PricingSettings? s = null, int? roomTypeId = null)
         => period.Type switch
         {
             RentalType.Hourly => HourlyRoomCharge(priceFirstHour, priceExtraHour, period.Hours),
             RentalType.Overnight => priceOvernight,
-            _ => RoomCharge(pricePerNight, period.Nights)
+            _ => s is { EnableDynamicPricing: true }
+                ? GetNightlyBreakdown(period.CheckIn, period.Nights, pricePerNight, s, roomTypeId).Sum(x => x.AppliedPrice)
+                : RoomCharge(pricePerNight, period.Nights)
         };
+
+    public IReadOnlyList<NightPriceBreakdown> GetNightlyBreakdown(
+        DateTime checkIn, int nights, decimal basePricePerNight, PricingSettings s, int? roomTypeId = null)
+    {
+        var count = nights < 1 ? 1 : nights;
+        var list = new List<NightPriceBreakdown>(count);
+
+        var weekendSet = new HashSet<string>(
+            (s.WeekendDays ?? string.Empty).Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries),
+            StringComparer.OrdinalIgnoreCase);
+
+        for (var i = 0; i < count; i++)
+        {
+            var date = checkIn.Date.AddDays(i);
+            decimal pctDiff = 0m;
+            string label = "Ngày thường";
+
+            if (s.EnableDynamicPricing && basePricePerNight > 0)
+            {
+                // 1. Ưu tiên quy tắc mùa vụ / lễ Tết trước
+                var matchingRules = s.SeasonalRules
+                    .Where(r => r.IsActive && date >= r.StartDate.Date && date <= r.EndDate.Date)
+                    .Where(r => string.IsNullOrWhiteSpace(r.RoomTypeIds) ||
+                                (roomTypeId.HasValue && r.RoomTypeIds
+                                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                                    .Contains(roomTypeId.Value.ToString())))
+                    .OrderByDescending(r => Math.Abs(r.PercentChange))
+                    .ToList();
+
+                if (matchingRules.Count > 0)
+                {
+                    var top = matchingRules[0];
+                    pctDiff = top.PercentChange;
+                    var sign = pctDiff >= 0 ? "+" : "";
+                    label = $"{top.Name} ({sign}{pctDiff:0.#}%)";
+                }
+                else if (weekendSet.Contains(date.DayOfWeek.ToString()) && s.WeekendSurchargeRate != 0)
+                {
+                    pctDiff = Math.Round(s.WeekendSurchargeRate * 100m, 2);
+                    var sign = pctDiff >= 0 ? "+" : "";
+                    label = $"Cuối tuần ({sign}{pctDiff:0.#}%)";
+                }
+            }
+
+            var applied = basePricePerNight * (1m + pctDiff / 100m);
+            if (s.RoundingUnit > 0)
+            {
+                applied = RoundToUnit(applied, s.RoundingUnit);
+            }
+
+            list.Add(new NightPriceBreakdown
+            {
+                Date = date,
+                BasePrice = basePricePerNight,
+                AppliedPrice = applied,
+                PercentDiff = pctDiff,
+                RateLabel = label
+            });
+        }
+
+        return list;
+    }
 
     private static DateTime TrimToMinute(DateTime value)
         => new(value.Year, value.Month, value.Day, value.Hour, value.Minute, 0, value.Kind);

@@ -17,24 +17,59 @@
     </li>
 </ul>
 
-<form method="get" class="d-flex gap-2 mb-3">
-    <input type="hidden" name="tab" value="@Model.Tab" />
-    <input name="Keyword" value="@Model.Keyword" class="form-control form-control-sm" style="max-width: 260px" placeholder="Số HĐ / số phòng / tên khách" />
-    <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-search"></i> Lọc</button>
-</form>
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <form method="get" class="d-flex gap-2">
+        <input type="hidden" name="tab" value="@Model.Tab" />
+        <input name="Keyword" value="@Model.Keyword" class="form-control form-control-sm" style="max-width: 260px" placeholder="Số HĐ / số phòng / tên khách / mã đoàn" />
+        <button class="btn btn-outline-secondary btn-sm"><i class="bi bi-search"></i> Lọc</button>
+    </form>
+
+    @if (!Model.IsInvoiceTab && Model.OpenFolios.TotalItems > 0)
+    {
+        <button type="button" id="btnGroupCheckoutSelected" class="btn btn-sm btn-success" disabled onclick="goToGroupPayment()">
+            <i class="bi bi-people-fill"></i> Thanh toán gộp các phòng đã chọn (<span id="selectedFolioCount">0</span>)
+        </button>
+    }
+</div>
 
 @if (!Model.IsInvoiceTab)
 {
     <div class="card"><div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
-            <thead class="table-light"><tr><th>Folio</th><th>Phòng</th><th>Khách</th><th>Vào</th><th class="text-end">Tạm tính</th><th class="text-end">Đã cọc</th><th class="text-end">Số dư</th><th></th><th class="text-end">Thao tác</th></tr></thead>
+            <thead class="table-light">
+                <tr>
+                    <th style="width: 36px;">
+                        <input type="checkbox" class="form-check-input" id="chkAllFolios" onchange="toggleAllFolios(this)" />
+                    </th>
+                    <th>Folio</th>
+                    <th>Phòng</th>
+                    <th>Khách / Đoàn</th>
+                    <th>Vào</th>
+                    <th class="text-end">Tạm tính</th>
+                    <th class="text-end">Đã cọc</th>
+                    <th class="text-end">Số dư</th>
+                    <th></th>
+                    <th class="text-end">Thao tác</th>
+                </tr>
+            </thead>
             <tbody>
             @foreach (var f in Model.OpenFolios.Items)
             {
                 <tr>
+                    <td>
+                        <input type="checkbox" class="form-check-input folio-chk" value="@f.StayId" onchange="updateSelectedFolios()" />
+                    </td>
                     <td><code>@f.FolioCode</code></td>
                     <td><strong>@f.RoomNumber</strong></td>
-                    <td>@f.GuestName</td>
+                    <td>
+                        @f.GuestName
+                        @if (!string.IsNullOrWhiteSpace(f.ReservationCode))
+                        {
+                            <a class="badge text-bg-info text-decoration-none ms-1" asp-action="GroupPayment" asp-route-reservationId="@f.ReservationId" title="Thanh toán gộp theo đoàn @f.ReservationCode">
+                                <i class="bi bi-people-fill"></i> @f.ReservationCode
+                            </a>
+                        }
+                    </td>
                     <td>@f.ActualCheckIn.ToString("dd/MM HH:mm")</td>
                     <td class="text-end">@f.SubTotal.ToString("N0") ₫</td>
                     <td class="text-end">@f.DepositApplied.ToString("N0") ₫</td>
@@ -46,11 +81,30 @@
                     </td>
                 </tr>
             }
-            @if (Model.OpenFolios.TotalItems == 0) { <tr><td colspan="9" class="text-center text-muted py-4">Không có folio đang mở.</td></tr> }
+            @if (Model.OpenFolios.TotalItems == 0) { <tr><td colspan="10" class="text-center text-muted py-4">Không có folio đang mở.</td></tr> }
             </tbody>
         </table>
     </div></div>
     <partial name="_Pager" model="@((Model.OpenFolios.Page, Model.OpenFolios.TotalPages, Model.OpenFolios.TotalItems))" />
+
+    <script>
+        function toggleAllFolios(master) {
+            document.querySelectorAll('.folio-chk').forEach(function (c) { c.checked = master.checked; });
+            updateSelectedFolios();
+        }
+        function updateSelectedFolios() {
+            var checked = Array.from(document.querySelectorAll('.folio-chk:checked')).map(function (c) { return c.value; });
+            var cnt = document.getElementById('selectedFolioCount');
+            var btn = document.getElementById('btnGroupCheckoutSelected');
+            if (cnt) cnt.textContent = checked.length;
+            if (btn) btn.disabled = checked.length < 1;
+        }
+        function goToGroupPayment() {
+            var checked = Array.from(document.querySelectorAll('.folio-chk:checked')).map(function (c) { return c.value; });
+            if (checked.length === 0) return;
+            window.location.href = '/Billing/GroupPayment?stayIds=' + encodeURIComponent(checked.join(','));
+        }
+    </script>
 }
 else
 {

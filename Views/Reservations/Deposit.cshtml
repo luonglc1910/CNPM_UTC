@@ -1,9 +1,9 @@
-﻿@model DepositFormViewModel
+@model DepositFormViewModel
 @{
     ViewData["Title"] = $"Thu cọc — {Model.ReservationCode}";
 }
 
-<div class="row">
+<div class="row g-3">
     <div class="col-lg-6">
         <div class="card">
             <div class="card-header">Thu tiền cọc — đơn <code>@Model.ReservationCode</code> (@Model.GuestName)</div>
@@ -27,19 +27,19 @@
                 }
                 else
                 {
-                    <form method="post" asp-action="Deposit">
+                    <form method="post" asp-action="Deposit" id="depositForm">
                         <input type="hidden" asp-for="ReservationId" />
                         <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
 
                         <div class="mb-3">
                             <label asp-for="Amount" class="form-label">Số tiền cọc <span class="text-danger">*</span></label>
-                            <input asp-for="Amount" type="number" min="1" step="any" class="form-control" autofocus />
+                            <input asp-for="Amount" id="depositAmountInput" type="number" min="1" step="any" class="form-control" autofocus />
                             <span asp-validation-for="Amount" class="text-danger small"></span>
                         </div>
 
                         <div class="mb-3">
                             <label asp-for="Method" class="form-label">Phương thức <span class="text-danger">*</span></label>
-                            <select asp-for="Method" class="form-select">
+                            <select asp-for="Method" id="depositMethodSelect" class="form-select">
                                 @foreach (var m in Enum.GetValues<PaymentMethod>())
                                 {
                                     <option value="@((int)m)" selected="@(Model.Method == m)">@m.ToDisplayName()</option>
@@ -48,8 +48,8 @@
                         </div>
 
                         <div class="mb-3">
-                            <label asp-for="TransactionRef" class="form-label">Mã giao dịch <span class="text-muted small">(bắt buộc với CK/Thẻ)</span></label>
-                            <input asp-for="TransactionRef" class="form-control" />
+                            <label asp-for="TransactionRef" class="form-label">Mã giao dịch <span class="text-muted small">(bắt buộc với CK/Thẻ/VietQR)</span></label>
+                            <input asp-for="TransactionRef" id="depositTxRef" class="form-control" />
                             <span asp-validation-for="TransactionRef" class="text-danger small"></span>
                         </div>
 
@@ -67,8 +67,64 @@
             </div>
         </div>
     </div>
+
+    @if (Model.VietQr is not null)
+    {
+        <div class="col-lg-6">
+            <div class="card border-primary shadow-sm">
+                <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                    <span><i class="bi bi-qr-code-scan me-1"></i> Quét VietQR đặt cọc</span>
+                    <span class="badge bg-light text-primary">@Model.VietQr.BankName</span>
+                </div>
+                <div class="card-body text-center">
+                    <img src="@Model.VietQr.QrImageUrl" alt="VietQR Đặt cọc" class="img-fluid rounded border p-2 mb-3" style="max-width: 240px;" />
+                    <div class="small text-start bg-light rounded p-2 mb-3">
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Ngân hàng:</span>
+                            <strong>@Model.VietQr.BankName</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Tên chủ thẻ:</span>
+                            <strong>@Model.VietQr.AccountName</strong>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Số thẻ / Số TK:</span>
+                            <code>@Model.VietQr.AccountNo</code>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Ngày phát hành / OTP:</span>
+                            <span><code>@Model.VietQr.IssueDate</code> · OTP: <code>@Model.VietQr.DefaultOtp</code></span>
+                        </div>
+                        <div class="d-flex justify-content-between mb-1">
+                            <span class="text-muted">Tiền cọc đề xuất:</span>
+                            <strong class="text-danger">@Model.VietQr.Amount.ToString("N0") ₫</strong>
+                        </div>
+                        <div class="d-flex justify-content-between">
+                            <span class="text-muted">Nội dung CK:</span>
+                            <code>@Model.VietQr.TransferMemo</code>
+                        </div>
+                    </div>
+                    @if (Model.HasOpenShift)
+                    {
+                        <button type="button" class="btn btn-success w-100" onclick="confirmDepositVietQr()">
+                            <i class="bi bi-lightning-charge-fill"></i> Đã nhận VietQR — Ghi nhận tiền cọc ngay
+                        </button>
+                    }
+                </div>
+            </div>
+        </div>
+    }
 </div>
 
 @section Scripts {
     <partial name="_ValidationScriptsPartial" />
+    <script>
+        function confirmDepositVietQr() {
+            var sel = document.getElementById('depositMethodSelect');
+            var tx = document.getElementById('depositTxRef');
+            if (sel) sel.value = '@((int)PaymentMethod.BankTransfer)';
+            if (tx && !tx.value) tx.value = 'VQR-DEP-' + Date.now();
+            document.getElementById('depositForm')?.submit();
+        }
+    </script>
 }

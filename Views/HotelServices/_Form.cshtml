@@ -8,7 +8,7 @@
 <div class="row g-3">
     <div class="col-md-4">
         <label asp-for="Code" class="form-label">Mã dịch vụ <span class="text-danger">*</span></label>
-        @if (Model.IsEdit)
+        @if (Model?.IsEdit == true)
         {
             @* Mã không sửa được sau khi tạo; hiển thị khóa và gửi kèm để form không mất giá trị. *@
             <input asp-for="Code" class="form-control" readonly />
@@ -29,12 +29,32 @@
         <span asp-validation-for="Name" class="text-danger small"></span>
     </div>
 
+    <div class="col-md-12">
+        <label asp-for="Description" class="form-label">Mô tả (Hiển thị trang chủ)</label>
+        <textarea asp-for="Description" class="form-control" rows="3" placeholder="Nhập mô tả ngắn gọn..."></textarea>
+        <span asp-validation-for="Description" class="text-danger small"></span>
+    </div>
+
+    <div class="col-md-12">
+        <label asp-for="ImageFile" class="form-label">Tải Hình ảnh lên</label>
+        <input asp-for="ImageFile" type="file" class="form-control" accept="image/*" />
+        <span asp-validation-for="ImageFile" class="text-danger small"></span>
+        @if (!string.IsNullOrEmpty(Model?.ImageUrl))
+        {
+            <div class="mt-2">
+                <img src="@Model.ImageUrl" alt="Current Image" style="max-height: 100px; border-radius: 8px;" />
+                <input type="hidden" asp-for="ImageUrl" />
+                <div class="form-text">Ảnh hiện tại: @Model.ImageUrl</div>
+            </div>
+        }
+    </div>
+
     <div class="col-md-4">
         <label asp-for="Category" class="form-label">Nhóm dịch vụ <span class="text-danger">*</span></label>
         <select asp-for="Category" class="form-select">
             @foreach (var category in Enum.GetValues<ServiceCategory>())
             {
-                <option value="@((int)category)" selected="@(Model.Category == category)">
+                <option value="@((int)category)" selected="@(Model?.Category == category)">
                     @category.ToDisplayName()
                 </option>
             }
@@ -71,7 +91,7 @@
     </div>
 
     @* Hai trường chỉ có nghĩa khi bật kho — ẩn/hiện bằng JS, và server cũng tự đưa về 0/false nếu tắt. *@
-    <div class="col-12" id="stock-fields" hidden="@(!Model.IsStockManaged)">
+    <div class="col-12" id="stock-fields" hidden="@(Model?.IsStockManaged != true)">
         <div class="card bg-body-tertiary border-0">
             <div class="card-body">
                 <div class="row g-3">
@@ -92,7 +112,7 @@
                         </div>
                     </div>
 
-                    @if (Model.IsEdit)
+                    @if (Model?.IsEdit == true)
                     {
                         <div class="col-12">
                             <span class="text-muted small">
@@ -106,7 +126,7 @@
         </div>
     </div>
 
-    @if (Model.IsEdit)
+    @if (Model?.IsEdit == true)
     {
         <div class="col-12">
             <div class="form-check">
@@ -120,7 +140,7 @@
                 <i class="bi bi-info-circle"></i>
                 Sửa đơn giá <strong>không ảnh hưởng hồi tố</strong>: các dòng dịch vụ đã ghi vào folio
                 giữ nguyên đơn giá lúc ghi nhận. Giá mới chỉ áp cho lần ghi nhận sau đây.
-                @if (Model.HasFolioHistory)
+                @if (Model?.HasFolioHistory == true)
                 {
                     <br />
                     <span>Dịch vụ này <strong>đã phát sinh giao dịch</strong> nên chỉ ngừng sử dụng được, không xóa.</span>
@@ -142,7 +162,7 @@
 
 <div class="mt-4 d-flex gap-2">
     <button type="submit" class="btn btn-primary">
-        <i class="bi bi-check-lg"></i> @(Model.IsEdit ? "Cập nhật" : "Thêm dịch vụ")
+        <i class="bi bi-check-lg"></i> @(Model?.IsEdit == true ? "Cập nhật" : "Thêm dịch vụ")
     </button>
     <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
 </div>

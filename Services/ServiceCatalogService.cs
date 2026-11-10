@@ -65,6 +65,8 @@ public class ServiceCatalogService : IServiceCatalogService
                 Id = s.Id,
                 Code = s.Code,
                 Name = s.Name,
+                Description = s.Description,
+                ImageUrl = s.ImageUrl,
                 Category = s.Category,
                 UnitPrice = s.UnitPrice,
                 Unit = s.Unit,
@@ -98,6 +100,8 @@ public class ServiceCatalogService : IServiceCatalogService
             Id = entity.Id,
             Code = entity.Code,
             Name = entity.Name,
+            Description = entity.Description,
+            ImageUrl = entity.ImageUrl,
             Category = entity.Category,
             UnitPrice = entity.UnitPrice,
             Unit = entity.Unit,
@@ -123,6 +127,8 @@ public class ServiceCatalogService : IServiceCatalogService
         {
             Code = code,
             Name = form.Name.Trim(),
+            Description = form.Description?.Trim(),
+            ImageUrl = form.ImageUrl?.Trim(),
             Category = form.Category,
             UnitPrice = form.UnitPrice,
             Unit = form.Unit.Trim(),
@@ -161,6 +167,8 @@ public class ServiceCatalogService : IServiceCatalogService
         var stockBefore = entity.StockQuantity;
 
         entity.Name = form.Name.Trim();
+        entity.Description = form.Description?.Trim();
+        entity.ImageUrl = form.ImageUrl?.Trim();
         entity.Category = form.Category;
         entity.UnitPrice = form.UnitPrice;
         entity.Unit = form.Unit.Trim();

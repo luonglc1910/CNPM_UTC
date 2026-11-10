@@ -53,6 +53,7 @@ public class RoomTypeService : IRoomTypeService
                 Id = t.Id,
                 Code = t.Code,
                 Name = t.Name,
+                ImageUrl = t.ImageUrl,
                 StandardCapacity = t.StandardCapacity,
                 MaxCapacity = t.MaxCapacity,
                 BasePricePerNight = t.BasePricePerNight,
@@ -90,6 +91,15 @@ public class RoomTypeService : IRoomTypeService
             PriceOvernight = entity.PriceOvernight,
             SelectedAmenities = SplitAmenities(entity.Amenities),
             Description = entity.Description,
+            ImageUrl = entity.ImageUrl,
+            AdditionalImageUrls = entity.AdditionalImageUrls,
+            Slug = entity.Slug,
+            DetailDescription = entity.DetailDescription,
+            ViewType = entity.ViewType,
+            BedType = entity.BedType,
+            SizeSqm = entity.SizeSqm,
+            IsFreeCancellation = entity.IsFreeCancellation,
+            IsPayAtHotel = entity.IsPayAtHotel,
             IsActive = entity.IsActive
         };
     }
@@ -123,6 +133,15 @@ public class RoomTypeService : IRoomTypeService
             PriceOvernight = form.PriceOvernight,
             Amenities = JoinAmenities(form.SelectedAmenities),
             Description = form.Description?.Trim(),
+            ImageUrl = form.ImageUrl?.Trim(),
+            AdditionalImageUrls = form.AdditionalImageUrls?.Trim(),
+            Slug = form.Slug?.Trim(),
+            DetailDescription = form.DetailDescription?.Trim(),
+            ViewType = form.ViewType?.Trim(),
+            BedType = form.BedType?.Trim(),
+            SizeSqm = form.SizeSqm,
+            IsFreeCancellation = form.IsFreeCancellation,
+            IsPayAtHotel = form.IsPayAtHotel,
             IsActive = true
         };
 
@@ -165,6 +184,15 @@ public class RoomTypeService : IRoomTypeService
         entity.PriceOvernight = form.PriceOvernight;
         entity.Amenities = JoinAmenities(form.SelectedAmenities);
         entity.Description = form.Description?.Trim();
+        entity.ImageUrl = form.ImageUrl?.Trim();
+        entity.AdditionalImageUrls = form.AdditionalImageUrls?.Trim();
+        entity.Slug = form.Slug?.Trim();
+        entity.DetailDescription = form.DetailDescription?.Trim();
+        entity.ViewType = form.ViewType?.Trim();
+        entity.BedType = form.BedType?.Trim();
+        entity.SizeSqm = form.SizeSqm;
+        entity.IsFreeCancellation = form.IsFreeCancellation;
+        entity.IsPayAtHotel = form.IsPayAtHotel;
         entity.IsActive = form.IsActive;
 
         // BR-11: mọi lần sửa giá đều phải ghi lại giá cũ → giá mới. Từ BR-13 một loại phòng có

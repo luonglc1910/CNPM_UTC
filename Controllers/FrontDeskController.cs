@@ -101,15 +101,10 @@ public class FrontDeskController : AdminControllerBase
         return RedirectToAction(nameof(Stay), new { id = form.StayId });
     }
 
-    // SCR-D06
+    // SCR-D06 — chuyển sang màn hình Đổi phòng thống nhất ở menu Đặt phòng
     [HttpGet]
-    public async Task<IActionResult> ChangeRoom(int stayId)
-    {
-        var vm = await _service.BuildChangeRoomAsync(stayId, IsAdmin);
-        return vm is null
-            ? Blocked(BlockedReason.Stay(await _service.GetStayStatusAsync(stayId), "đổi phòng"), nameof(Index))
-            : View(vm);
-    }
+    public IActionResult ChangeRoom(int stayId)
+        => RedirectToAction(nameof(ReservationsController.ChangeRoom), "Reservations", new { stayId });
 
     [HttpPost]
     [ValidateAntiForgeryToken]

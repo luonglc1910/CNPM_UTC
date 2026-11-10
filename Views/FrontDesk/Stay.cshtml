@@ -1,3 +1,4 @@
+@using HotelManagement.Web.Models
 @using HotelManagement.Web.Models.ViewModels
 @using HotelManagement.Web.Models.Entities
 @model StayDetailViewModel
@@ -9,11 +10,33 @@
 <div class="d-flex flex-wrap gap-2 mb-3">
     @if (Model.Stay.Status == StayStatus.CheckedIn)
     {
-        <a class="btn btn-outline-primary" asp-controller="Billing" asp-action="AddCharge" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-cup-straw"></i> Ghi dịch vụ</a>
-        <a class="btn btn-outline-secondary" asp-action="AddGuest" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-person-plus"></i> Thêm khách</a>
-        <a class="btn btn-outline-secondary" asp-action="ChangeRoom" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-arrow-left-right"></i> Đổi phòng</a>
-        <a class="btn btn-outline-secondary" asp-action="Extend" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-calendar-plus"></i> Gia hạn</a>
-        <a class="btn btn-outline-secondary" asp-controller="Billing" asp-action="Folio" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-receipt"></i> Folio</a>
+        <div class="dropdown">
+            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                <i class="bi bi-gear"></i> Thao tác
+            </button>
+            <ul class="dropdown-menu">
+                <li><a class="dropdown-item" asp-controller="Billing" asp-action="AddCharge" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-cup-straw me-2"></i>Ghi dịch vụ</a></li>
+                <li><a class="dropdown-item" asp-action="AddGuest" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-person-plus me-2"></i>Thêm khách</a></li>
+                <li><a class="dropdown-item" asp-action="ChangeRoom" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-arrow-left-right me-2"></i>Đổi phòng</a></li>
+                <li><a class="dropdown-item" asp-action="Extend" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-calendar-plus me-2"></i>Gia hạn</a></li>
+                <li><a class="dropdown-item" asp-controller="Billing" asp-action="Folio" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-receipt me-2"></i>Folio</a></li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><a class="dropdown-item" asp-controller="InRoom" asp-action="Menu" asp-route-roomId="@Model.Stay.RoomId" target="_blank"><i class="bi bi-qr-code-scan me-2"></i>Mở Cổng QR tại phòng</a></li>
+                @if (Model.Stay.ReservationId is not null)
+                {
+                    <li><a class="dropdown-item" asp-controller="Billing" asp-action="GroupPayment" asp-route-reservationId="@Model.Stay.ReservationId"><i class="bi bi-collection me-2"></i>Thanh toán gộp theo Đoàn</a></li>
+                }
+            </ul>
+        </div>
+        <a class="btn btn-outline-primary" asp-controller="InRoom" asp-action="Menu" asp-route-roomId="@Model.Stay.RoomId" target="_blank">
+            <i class="bi bi-qr-code"></i> QR Dịch vụ phòng
+        </a>
+        @if (Model.Stay.ReservationId is not null)
+        {
+            <a class="btn btn-outline-success" asp-controller="Billing" asp-action="GroupPayment" asp-route-reservationId="@Model.Stay.ReservationId">
+                <i class="bi bi-collection"></i> Thanh toán Đoàn
+            </a>
+        }
         <a class="btn btn-primary ms-auto" asp-action="CheckOut" asp-route-stayId="@Model.Stay.Id"><i class="bi bi-box-arrow-left"></i> Check-out</a>
     }
     else

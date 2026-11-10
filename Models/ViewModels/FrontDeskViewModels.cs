@@ -16,6 +16,7 @@ public class ArrivalItem
     public int Guests { get; set; }
     public decimal DepositPaid { get; set; }
     public bool CanCheckIn { get; set; }
+    public DateTime CreatedAt { get; set; }
 }
 
 public class DepartureItem
@@ -34,7 +35,11 @@ public class InHouseItem
 {
     public int StayId { get; set; }
     public string RoomNumber { get; set; } = string.Empty;
+    public string RoomTypeName { get; set; } = string.Empty;
     public string GuestName { get; set; } = string.Empty;
+    public int GuestsCount { get; set; }
+    public RentalType RentalType { get; set; }
+    public decimal TotalAmount { get; set; }
     public DateTime ActualCheckIn { get; set; }
     public DateTime ExpectedCheckOut { get; set; }
 }

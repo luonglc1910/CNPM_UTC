@@ -9,7 +9,6 @@
         StringComparer.OrdinalIgnoreCase);
 }
 
-<partial name="_RoomsNav" />
 
 <div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
     <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
@@ -119,6 +118,10 @@ else if (Model.IsGrid)
                         }
                         <a class="btn btn-sm btn-outline-secondary mt-2 w-100"
                            asp-action="UpdateStatus" asp-route-id="@room.Id">Đổi trạng thái</a>
+                        <button type="button" class="btn btn-sm btn-outline-primary mt-1 w-100"
+                                onclick="openRoomQrModal(@room.Id, '@room.RoomNumber', '@room.RoomTypeName')">
+                            <i class="bi bi-qr-code"></i> QR Phòng
+                        </button>
                     </div>
                 </div>
             }
@@ -169,6 +172,11 @@ else
                             }
                         </td>
                         <td class="text-end text-nowrap">
+                            <button type="button" class="btn btn-sm btn-outline-primary"
+                                    onclick="openRoomQrModal(@room.Id, '@room.RoomNumber', '@room.RoomTypeName')"
+                                    title="Mã QR dịch vụ tại phòng (Self-Service)">
+                                <i class="bi bi-qr-code"></i>
+                            </button>
                             <a class="btn btn-sm btn-outline-secondary" asp-action="UpdateStatus" asp-route-id="@room.Id"
                                title="Đổi trạng thái"><i class="bi bi-arrow-repeat"></i></a>
                             @if (isAdmin)
@@ -185,4 +193,46 @@ else
     </div>
 
     <partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" />
+}
+
+@* Modal hiển thị & in mã QR In-Room Service (Chức năng 3) *@
+<div class="modal fade" id="roomQrModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content text-center">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="bi bi-qr-code-scan text-primary me-1"></i> Mã QR Dịch vụ tại phòng <span id="qrRoomNo"></span></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body py-4">
+                <p class="small text-muted mb-2" id="qrRoomType"></p>
+                <div class="p-3 d-inline-block border rounded-4 bg-white shadow-sm mb-3">
+                    <img id="qrImage" src="" alt="QR In-Room Service" style="width: 220px; height: 220px;" />
+                </div>
+                <p class="small text-muted mb-0">
+                    Đặt mã QR này trên bàn trong phòng để khách quét gọi đồ ăn, minibar, dọn phòng hoặc báo hỏng thiết bị trực tiếp.
+                </p>
+            </div>
+            <div class="modal-footer justify-content-center">
+                <a id="qrOpenLink" href="#" target="_blank" class="btn btn-primary">
+                    <i class="bi bi-box-arrow-up-right"></i> Mở thử trang QR của phòng
+                </a>
+                <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
+                    <i class="bi bi-printer"></i> In bảng QR
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function openRoomQrModal(roomId, roomNo, roomType) {
+            var url = window.location.origin + '/InRoom/Menu?roomId=' + roomId;
+            document.getElementById('qrRoomNo').textContent = roomNo;
+            document.getElementById('qrRoomType').textContent = roomType + ' — Quét mã để gọi dịch vụ 24/7';
+            document.getElementById('qrImage').src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(url);
+            document.getElementById('qrOpenLink').href = url;
+            new bootstrap.Modal(document.getElementById('roomQrModal')).show();
+        }
+    </script>
 }

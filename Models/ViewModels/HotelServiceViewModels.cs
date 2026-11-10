@@ -8,6 +8,8 @@ public class HotelServiceListItemViewModel
     public int Id { get; set; }
     public string Code { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public string? ImageUrl { get; set; }
     public ServiceCategory Category { get; set; }
     public decimal UnitPrice { get; set; }
     public string Unit { get; set; } = string.Empty;
@@ -65,6 +67,17 @@ public class HotelServiceFormViewModel
     [Required(ErrorMessage = "Vui lòng nhập tên dịch vụ.")]
     [MaxLength(100, ErrorMessage = "Tên dịch vụ tối đa 100 ký tự.")]
     public string Name { get; set; } = string.Empty;
+
+    [Display(Name = "Mô tả")]
+    [MaxLength(500, ErrorMessage = "Mô tả tối đa 500 ký tự.")]
+    public string? Description { get; set; }
+
+    [Display(Name = "URL Hình ảnh")]
+    [MaxLength(500, ErrorMessage = "URL tối đa 500 ký tự.")]
+    public string? ImageUrl { get; set; }
+
+    [Display(Name = "Tải ảnh lên")]
+    public Microsoft.AspNetCore.Http.IFormFile? ImageFile { get; set; }
 
     [Display(Name = "Nhóm dịch vụ")]
     [Required(ErrorMessage = "Vui lòng chọn nhóm dịch vụ.")]

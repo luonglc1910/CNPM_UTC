@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using HotelManagement.Web.Models.Entities;
+using HotelManagement.Web.Services;
 using Microsoft.AspNetCore.Mvc.Rendering;
 
 namespace HotelManagement.Web.Models.ViewModels;
@@ -64,6 +65,8 @@ public class FolioLineView
 public class OpenFolioListItem
 {
     public int StayId { get; set; }
+    public int? ReservationId { get; set; }
+    public string? ReservationCode { get; set; }
     public string FolioCode { get; set; } = string.Empty;
     public string RoomNumber { get; set; } = string.Empty;
     public string GuestName { get; set; } = string.Empty;
@@ -106,6 +109,8 @@ public class BillingIndexViewModel
 public class FolioDetailViewModel
 {
     public int StayId { get; set; }
+    public int? ReservationId { get; set; }
+    public string? ReservationCode { get; set; }
     public string RoomNumber { get; set; } = string.Empty;
     public string RoomTypeName { get; set; } = string.Empty;
     public string GuestName { get; set; } = string.Empty;
@@ -116,9 +121,19 @@ public class FolioDetailViewModel
 
     public BillingFolioSummary Summary { get; set; } = new();
     public IReadOnlyList<FolioLineView> Lines { get; set; } = new List<FolioLineView>();
+    public IReadOnlyList<TransferRoomTargetOption> OtherOpenStays { get; set; } = new List<TransferRoomTargetOption>();
 
     public bool CanEdit => StayStatus == StayStatus.CheckedIn && !Summary.IsLocked;
     public int? InvoiceId { get; set; }
+}
+
+public class TransferRoomTargetOption
+{
+    public int StayId { get; set; }
+    public string RoomNumber { get; set; } = string.Empty;
+    public string GuestName { get; set; } = string.Empty;
+    public string FolioCode { get; set; } = string.Empty;
+    public bool IsSameReservation { get; set; }
 }
 
 // ---------- SCR-F03 ----------
@@ -200,6 +215,8 @@ public class PaymentViewModel
 
     [Display(Name = "Ghi nhận công nợ (chỉ Admin)")]
     public bool RecordAsDebt { get; set; }
+
+    public VietQrPayload? VietQr { get; set; }
 }
 
 // ---------- SCR-F06 ----------
@@ -212,6 +229,7 @@ public class InvoiceViewModel
     public string HotelPhone { get; set; } = string.Empty;
     public string HotelTaxCode { get; set; } = string.Empty;
     public string GuestName { get; set; } = string.Empty;
+    public string? GuestEmail { get; set; }
     public string? GuestIdNumber { get; set; }
     public string RoomNumber { get; set; } = string.Empty;
     public DateTime ActualCheckIn { get; set; }
@@ -219,6 +237,61 @@ public class InvoiceViewModel
     public int Nights { get; set; }
     public IReadOnlyList<FolioLineView> Lines { get; set; } = new List<FolioLineView>();
     public IReadOnlyList<Payment> Payments { get; set; } = new List<Payment>();
+    public VietQrPayload? DebtVietQr { get; set; }
+}
+
+// ---------- Chức năng 6: Gộp / Tách hóa đơn (Master Folio / Group Checkout) ----------
+
+public class GroupStaySummaryItem
+{
+    public int StayId { get; set; }
+    public string RoomNumber { get; set; } = string.Empty;
+    public string RoomTypeName { get; set; } = string.Empty;
+    public string GuestName { get; set; } = string.Empty;
+    public string FolioCode { get; set; } = string.Empty;
+    public bool IsInspected { get; set; }
+    public bool IsLocked { get; set; }
+    public decimal RoomCharge { get; set; }
+    public decimal ServiceCharge { get; set; }
+    public decimal SurchargeAmount { get; set; }
+    public decimal DiscountAmount { get; set; }
+    public decimal TaxAmount { get; set; }
+    public decimal Total { get; set; }
+    public decimal DepositApplied { get; set; }
+    public decimal BalanceDue { get; set; }
+}
+
+public class GroupPaymentViewModel
+{
+    public int? ReservationId { get; set; }
+    public string? ReservationCode { get; set; }
+    public string LeaderGuestName { get; set; } = string.Empty;
+    public string StayIdsCsv { get; set; } = string.Empty;
+
+    public List<GroupStaySummaryItem> Stays { get; set; } = new();
+
+    public decimal TotalRoomCharge { get; set; }
+    public decimal TotalServiceCharge { get; set; }
+    public decimal TotalSurcharge { get; set; }
+    public decimal TotalDiscount { get; set; }
+    public decimal TotalTax { get; set; }
+    public decimal GrandTotal { get; set; }
+    public decimal TotalDepositApplied { get; set; }
+    public decimal TotalBalanceDue { get; set; }
+
+    public bool AllInspected { get; set; }
+    public bool AllLocked { get; set; }
+    public bool IsAdmin { get; set; }
+    public bool HasOpenShift { get; set; }
+    public decimal AmountTendered { get; set; }
+    public VietQrPayload? VietQr { get; set; }
+
+    [Display(Name = "Phương thức thanh toán")]
+    public PaymentMethod Method { get; set; } = PaymentMethod.BankTransfer;
+
+    [Display(Name = "Mã giao dịch")]
+    [MaxLength(50)]
+    public string? TransactionRef { get; set; }
 }
 
 // ---------- SCR-F07 ----------

@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using HotelManagement.Web.Services;
 
 namespace HotelManagement.Web.Models.ViewModels;
 
@@ -14,6 +15,8 @@ public class SettingsViewModel
     public SurchargeSettings Surcharge { get; set; } = new();
     public CancellationSettings Cancellation { get; set; } = new();
     public LimitSettings Limit { get; set; } = new();
+    public PaymentAndEmailSettings Payment { get; set; } = new();
+    public DynamicPricingSettings DynamicPricing { get; set; } = new();
 
     /// <summary>Nhóm vừa được lưu hoặc vừa lỗi — để cuộn thẳng tới thẻ đó.</summary>
     public string? ActiveGroup { get; set; }
@@ -163,4 +166,81 @@ public class LimitSettings
     [Display(Name = "Tuổi tối đa tính là trẻ em")]
     [Range(0, 18, ErrorMessage = "Tuổi trẻ em từ 0 đến 18.")]
     public int ChildAgeLimit { get; set; } = 12;
+}
+
+/// <summary>Nhóm 7 — Thanh toán VietQR &amp; Email tự động (Chức năng 1 &amp; 2).</summary>
+public class PaymentAndEmailSettings
+{
+    [Display(Name = "Mã BIN Ngân hàng (VietQR)")]
+    [Required(ErrorMessage = "Vui lòng nhập mã BIN ngân hàng.")]
+    public string BankBin { get; set; } = "970422";
+
+    [Display(Name = "Tên Ngân hàng")]
+    [Required(ErrorMessage = "Vui lòng nhập tên ngân hàng.")]
+    public string BankName { get; set; } = "MB Bank (Ngân hàng Quân Đội)";
+
+    [Display(Name = "Số tài khoản nhận tiền")]
+    [Required(ErrorMessage = "Vui lòng nhập số tài khoản.")]
+    public string BankAccountNo { get; set; } = "088899998888";
+
+    [Display(Name = "Chủ tài khoản")]
+    [Required(ErrorMessage = "Vui lòng nhập tên chủ tài khoản.")]
+    public string BankAccountName { get; set; } = "KHACH SAN AURA RESORT";
+
+    [Display(Name = "Tự động gửi Email xác nhận đặt phòng & hóa đơn")]
+    public bool EmailEnabled { get; set; } = true;
+
+    [Display(Name = "Tên người gửi Email")]
+    public string EmailSenderName { get; set; } = "AURA Boutique Hotel & Resort";
+
+    [Display(Name = "Địa chỉ Email gửi")]
+    public string EmailSenderAddress { get; set; } = "booking@aurahotel.vn";
+
+    [Display(Name = "Máy chủ SMTP (tùy chọn)")]
+    public string? EmailSmtpHost { get; set; }
+
+    [Display(Name = "Cổng SMTP")]
+    public int EmailSmtpPort { get; set; } = 587;
+
+    [Display(Name = "Tài khoản SMTP")]
+    public string? EmailSmtpUser { get; set; }
+
+    [Display(Name = "Mật khẩu ứng dụng SMTP")]
+    [DataType(DataType.Password)]
+    public string? EmailSmtpPass { get; set; }
+
+    public bool EmailSmtpPasswordConfigured { get; set; }
+}
+
+/// <summary>Nhóm 8 — Bảng giá linh hoạt theo Mùa / Cuối tuần / Ngày lễ (Chức năng 5).</summary>
+public class DynamicPricingSettings
+{
+    [Display(Name = "Bật tính giá linh hoạt (Cuối tuần & Mùa vụ)")]
+    public bool Enabled { get; set; } = true;
+
+    [Display(Name = "Phụ thu đêm cuối tuần (%)")]
+    [Range(-50, 200, ErrorMessage = "Tỷ lệ cuối tuần từ -50% đến +200%.")]
+    public decimal WeekendSurchargePercent { get; set; } = 15;
+
+    [Display(Name = "Các đêm tính giá cuối tuần")]
+    public string WeekendDays { get; set; } = "Friday,Saturday";
+
+    public List<SeasonalPricingRule> Rules { get; set; } = new();
+}
+
+public class AddSeasonalRuleInput
+{
+    [Required(ErrorMessage = "Vui lòng nhập tên đợt lễ / mùa vụ.")]
+    public string Name { get; set; } = string.Empty;
+
+    [Required]
+    public DateTime StartDate { get; set; } = DateTime.Today;
+
+    [Required]
+    public DateTime EndDate { get; set; } = DateTime.Today.AddDays(3);
+
+    [Range(-80, 300, ErrorMessage = "Mức điều chỉnh giá từ -80% đến +300%.")]
+    public decimal PercentChange { get; set; } = 20;
+
+    public string? RoomTypeIds { get; set; }
 }

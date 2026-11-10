@@ -28,12 +28,17 @@ public class HotelDbContext : DbContext
     public DbSet<RoomType> RoomTypes => Set<RoomType>();
     public DbSet<Room> Rooms => Set<Room>();
     public DbSet<HotelService> HotelServices => Set<HotelService>();
+    public DbSet<HotelGalleryImage> HotelGalleryImages => Set<HotelGalleryImage>();
     public DbSet<InventoryTransaction> InventoryTransactions => Set<InventoryTransaction>();
+    public DbSet<Promotion> Promotions => Set<Promotion>();
+    public DbSet<Testimonial> Testimonials => Set<Testimonial>();
+    public DbSet<Amenity> Amenities => Set<Amenity>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<NumberSequence> NumberSequences => Set<NumberSequence>();
 
     // Khách hàng
     public DbSet<Guest> Guests => Set<Guest>();
+    public DbSet<PointTransaction> PointTransactions => Set<PointTransaction>();
 
     // Đặt phòng
     public DbSet<Reservation> Reservations => Set<Reservation>();
@@ -114,6 +119,11 @@ public class HotelDbContext : DbContext
             e.HasIndex(x => x.Code).IsUnique();
         });
 
+        b.Entity<RoomTypeAmenity>(e =>
+        {
+            e.HasKey(x => new { x.RoomTypeId, x.AmenityId });
+        });
+
         b.Entity<Room>(e =>
         {
             // FR-A02: số phòng duy nhất toàn hệ thống.
@@ -166,6 +176,27 @@ public class HotelDbContext : DbContext
 
             e.HasIndex(x => x.PhoneNumber);
             e.HasIndex(x => x.FullName);
+
+            // Email dùng làm tài khoản đăng nhập khách hàng (ClientCookie) — phải duy nhất.
+            e.HasIndex(x => x.Email)
+                .IsUnique()
+                .HasFilter("[Email] IS NOT NULL");
+        });
+
+        b.Entity<PointTransaction>(e =>
+        {
+            e.HasIndex(x => x.GuestId);
+            e.HasIndex(x => x.CreatedAt);
+
+            e.HasOne(x => x.Guest)
+                .WithMany()
+                .HasForeignKey(x => x.GuestId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(x => x.Booking)
+                .WithMany()
+                .HasForeignKey(x => x.BookingId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
     }
 

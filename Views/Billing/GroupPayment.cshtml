@@ -1,0 +1,253 @@
+@model GroupPaymentViewModel
+@{
+    ViewData["Title"] = Model.ReservationCode is not null
+        ? $"Thanh toán gộp Đoàn {Model.ReservationCode}"
+        : $"Thanh toán gộp ({Model.Stays.Count} phòng)";
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h5 class="mb-0">
+            <i class="bi bi-people-fill text-primary me-1"></i>
+            Thanh toán gộp / Master Checkout (@Model.Stays.Count phòng)
+            @if (!string.IsNullOrWhiteSpace(Model.ReservationCode))
+            {
+                <a class="badge text-bg-info text-decoration-none ms-1" asp-controller="Reservations" asp-action="Details" asp-route-id="@Model.ReservationId">
+                    Đơn @Model.ReservationCode
+                </a>
+            }
+        </h5>
+        <span class="text-muted small">Trưởng đoàn / Đại diện: <strong>@Model.LeaderGuestName</strong></span>
+    </div>
+
+    <div class="d-flex gap-2">
+        @if (!Model.AllInspected || !Model.AllLocked)
+        {
+            <form method="post" asp-action="PrepareGroupCheckout" class="d-inline">
+                @Html.AntiForgeryToken()
+                <input type="hidden" name="reservationId" value="@Model.ReservationId" />
+                <input type="hidden" name="stayIdsCsv" value="@Model.StayIdsCsv" />
+                <button type="submit" class="btn btn-warning">
+                    <i class="bi bi-shield-check"></i> Kiểm phòng &amp; Khóa tất cả @Model.Stays.Count Folio (1 chạm)
+                </button>
+            </form>
+        }
+        <a class="btn btn-outline-secondary" asp-action="Index">Quay lại Thu ngân</a>
+    </div>
+</div>
+
+@if (!Model.HasOpenShift)
+{
+    <div class="alert alert-warning">
+        Bạn chưa mở ca làm việc — không thu tiền được (BR-10).
+        <a class="btn btn-sm btn-primary ms-2" asp-controller="Shifts" asp-action="Index">Mở ca làm việc</a>
+    </div>
+}
+else if (!Model.AllInspected || !Model.AllLocked)
+{
+    <div class="alert alert-info d-flex justify-content-between align-items-center">
+        <span>
+            <i class="bi bi-info-circle me-1"></i>
+            Một số phòng trong nhóm chưa kiểm phòng hoặc chưa khóa Folio. Bấm nút bên phải để xác nhận kiểm phòng &amp; khóa đồng loạt trước khi thu tiền.
+        </span>
+        <form method="post" asp-action="PrepareGroupCheckout" class="d-inline ms-2">
+            @Html.AntiForgeryToken()
+            <input type="hidden" name="reservationId" value="@Model.ReservationId" />
+            <input type="hidden" name="stayIdsCsv" value="@Model.StayIdsCsv" />
+            <button type="submit" class="btn btn-sm btn-primary text-nowrap">
+                <i class="bi bi-check2-all"></i> Chuẩn bị tất cả ngay
+            </button>
+        </form>
+    </div>
+}
+
+<div class="card mb-3">
+    <div class="card-header fw-semibold">Bảng kê chi tiết từng phòng trong nhóm</div>
+    <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>Phòng</th>
+                    <th>Khách</th>
+                    <th>Mã Folio</th>
+                    <th class="text-end">Tiền phòng</th>
+                    <th class="text-end">Dịch vụ &amp; Phụ thu</th>
+                    <th class="text-end">Giảm giá</th>
+                    <th class="text-end">VAT</th>
+                    <th class="text-end">Tổng cộng</th>
+                    <th class="text-end">Đã cọc</th>
+                    <th class="text-end">Phải thu</th>
+                    <th class="text-center">Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model.Stays)
+                {
+                    <tr>
+                        <td><strong>P.@item.RoomNumber</strong></td>
+                        <td>@item.GuestName</td>
+                        <td><a asp-action="Folio" asp-route-stayId="@item.StayId"><code>@item.FolioCode</code></a></td>
+                        <td class="text-end">@item.RoomCharge.ToString("N0") ₫</td>
+                        <td class="text-end">@((item.ServiceCharge + item.SurchargeAmount).ToString("N0")) ₫</td>
+                        <td class="text-end">-@item.DiscountAmount.ToString("N0") ₫</td>
+                        <td class="text-end">@item.TaxAmount.ToString("N0") ₫</td>
+                        <td class="text-end fw-semibold">@item.Total.ToString("N0") ₫</td>
+                        <td class="text-end text-success">@item.DepositApplied.ToString("N0") ₫</td>
+                        <td class="text-end fw-bold text-primary">@item.BalanceDue.ToString("N0") ₫</td>
+                        <td class="text-center">
+                            @if (item.IsInspected && item.IsLocked)
+                            {
+                                <span class="badge text-bg-success"><i class="bi bi-check-lg"></i> Sẵn sàng</span>
+                            }
+                            else
+                            {
+                                @if (!item.IsInspected)
+                                {
+                                    <span class="badge text-bg-warning">Chưa kiểm</span>
+                                }
+                                @if (!item.IsLocked)
+                                {
+                                    <span class="badge text-bg-secondary">Chưa khóa</span>
+                                }
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+            <tfoot class="table-light fw-bold">
+                <tr>
+                    <td colspan="3">TỔNG ĐOÀN (@Model.Stays.Count PHÒNG)</td>
+                    <td class="text-end">@Model.TotalRoomCharge.ToString("N0") ₫</td>
+                    <td class="text-end">@((Model.TotalServiceCharge + Model.TotalSurcharge).ToString("N0")) ₫</td>
+                    <td class="text-end">-@Model.TotalDiscount.ToString("N0") ₫</td>
+                    <td class="text-end">@Model.TotalTax.ToString("N0") ₫</td>
+                    <td class="text-end">@Model.GrandTotal.ToString("N0") ₫</td>
+                    <td class="text-end text-success">@Model.TotalDepositApplied.ToString("N0") ₫</td>
+                    <td class="text-end text-danger fs-6">@Model.TotalBalanceDue.ToString("N0") ₫</td>
+                    <td></td>
+                </tr>
+            </tfoot>
+        </table>
+    </div>
+</div>
+
+@if (Model.HasOpenShift && Model.AllInspected && Model.AllLocked)
+{
+    <div class="row g-3">
+        <div class="col-lg-7">
+            <form method="post" asp-action="GroupPayment" id="groupPaymentForm">
+                @Html.AntiForgeryToken()
+                <input type="hidden" asp-for="ReservationId" />
+                <input type="hidden" asp-for="StayIdsCsv" />
+                <input type="hidden" id="groupBalanceDue" value="@Model.TotalBalanceDue" />
+                <div class="card">
+                    <div class="card-header fw-semibold">Thu tiền gộp &amp; Check-out đồng loạt (@Model.Stays.Count phòng)</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label asp-for="Method" class="form-label">Phương thức thanh toán</label>
+                            <select asp-for="Method" id="groupMethodSelect" class="form-select">
+                                @foreach (var m in Enum.GetValues<PaymentMethod>())
+                                {
+                                    <option value="@((int)m)" selected="@(Model.Method == m)">@m.ToDisplayName()</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="AmountTendered" class="form-label">Số tiền khách đưa</label>
+                            <input asp-for="AmountTendered" id="groupTendered" type="number" min="0" step="any" class="form-control" />
+                            <div class="form-text">Tiền thối lại: <strong id="groupChange">0 ₫</strong></div>
+                        </div>
+                        <div class="mb-3">
+                            <label asp-for="TransactionRef" class="form-label">Mã giao dịch (nếu Chuyển khoản / Thẻ / VietQR)</label>
+                            <input asp-for="TransactionRef" id="groupTxRef" class="form-control" placeholder="VD: VQR-GROUP-..." />
+                        </div>
+                    </div>
+                    <div class="card-footer d-flex gap-2">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check2-circle"></i> Xác nhận Thanh toán gộp &amp; Trả @Model.Stays.Count phòng
+                        </button>
+                        <a class="btn btn-outline-secondary" asp-action="Index">Hủy</a>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        @if (Model.VietQr is not null && Model.TotalBalanceDue > 0)
+        {
+            <div class="col-lg-5">
+                <div class="card border-primary shadow-sm">
+                    <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center">
+                        <span><i class="bi bi-qr-code-scan me-1"></i> VietQR Thanh toán Đoàn</span>
+                        <span class="badge bg-light text-primary">@Model.VietQr.BankName</span>
+                    </div>
+                    <div class="card-body text-center">
+                        <img src="@Model.VietQr.QrImageUrl" alt="VietQR Đoàn" class="img-fluid rounded border p-2 mb-3" style="max-width: 240px;" />
+                        <div class="small text-start bg-light rounded p-2 mb-3">
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Ngân hàng:</span>
+                                <strong>@Model.VietQr.BankName</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Tên chủ thẻ:</span>
+                                <strong>@Model.VietQr.AccountName</strong>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Số thẻ / Số TK:</span>
+                                <code>@Model.VietQr.AccountNo</code>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Ngày phát hành / OTP:</span>
+                                <span><code>@Model.VietQr.IssueDate</code> · OTP: <code>@Model.VietQr.DefaultOtp</code></span>
+                            </div>
+                            <div class="d-flex justify-content-between mb-1">
+                                <span class="text-muted">Tổng thanh toán:</span>
+                                <strong class="text-danger">@Model.VietQr.Amount.ToString("N0") ₫</strong>
+                            </div>
+                            <div class="d-flex justify-content-between">
+                                <span class="text-muted">Nội dung CK:</span>
+                                <code>@Model.VietQr.TransferMemo</code>
+                            </div>
+                        </div>
+                        <button type="button" id="btnGroupVietQrConfirm" class="btn btn-success w-100">
+                            <i class="bi bi-lightning-charge-fill"></i> Đã nhận VietQR Đoàn — Tất toán &amp; Trả phòng ngay
+                        </button>
+                    </div>
+                </div>
+            </div>
+        }
+    </div>
+}
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+    <script>
+        (function () {
+            var due = Number(document.getElementById('groupBalanceDue')?.value) || 0;
+            var t = document.getElementById('groupTendered');
+            var out = document.getElementById('groupChange');
+            if (t && out) {
+                function upd() {
+                    var c = (Number(t.value) || 0) - due;
+                    out.textContent = (c > 0 ? c : 0).toLocaleString('vi-VN') + ' ₫';
+                }
+                t.addEventListener('input', upd);
+                upd();
+            }
+
+            var btnQr = document.getElementById('btnGroupVietQrConfirm');
+            if (btnQr) {
+                btnQr.addEventListener('click', function () {
+                    var sel = document.getElementById('groupMethodSelect');
+                    var tx = document.getElementById('groupTxRef');
+                    if (sel) sel.value = '@((int)PaymentMethod.BankTransfer)';
+                    if (t) t.value = due;
+                    if (tx && !tx.value) {
+                        tx.value = 'VQR-GRP-' + new Date().toISOString().replace(/[-:T.Z]/g, '').slice(0, 14);
+                    }
+                    document.getElementById('groupPaymentForm')?.submit();
+                });
+            }
+        })();
+    </script>
+}
+

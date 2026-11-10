@@ -99,7 +99,7 @@ public static class EnumDisplay
     public static string ToDisplayName(this ReservationStatus status) => status switch
     {
         ReservationStatus.Draft => "Nháp",
-        ReservationStatus.Confirmed => "Đã xác nhận",
+        ReservationStatus.Confirmed => "Chờ check-in",
         ReservationStatus.CheckedIn => "Đã nhận phòng",
         ReservationStatus.CheckedOut => "Đã trả phòng",
         ReservationStatus.Cancelled => "Đã hủy",

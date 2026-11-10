@@ -1,4 +1,5 @@
 @inject HotelManagement.Web.Services.IShiftService ShiftService
+@inject HotelManagement.Web.Services.INotificationService NotificationService
 <!DOCTYPE html>
 <html lang="vi">
 <head>
@@ -21,8 +22,8 @@
     <div class="admin-shell">
         <aside class="admin-sidebar offcanvas-lg offcanvas-start" tabindex="-1" id="adminSidebar">
             <div class="offcanvas-header">
-                <a class="sidebar-brand" asp-controller="Home" asp-action="Index">
-                    <i class="bi bi-building"></i> Hotel Admin
+                <a class="sidebar-brand d-flex align-items-center justify-content-center p-3" asp-controller="Home" asp-action="Index">
+                    <img src="~/images/logo.png" alt="AURA Logo" style="height: 64px; width: auto; object-fit: contain; filter: brightness(0) invert(1);" />
                 </a>
                 <button type="button" class="btn-close btn-close-white d-lg-none" data-bs-dismiss="offcanvas" data-bs-target="#adminSidebar" aria-label="Đóng"></button>
             </div>
@@ -60,6 +61,43 @@
 
                         <div class="topbar-divider d-none d-md-block"></div>
 
+                        @* Chuông thông báo thời gian thực (SignalR — Chức năng 2) *@
+                        var recentNotifs = await NotificationService.GetRecentAsync(12);
+                        var unreadCount = NotificationService.GetUnreadCount();
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary btn-sm position-relative" type="button" id="notifDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false" title="Thông báo thời gian thực">
+                                <i class="bi bi-bell-fill"></i>
+                                <span id="notifBadge" class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger @(unreadCount > 0 ? "" : "d-none")" style="font-size: 0.65rem;">
+                                    @unreadCount
+                                </span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end shadow p-0" style="width: 350px; max-height: 440px; overflow-y: auto;" aria-labelledby="notifDropdownBtn">
+                                <div class="d-flex justify-content-between align-items-center px-3 py-2 border-bottom bg-light">
+                                    <span class="fw-semibold small"><i class="bi bi-broadcast text-primary me-1"></i> Thông báo trực tuyến</span>
+                                    <button type="button" class="btn btn-link btn-sm p-0 text-decoration-none small" onclick="markAllNotifsRead()">Đánh dấu đã đọc</button>
+                                </div>
+                                <div id="notifList">
+                                    @if (recentNotifs.Count == 0)
+                                    {
+                                        <div class="p-3 text-center text-muted small" id="notifEmpty">Chưa có thông báo mới.</div>
+                                    }
+                                    else
+                                    {
+                                        @foreach (var n in recentNotifs)
+                                        {
+                                            <a href="@n.Url" class="dropdown-item px-3 py-2 border-bottom text-wrap @(n.IsRead ? "" : "bg-light")">
+                                                <div class="d-flex align-items-center justify-content-between mb-1">
+                                                    <span class="badge @n.BadgeClass" style="font-size: 0.68rem;"><i class="bi bi-@n.Icon me-1"></i>@n.Title</span>
+                                                    <span class="text-muted" style="font-size: 0.7rem;">@n.CreatedAt.ToString("HH:mm dd/MM")</span>
+                                                </div>
+                                                <div class="small text-dark">@n.Message</div>
+                                            </a>
+                                        }
+                                    }
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="topbar-user d-none d-md-flex">
                             <span class="topbar-user-name">@User.GetDisplayName()</span>
                             <span class="topbar-user-role">@User.GetRoleDisplayName()</span>
@@ -78,43 +116,97 @@
             </header>
 
             <main class="admin-content" id="main">
-                @* Bốn kênh thông báo theo 00-conventions.md mục 4. *@
-                @if (TempData["Success"] is string success)
-                {
-                    <div class="alert alert-success alert-dismissible fade show" role="alert">
-                        @success
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
-                    </div>
-                }
-                @if (TempData["Error"] is string error)
-                {
-                    <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                        @error
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
-                    </div>
-                }
-                @if (TempData["Warning"] is string warning)
-                {
-                    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-                        @warning
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
-                    </div>
-                }
-                @if (TempData["Info"] is string info)
-                {
-                    <div class="alert alert-info alert-dismissible fade show" role="alert">
-                        @info
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Đóng"></button>
-                    </div>
-                }
                 @RenderBody()
             </main>
         </div>
     </div>
 
+    <div id="realtimeToastContainer" class="toast-container position-fixed bottom-0 end-0 p-3" style="z-index: 1090;"></div>
+
     <script src="~/lib/jquery/dist/jquery.min.js"></script>
     <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/8.0.7/signalr.min.js"></script>
     <script src="~/js/site.js" asp-append-version="true"></script>
+    <script>
+        function markAllNotifsRead() {
+            fetch('/Home/MarkNotificationsRead', { method: 'POST' }).then(function () {
+                var badge = document.getElementById('notifBadge');
+                if (badge) { badge.classList.add('d-none'); badge.textContent = '0'; }
+            });
+        }
+
+        (function () {
+            if (typeof signalR === 'undefined') return;
+            var connection = new signalR.HubConnectionBuilder()
+                .withUrl('/hubs/notifications')
+                .withAutomaticReconnect()
+                .build();
+
+            connection.on('ReceiveNotification', function (n) {
+                var badge = document.getElementById('notifBadge');
+                if (badge) {
+                    badge.textContent = n.unreadCount || (parseInt(badge.textContent || '0', 10) + 1);
+                    badge.classList.remove('d-none');
+                }
+                var empty = document.getElementById('notifEmpty');
+                if (empty) empty.remove();
+
+                var list = document.getElementById('notifList');
+                if (list) {
+                    var item = document.createElement('a');
+                    item.href = n.url || '/FrontDesk';
+                    item.className = 'dropdown-item px-3 py-2 border-bottom text-wrap bg-light';
+                    item.innerHTML =
+                        '<div class="d-flex align-items-center justify-content-between mb-1">' +
+                        '<span class="badge ' + (n.badgeClass || 'bg-primary') + '" style="font-size:0.68rem;"><i class="bi bi-' + (n.icon || 'bell-fill') + ' me-1"></i>' + n.title + '</span>' +
+                        '<span class="text-muted" style="font-size:0.7rem;">' + (n.time || 'Vừa xong') + '</span>' +
+                        '</div>' +
+                        '<div class="small text-dark fw-medium">' + n.message + '</div>';
+                    list.prepend(item);
+                }
+
+                // Phát âm báo nhẹ nhàng bằng Web Audio API
+                try {
+                    var ctx = new (window.AudioContext || window.webkitAudioContext)();
+                    var osc = ctx.createOscillator();
+                    var gain = ctx.createGain();
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(880, ctx.currentTime);
+                    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.35);
+                    osc.connect(gain);
+                    gain.connect(ctx.destination);
+                    osc.start();
+                    osc.stop(ctx.currentTime + 0.35);
+                } catch (e) { }
+
+                // Hiển thị Toast góc dưới bên phải
+                var container = document.getElementById('realtimeToastContainer');
+                if (container && typeof bootstrap !== 'undefined') {
+                    var toastEl = document.createElement('div');
+                    toastEl.className = 'toast align-items-center border-0 shadow-lg mb-2';
+                    toastEl.setAttribute('role', 'alert');
+                    toastEl.innerHTML =
+                        '<div class="toast-header bg-dark text-white">' +
+                        '<i class="bi bi-' + (n.icon || 'bell-fill') + ' me-2 text-warning"></i>' +
+                        '<strong class="me-auto">' + n.title + '</strong>' +
+                        '<small>' + (n.time || 'Vừa xong') + '</small>' +
+                        '<button type="button" class="btn-close btn-close-white ms-2" data-bs-dismiss="toast"></button>' +
+                        '</div>' +
+                        '<div class="toast-body bg-white">' +
+                        '<div class="mb-2">' + n.message + '</div>' +
+                        '<a href="' + (n.url || '/FrontDesk') + '" class="btn btn-sm btn-primary">Xem ngay</a>' +
+                        '</div>';
+                    container.appendChild(toastEl);
+                    var t = new bootstrap.Toast(toastEl, { delay: 8000 });
+                    t.show();
+                }
+            });
+
+            connection.start().catch(function () { });
+        })();
+    </script>
+    <partial name="_Notification" />
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>

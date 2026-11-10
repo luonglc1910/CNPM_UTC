@@ -20,14 +20,24 @@ public static class SystemSettingDefaults
         public const string Surcharge = "Surcharge";
         public const string Cancellation = "Cancellation";
         public const string Limit = "Limit";
+        public const string Payment = "Payment";
+        public const string DynamicPricing = "DynamicPricing";
 
-        public static readonly string[] All = { Hotel, CheckInOut, Tax, Surcharge, Cancellation, Limit };
+        public static readonly string[] All = { Hotel, CheckInOut, Tax, Surcharge, Cancellation, Limit, Payment, DynamicPricing };
     }
+
+    public const string DefaultSeasonalRulesJson = """
+        [
+          {"Id":"SR-1","Name":"Mùa Cao Điểm Hè","StartDate":"2026-06-01","EndDate":"2026-08-31","PercentChange":20,"RoomTypeIds":"","IsActive":true},
+          {"Id":"SR-2","Name":"Dịp Lễ Quốc Khánh 2/9","StartDate":"2026-09-01","EndDate":"2026-09-04","PercentChange":30,"RoomTypeIds":"","IsActive":true},
+          {"Id":"SR-3","Name":"Mùa Lễ Hội Cuối Năm & Tết","StartDate":"2026-12-20","EndDate":"2027-01-05","PercentChange":25,"RoomTypeIds":"","IsActive":true}
+        ]
+        """;
 
     public static readonly (string Key, string Value, string Group, string Description)[] All =
     {
         // 1. Thông tin khách sạn
-        (SystemSettingKeys.HotelName, "Khách sạn UTC", Groups.Hotel, "Tên khách sạn in trên hóa đơn"),
+        (SystemSettingKeys.HotelName, "AURA Boutique Hotel & Resort", Groups.Hotel, "Tên khách sạn in trên hóa đơn"),
         (SystemSettingKeys.HotelAddress, "54 Triều Khúc, Thanh Xuân, Hà Nội", Groups.Hotel, "Địa chỉ"),
         (SystemSettingKeys.HotelPhone, "0240 123 4567", Groups.Hotel, "Điện thoại"),
         (SystemSettingKeys.HotelTaxCode, "0100000000", Groups.Hotel, "Mã số thuế"),
@@ -66,7 +76,26 @@ public static class SystemSettingDefaults
         (SystemSettingKeys.AllowSellWhenOutOfStock, "false", Groups.Limit, "Cho phép bán dịch vụ khi hết tồn - BR-12"),
         (SystemSettingKeys.LoyalGuestStayThreshold, "3", Groups.Limit, "Số lần lưu trú để được gắn nhãn khách quen"),
         (SystemSettingKeys.ChildAgeLimit, "12", Groups.Limit, "Tuổi tối đa tính là trẻ em, không thu phụ thu thêm người"),
-        (SystemSettingKeys.CashDifferenceThreshold, "50000", Groups.Limit, "Ngưỡng chênh lệch tiền mặt khi đóng ca - vượt thì cảnh báo - SCR-F08")
+        (SystemSettingKeys.CashDifferenceThreshold, "50000", Groups.Limit, "Ngưỡng chênh lệch tiền mặt khi đóng ca - vượt thì cảnh báo - SCR-F08"),
+
+        // 7. Thanh toán VietQR & Email tự động
+        (SystemSettingKeys.BankBin, "970419", Groups.Payment, "Mã BIN ngân hàng VietQR (VD: 970419 = Ngân hàng NCB, 970422 = MB Bank)"),
+        (SystemSettingKeys.BankName, "Ngân hàng NCB", Groups.Payment, "Tên hiển thị ngân hàng thụ hưởng"),
+        (SystemSettingKeys.BankAccountNo, "9704198526191432198", Groups.Payment, "Số thẻ / Số tài khoản nhận thanh toán"),
+        (SystemSettingKeys.BankAccountName, "NGUYEN VAN A", Groups.Payment, "Tên chủ thẻ / chủ tài khoản ngân hàng"),
+        (SystemSettingKeys.EmailEnabled, "true", Groups.Payment, "Tự động gửi email xác nhận đặt phòng và hóa đơn"),
+        (SystemSettingKeys.EmailSenderName, "AURA Boutique Hotel & Resort", Groups.Payment, "Tên người gửi email"),
+        (SystemSettingKeys.EmailSenderAddress, "booking@aurahotel.vn", Groups.Payment, "Địa chỉ email gửi đi"),
+        (SystemSettingKeys.EmailSmtpHost, "", Groups.Payment, "Máy chủ SMTP (để trống sẽ lưu bản xem trước tại máy chủ)"),
+        (SystemSettingKeys.EmailSmtpPort, "587", Groups.Payment, "Cổng SMTP"),
+        (SystemSettingKeys.EmailSmtpUser, "", Groups.Payment, "Tài khoản SMTP"),
+        (SystemSettingKeys.EmailSmtpPass, "", Groups.Payment, "Mật khẩu ứng dụng SMTP"),
+
+        // 8. Bảng giá linh hoạt theo Mùa / Cuối tuần / Ngày lễ
+        (SystemSettingKeys.EnableDynamicPricing, "true", Groups.DynamicPricing, "Bật tính giá tự động theo cuối tuần và mùa lễ"),
+        (SystemSettingKeys.WeekendSurchargeRate, "0.15", Groups.DynamicPricing, "Tỷ lệ tăng giá đêm cuối tuần (0.15 = +15%)"),
+        (SystemSettingKeys.WeekendDays, "Friday,Saturday", Groups.DynamicPricing, "Các đêm trong tuần áp dụng giá cuối tuần"),
+        (SystemSettingKeys.SeasonalRulesJson, DefaultSeasonalRulesJson, Groups.DynamicPricing, "Danh sách quy tắc giá theo mùa / lễ Tết (JSON)")
     };
 
     /// <summary>Nhãn tiếng Việt của nhóm, dùng cho thông báo và nhật ký.</summary>
@@ -78,6 +107,8 @@ public static class SystemSettingDefaults
         Groups.Surcharge => "Phụ thu",
         Groups.Cancellation => "Chính sách cọc & hủy",
         Groups.Limit => "Hạn mức nghiệp vụ",
+        Groups.Payment => "Thanh toán VietQR & Email",
+        Groups.DynamicPricing => "Bảng giá linh hoạt & Mùa vụ",
         _ => group
     };
 }

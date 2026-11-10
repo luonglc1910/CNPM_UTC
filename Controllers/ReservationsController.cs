@@ -1,4 +1,4 @@
-﻿using HotelManagement.Web.Models;
+using HotelManagement.Web.Models;
 using HotelManagement.Web.Models.ViewModels;
 using HotelManagement.Web.Security;
 using HotelManagement.Web.Services;
@@ -13,10 +13,12 @@ namespace HotelManagement.Web.Controllers;
 public class ReservationsController : AdminControllerBase
 {
     private readonly IReservationService _service;
+    private readonly IEmailService _email;
 
-    public ReservationsController(IReservationService service)
+    public ReservationsController(IReservationService service, IEmailService email)
     {
         _service = service;
+        _email = email;
     }
 
     /// <summary>
@@ -138,6 +140,39 @@ public class ReservationsController : AdminControllerBase
         return RedirectToAction(nameof(Details), new { id });
     }
 
+    // Đổi phòng cho khách hàng (menu Đặt phòng)
+    [HttpGet]
+    public async Task<IActionResult> ChangeRoom(int? stayId, int? reservationId, string? targetKey)
+        => View(await _service.BuildChangeRoomFormAsync(stayId, reservationId, targetKey));
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    [ActionName(nameof(ChangeRoom))]
+    public async Task<IActionResult> ChangeRoomPost(ChangeRoomFormViewModel form)
+    {
+        if (!ModelState.IsValid)
+        {
+            await _service.FillChangeRoomOptionsAsync(form);
+            return View(form);
+        }
+
+        var (result, isStay, targetId) = await _service.ChangeRoomAsync(form, CurrentEmployeeId, IsAdmin);
+        if (!result.Succeeded)
+        {
+            ModelState.AddModelError(result.ErrorField ?? string.Empty, result.Error!);
+            await _service.FillChangeRoomOptionsAsync(form);
+            return View(form);
+        }
+
+        TempData["Success"] = result.Message;
+        if (isStay)
+        {
+            return RedirectToAction(nameof(FrontDeskController.Stay), "FrontDesk", new { id = targetId });
+        }
+
+        return RedirectToAction(nameof(Details), new { id = targetId });
+    }
+
     // SCR-C07
     [HttpGet]
     public async Task<IActionResult> Deposit(int id)
@@ -220,12 +255,51 @@ public class ReservationsController : AdminControllerBase
         return RedirectToAction(nameof(Details), new { id = form.ReservationId });
     }
 
-    // SCR-C09
-    [HttpGet]
     // SCR-C03 — ma trận phòng × ngày, nhìn nhanh khoảng trống để lấp.
     [HttpGet]
     public async Task<IActionResult> RoomChart(DateTime? from, int days = 14)
         => View(await _service.BuildRoomChartAsync(from, days));
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> QuickMoveRoom(
+        int? reservationId, int? stayId, int fromRoomId, int toRoomId, string? reason, DateTime? from, int days = 14)
+    {
+        var result = await _service.QuickMoveRoomAsync(
+            reservationId, stayId, fromRoomId, toRoomId, reason, CurrentEmployeeId, IsAdmin);
+        SetMessage(result);
+        return RedirectToAction(nameof(RoomChart), new { from = from?.ToString("yyyy-MM-dd"), days });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> QuickExtend(
+        int? reservationId, int? stayId, int addNights = 1, DateTime? from = null, int days = 14)
+    {
+        var result = await _service.QuickExtendAsync(
+            reservationId, stayId, addNights, CurrentEmployeeId, IsAdmin);
+        SetMessage(result);
+        return RedirectToAction(nameof(RoomChart), new { from = from?.ToString("yyyy-MM-dd"), days });
+    }
+
+    [HttpPost]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> SendConfirmationEmail(int id)
+    {
+        var email = await _email.SendBookingConfirmationAsync(id);
+        if (email.Sent)
+        {
+            TempData["Success"] = "Đã gửi email xác nhận đặt phòng và lưu bản xem trước!";
+        }
+        else
+        {
+            TempData["Error"] = $"Chưa gửi được email: {email.Message}";
+        }
+        if (!string.IsNullOrWhiteSpace(email.PreviewUrl))
+            TempData["EmailPreviewUrl"] = email.PreviewUrl;
+
+        return RedirectToAction(nameof(Details), new { id });
+    }
 
     /// <summary>URL cũ của SCR-C09 trước khi gộp. Giữ để link đã lưu không gãy.</summary>
     public IActionResult NoShow()
