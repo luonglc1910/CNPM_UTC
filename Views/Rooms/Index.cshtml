@@ -2,237 +2,215 @@
 @{
     ViewData["Title"] = "Phòng";
     var isAdmin = User.IsInRole(Roles.Admin);
-
-    // Giữ nguyên bộ lọc khi bấm chuyển chế độ hiển thị.
     var switchQuery = new Dictionary<string, string?>(
         Context.Request.Query.ToDictionary(q => q.Key, q => (string?)q.Value.ToString()),
         StringComparer.OrdinalIgnoreCase);
 }
 
-
-<div class="d-flex flex-wrap gap-2 justify-content-between align-items-end mb-3">
-    <form method="get" class="d-flex flex-wrap gap-2 align-items-end">
-        <input type="hidden" name="view" value="@Model.View" />
+<div class="rooms-page">
+    <section class="rooms-hero">
         <div>
-            <label asp-for="Keyword" class="form-label mb-1 small text-muted"></label>
-            <input asp-for="Keyword" class="form-control form-control-sm" style="width: 130px" placeholder="VD: 201" />
+            <span class="rooms-hero-kicker">Danh mục vận hành</span>
+            <h2>Quản lý phòng</h2>
+            <p>Theo dõi trạng thái, khách lưu trú và xử lý phòng tại một nơi.</p>
         </div>
-        <div>
-            <label asp-for="Floor" class="form-label mb-1 small text-muted"></label>
-            <select asp-for="Floor" asp-items="Model.FloorOptions" class="form-select form-select-sm">
-                <option value="">Tất cả</option>
-            </select>
-        </div>
-        <div>
-            <label asp-for="RoomTypeId" class="form-label mb-1 small text-muted"></label>
-            <select asp-for="RoomTypeId" asp-items="Model.RoomTypeOptions" class="form-select form-select-sm">
-                <option value="">Tất cả</option>
-            </select>
-        </div>
-        <div>
-            <label asp-for="Status" class="form-label mb-1 small text-muted"></label>
-            <select asp-for="Status" class="form-select form-select-sm">
-                <option value="">Tất cả</option>
-                @foreach (var s in Enum.GetValues<RoomStatus>())
-                {
-                    <option value="@((int)s)" selected="@(Model.Status == s)">@s.ToDisplayName()</option>
-                }
-            </select>
-        </div>
-        <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-search"></i> Lọc</button>
-        @if (Model.HasFilter)
-        {
-            <a class="btn btn-link btn-sm" asp-action="Index" asp-route-view="@Model.View">Bỏ lọc</a>
-        }
-    </form>
-
-    <div class="d-flex gap-2">
-        <div class="btn-group btn-group-sm" role="group">
-            @{
-                switchQuery["view"] = "table";
-                var tableUrl = Url.Action(null, null, switchQuery);
-                switchQuery["view"] = "grid";
-                var gridUrl = Url.Action(null, null, switchQuery);
+        <div class="rooms-hero-actions">
+            <a class="btn btn-outline-light" asp-controller="Reservations" asp-action="RoomChart"><i class="bi bi-calendar3-range"></i> Sơ đồ phòng</a>
+            @if (isAdmin)
+            {
+                <a class="btn btn-light" asp-action="Create"><i class="bi bi-plus-lg"></i> Thêm phòng</a>
             }
-            <a class="btn @(Model.IsGrid ? "btn-outline-secondary" : "btn-secondary")" href="@tableUrl">
-                <i class="bi bi-list-ul"></i> Bảng
+        </div>
+    </section>
+
+    <section class="rooms-status-section">
+        <div class="rooms-section-heading">
+            <div><span class="rooms-section-kicker">Trạng thái hiện tại</span><h3>Tổng quan @Model.TotalRooms phòng</h3></div>
+            <a class="rooms-clear-filter" asp-action="Index" asp-route-view="@Model.View">Xem tất cả <i class="bi bi-arrow-right"></i></a>
+        </div>
+        <div class="rooms-status-grid">
+            <a class="rooms-status-card status-available @(Model.Status == RoomStatus.Available ? "is-active" : "")" asp-action="Index" asp-route-status="@RoomStatus.Available" asp-route-view="@Model.View">
+                <span class="rooms-status-icon"><i class="bi bi-door-open"></i></span><span><strong>Phòng trống</strong><small>Sẵn sàng bán</small></span><b>@Model.AvailableRooms</b>
             </a>
-            <a class="btn @(Model.IsGrid ? "btn-secondary" : "btn-outline-secondary")" href="@gridUrl">
-                <i class="bi bi-grid-3x3-gap"></i> Lưới theo tầng
+            <a class="rooms-status-card status-reserved @(Model.Status == RoomStatus.Reserved ? "is-active" : "")" asp-action="Index" asp-route-status="@RoomStatus.Reserved" asp-route-view="@Model.View">
+                <span class="rooms-status-icon"><i class="bi bi-calendar2-check"></i></span><span><strong>Chờ check-in</strong><small>Đã giữ cho khách</small></span><b>@Model.PendingCheckInRooms</b>
+            </a>
+            <a class="rooms-status-card status-occupied @(Model.Status == RoomStatus.Occupied ? "is-active" : "")" asp-action="Index" asp-route-status="@RoomStatus.Occupied" asp-route-view="@Model.View">
+                <span class="rooms-status-icon"><i class="bi bi-person-fill"></i></span><span><strong>Đang có khách</strong><small>Phòng đang lưu trú</small></span><b>@Model.OccupiedRooms</b>
+            </a>
+            <a class="rooms-status-card status-dirty @(Model.Status == RoomStatus.Dirty ? "is-active" : "")" asp-action="Index" asp-route-status="@RoomStatus.Dirty" asp-route-view="@Model.View">
+                <span class="rooms-status-icon"><i class="bi bi-stars"></i></span><span><strong>Chờ dọn</strong><small>Cần buồng phòng xử lý</small></span><b>@Model.DirtyRooms</b>
+            </a>
+            <a class="rooms-status-card status-maintenance @(Model.Status == RoomStatus.Maintenance ? "is-active" : "")" asp-action="Index" asp-route-status="@RoomStatus.Maintenance" asp-route-view="@Model.View">
+                <span class="rooms-status-icon"><i class="bi bi-tools"></i></span><span><strong>Bảo trì</strong><small>Tạm ngưng khai thác</small></span><b>@Model.MaintenanceRooms</b>
             </a>
         </div>
-        @if (isAdmin)
+    </section>
+
+    <section class="rooms-filter-panel">
+        <div class="rooms-section-heading">
+            <div><span class="rooms-section-kicker">Tìm kiếm chi tiết</span><h3>Bộ lọc phòng</h3></div>
+            @if (Model.HasFilter)
+            {
+                <a class="rooms-reset-link" asp-action="Index" asp-route-view="@Model.View"><i class="bi bi-arrow-counterclockwise"></i> Xóa bộ lọc</a>
+            }
+        </div>
+        <form method="get" class="rooms-filter-form">
+            <input type="hidden" name="view" value="@Model.View" />
+            <div class="rooms-search-field">
+                <label asp-for="Keyword" class="form-label">Số phòng</label>
+                <div class="input-group"><span class="input-group-text"><i class="bi bi-search"></i></span><input asp-for="Keyword" class="form-control" placeholder="Ví dụ: 201" /></div>
+            </div>
+            <div><label asp-for="Floor" class="form-label"></label><select asp-for="Floor" asp-items="Model.FloorOptions" class="form-select"><option value="">Tất cả tầng</option></select></div>
+            <div><label asp-for="RoomTypeId" class="form-label"></label><select asp-for="RoomTypeId" asp-items="Model.RoomTypeOptions" class="form-select"><option value="">Tất cả loại phòng</option></select></div>
+            <div>
+                <label asp-for="Status" class="form-label"></label>
+                <select asp-for="Status" class="form-select">
+                    <option value="">Tất cả trạng thái</option>
+                    @foreach (var status in Enum.GetValues<RoomStatus>())
+                    {
+                        <option value="@((int)status)" selected="@(Model.Status == status)">@status.ToDisplayName()</option>
+                    }
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary rooms-filter-button"><i class="bi bi-funnel"></i> Áp dụng</button>
+        </form>
+    </section>
+
+    <section class="rooms-results-section">
+        <div class="rooms-results-toolbar">
+            <div><span class="rooms-section-kicker">Danh sách hiện tại</span><h3>@Model.Results.TotalItems phòng @(Model.HasFilter ? "phù hợp" : "đang hoạt động")</h3></div>
+            <div class="rooms-view-switch" role="group" aria-label="Chế độ hiển thị">
+                @{
+                    switchQuery["view"] = "table";
+                    var tableUrl = Url.Action(null, null, switchQuery);
+                    switchQuery["view"] = "grid";
+                    var gridUrl = Url.Action(null, null, switchQuery);
+                }
+                <a class="@(Model.IsGrid ? "" : "is-active")" href="@tableUrl"><i class="bi bi-list-ul"></i> Bảng</a>
+                <a class="@(Model.IsGrid ? "is-active" : "")" href="@gridUrl"><i class="bi bi-grid-3x3-gap"></i> Theo tầng</a>
+            </div>
+        </div>
+
+        @if (Model.Results.TotalItems == 0)
         {
-            <a class="btn btn-primary btn-sm" asp-action="Create"><i class="bi bi-plus-lg"></i> Thêm phòng</a>
+            <div class="rooms-empty-state">
+                <span><i class="bi bi-door-closed"></i></span><h4>Không tìm thấy phòng</h4><p>Thử thay đổi hoặc xóa bộ lọc để xem thêm kết quả.</p>
+                <a class="btn btn-outline-secondary btn-sm" asp-action="Index" asp-route-view="@Model.View">Xem tất cả phòng</a>
+            </div>
         }
-    </div>
-</div>
-
-@* Chú thích màu trạng thái — 00-conventions.md mục 6. *@
-<div class="d-flex flex-wrap gap-2 mb-3 small">
-    @foreach (var s in Enum.GetValues<RoomStatus>())
-    {
-        <span class="badge @s.ToBadgeClass()">@s.ToDisplayName()</span>
-    }
-</div>
-
-@if (Model.Results.TotalItems == 0)
-{
-    <div class="card"><div class="card-body text-center text-muted py-5">
-        @if (Model.HasFilter)
+        else if (Model.IsGrid)
         {
-            <p class="mb-0">Không có phòng nào khớp bộ lọc.</p>
+            <div class="rooms-floor-list">
+                @foreach (var floorGroup in Model.AllForGrid.GroupBy(r => r.Floor).OrderBy(g => g.Key))
+                {
+                    <div class="rooms-floor-group">
+                        <div class="rooms-floor-title"><span>Tầng @floorGroup.Key</span><small>@floorGroup.Count() phòng</small></div>
+                        <div class="rooms-card-grid">
+                            @foreach (var room in floorGroup.OrderBy(r => r.RoomNumber))
+                            {
+                                <article class="rooms-room-card room-state-@room.Status.ToString().ToLowerInvariant()">
+                                    <div class="rooms-room-card-head"><span class="rooms-room-number">@room.RoomNumber</span><partial name="_RoomStatusBadge" model="room.Status" /></div>
+                                    <div class="rooms-room-type">@room.RoomTypeName</div>
+                                    <div class="rooms-room-price">@room.PricePerNight.ToString("N0") <small>₫/đêm</small></div>
+                                    <div class="rooms-room-guest">
+                                        @if (!string.IsNullOrWhiteSpace(room.CurrentGuestName))
+                                        {
+                                            <i class="bi bi-person-fill"></i><span>@room.CurrentGuestName</span>
+                                        }
+                                        else
+                                        {
+                                            <i class="bi bi-person"></i><span>Chưa có khách lưu trú</span>
+                                        }
+                                    </div>
+                                    @if (!string.IsNullOrWhiteSpace(room.StatusNote))
+                                    {
+                                        <div class="rooms-room-note" title="@room.StatusNote">@room.StatusNote</div>
+                                    }
+                                    <div class="rooms-room-actions">
+                                        <a asp-action="UpdateStatus" asp-route-id="@room.Id"><i class="bi bi-arrow-repeat"></i> Trạng thái</a>
+                                        <button type="button" class="js-room-qr" data-room-id="@room.Id" data-room-no="@room.RoomNumber" data-room-type="@room.RoomTypeName"><i class="bi bi-qr-code"></i> QR</button>
+                                        @if (isAdmin)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@room.Id" aria-label="Sửa phòng @room.RoomNumber"><i class="bi bi-pencil"></i></a>
+                                        }
+                                    </div>
+                                </article>
+                            }
+                        </div>
+                    </div>
+                }
+            </div>
         }
         else
         {
-            <p class="mb-1">Chưa có phòng nào.</p>
-            @if (isAdmin)
-            {
-                <p class="mb-0 small">Nhấn <strong>Thêm phòng</strong> để bắt đầu.</p>
-            }
+            <div class="table-responsive rooms-table-wrap">
+                <table class="table rooms-table align-middle mb-0">
+                    <thead><tr><th>Phòng</th><th>Tầng</th><th>Loại phòng</th><th>Giá / đêm</th><th>Trạng thái</th><th>Khách lưu trú</th><th class="text-end">Thao tác</th></tr></thead>
+                    <tbody>
+                        @foreach (var room in Model.Results.Items)
+                        {
+                            <tr>
+                                <td><span class="rooms-table-number">@room.RoomNumber</span></td>
+                                <td><span class="rooms-floor-pill">Tầng @room.Floor</span></td>
+                                <td><strong class="rooms-table-type">@room.RoomTypeName</strong></td>
+                                <td><span class="rooms-table-price">@room.PricePerNight.ToString("N0") ₫</span></td>
+                                <td>
+                                    <partial name="_RoomStatusBadge" model="room.Status" />
+                                    @if (!string.IsNullOrWhiteSpace(room.StatusNote))
+                                    {
+                                        <div class="rooms-table-note">@room.StatusNote</div>
+                                    }
+                                </td>
+                                <td>
+                                    @if (room.CurrentStayId is not null)
+                                    {
+                                        <a class="rooms-guest-link" asp-controller="FrontDesk" asp-action="Stay" asp-route-id="@room.CurrentStayId"><i class="bi bi-person-circle"></i> @room.CurrentGuestName</a>
+                                    }
+                                    else
+                                    {
+                                        <span class="rooms-no-guest">—</span>
+                                    }
+                                </td>
+                                <td class="text-end text-nowrap">
+                                    <div class="rooms-table-actions">
+                                        <button type="button" class="js-room-qr" data-room-id="@room.Id" data-room-no="@room.RoomNumber" data-room-type="@room.RoomTypeName" title="Mã QR dịch vụ tại phòng"><i class="bi bi-qr-code"></i></button>
+                                        <a asp-action="UpdateStatus" asp-route-id="@room.Id" title="Đổi trạng thái"><i class="bi bi-arrow-repeat"></i></a>
+                                        @if (isAdmin)
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@room.Id" title="Sửa phòng"><i class="bi bi-pencil"></i></a>
+                                        }
+                                    </div>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+            <div class="rooms-pager"><partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" /></div>
         }
-    </div></div>
-}
-else if (Model.IsGrid)
-{
-    @foreach (var floorGroup in Model.AllForGrid.GroupBy(r => r.Floor).OrderBy(g => g.Key))
-    {
-        <h2 class="h6 text-muted mt-3">Tầng @floorGroup.Key</h2>
-        <div class="d-flex flex-wrap gap-2">
-            @foreach (var room in floorGroup.OrderBy(r => r.RoomNumber))
-            {
-                <div class="card" style="width: 150px">
-                    <div class="card-body p-2 text-center">
-                        <div class="fw-semibold">@room.RoomNumber</div>
-                        <div class="small text-muted text-truncate" title="@room.RoomTypeName">@room.RoomTypeName</div>
-                        <div class="my-1"><partial name="_RoomStatusBadge" model="room.Status" /></div>
-                        @if (!string.IsNullOrWhiteSpace(room.CurrentGuestName))
-                        {
-                            <div class="small text-truncate" title="@room.CurrentGuestName">
-                                <i class="bi bi-person"></i> @room.CurrentGuestName
-                            </div>
-                        }
-                        @if (!string.IsNullOrWhiteSpace(room.StatusNote))
-                        {
-                            <div class="small text-danger text-truncate" title="@room.StatusNote">@room.StatusNote</div>
-                        }
-                        <a class="btn btn-sm btn-outline-secondary mt-2 w-100"
-                           asp-action="UpdateStatus" asp-route-id="@room.Id">Đổi trạng thái</a>
-                        <button type="button" class="btn btn-sm btn-outline-primary mt-1 w-100"
-                                onclick="openRoomQrModal(@room.Id, '@room.RoomNumber', '@room.RoomTypeName')">
-                            <i class="bi bi-qr-code"></i> QR Phòng
-                        </button>
-                    </div>
-                </div>
-            }
-        </div>
-    }
-}
-else
-{
-    <div class="card">
-        <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
-                <thead class="table-light">
-                    <tr>
-                        <th>Số phòng</th>
-                        <th class="text-center">Tầng</th>
-                        <th>Loại phòng</th>
-                        <th class="text-end">Giá / đêm</th>
-                        <th class="text-center">Trạng thái</th>
-                        <th>Khách đang ở</th>
-                        <th class="text-end">Thao tác</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach (var room in Model.Results.Items)
-                {
-                    <tr>
-                        <td class="fw-semibold">@room.RoomNumber</td>
-                        <td class="text-center">@room.Floor</td>
-                        <td>@room.RoomTypeName</td>
-                        <td class="text-end">@room.PricePerNight.ToString("N0") ₫</td>
-                        <td class="text-center">
-                            <partial name="_RoomStatusBadge" model="room.Status" />
-                            @if (!string.IsNullOrWhiteSpace(room.StatusNote))
-                            {
-                                <div class="small text-muted">@room.StatusNote</div>
-                            }
-                        </td>
-                        <td>
-                            @if (room.CurrentStayId is not null)
-                            {
-                                <a asp-controller="FrontDesk" asp-action="Stay" asp-route-id="@room.CurrentStayId">
-                                    @room.CurrentGuestName
-                                </a>
-                            }
-                            else
-                            {
-                                <span class="text-muted">—</span>
-                            }
-                        </td>
-                        <td class="text-end text-nowrap">
-                            <button type="button" class="btn btn-sm btn-outline-primary"
-                                    onclick="openRoomQrModal(@room.Id, '@room.RoomNumber', '@room.RoomTypeName')"
-                                    title="Mã QR dịch vụ tại phòng (Self-Service)">
-                                <i class="bi bi-qr-code"></i>
-                            </button>
-                            <a class="btn btn-sm btn-outline-secondary" asp-action="UpdateStatus" asp-route-id="@room.Id"
-                               title="Đổi trạng thái"><i class="bi bi-arrow-repeat"></i></a>
-                            @if (isAdmin)
-                            {
-                                <a class="btn btn-sm btn-outline-secondary" asp-action="Edit" asp-route-id="@room.Id"
-                                   title="Sửa"><i class="bi bi-pencil"></i></a>
-                            }
-                        </td>
-                    </tr>
-                }
-                </tbody>
-            </table>
-        </div>
-    </div>
+    </section>
+</div>
 
-    <partial name="_Pager" model="@((Model.Results.Page, Model.Results.TotalPages, Model.Results.TotalItems))" />
-}
-
-@* Modal hiển thị & in mã QR In-Room Service (Chức năng 3) *@
 <div class="modal fade" id="roomQrModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-        <div class="modal-content text-center">
-            <div class="modal-header">
-                <h5 class="modal-title"><i class="bi bi-qr-code-scan text-primary me-1"></i> Mã QR Dịch vụ tại phòng <span id="qrRoomNo"></span></h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body py-4">
-                <p class="small text-muted mb-2" id="qrRoomType"></p>
-                <div class="p-3 d-inline-block border rounded-4 bg-white shadow-sm mb-3">
-                    <img id="qrImage" src="" alt="QR In-Room Service" style="width: 220px; height: 220px;" />
-                </div>
-                <p class="small text-muted mb-0">
-                    Đặt mã QR này trên bàn trong phòng để khách quét gọi đồ ăn, minibar, dọn phòng hoặc báo hỏng thiết bị trực tiếp.
-                </p>
-            </div>
-            <div class="modal-footer justify-content-center">
-                <a id="qrOpenLink" href="#" target="_blank" class="btn btn-primary">
-                    <i class="bi bi-box-arrow-up-right"></i> Mở thử trang QR của phòng
-                </a>
-                <button type="button" class="btn btn-outline-secondary" onclick="window.print()">
-                    <i class="bi bi-printer"></i> In bảng QR
-                </button>
-            </div>
-        </div>
-    </div>
+    <div class="modal-dialog modal-dialog-centered"><div class="modal-content text-center">
+        <div class="modal-header"><h5 class="modal-title"><i class="bi bi-qr-code-scan text-primary me-1"></i> Mã QR Dịch vụ tại phòng <span id="qrRoomNo"></span></h5><button type="button" class="btn-close" data-bs-dismiss="modal"></button></div>
+        <div class="modal-body py-4"><p class="small text-muted mb-2" id="qrRoomType"></p><div class="p-3 d-inline-block border rounded-4 bg-white shadow-sm mb-3"><img id="qrImage" src="" alt="QR In-Room Service" width="220" height="220" /></div><p class="small text-muted mb-0">Khách quét mã để gọi đồ ăn, minibar, dọn phòng hoặc báo hỏng thiết bị.</p></div>
+        <div class="modal-footer justify-content-center"><a id="qrOpenLink" href="#" target="_blank" class="btn btn-primary"><i class="bi bi-box-arrow-up-right"></i> Mở trang QR</a><button type="button" class="btn btn-outline-secondary" onclick="window.print()"><i class="bi bi-printer"></i> In bảng QR</button></div>
+    </div></div>
 </div>
 
 @section Scripts {
     <script>
-        function openRoomQrModal(roomId, roomNo, roomType) {
-            var url = window.location.origin + '/InRoom/Menu?roomId=' + roomId;
-            document.getElementById('qrRoomNo').textContent = roomNo;
-            document.getElementById('qrRoomType').textContent = roomType + ' — Quét mã để gọi dịch vụ 24/7';
-            document.getElementById('qrImage').src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(url);
-            document.getElementById('qrOpenLink').href = url;
-            new bootstrap.Modal(document.getElementById('roomQrModal')).show();
-        }
+        document.querySelectorAll('.js-room-qr').forEach(function (button) {
+            button.addEventListener('click', function () {
+                var url = window.location.origin + '/InRoom/Menu?roomId=' + encodeURIComponent(button.dataset.roomId);
+                document.getElementById('qrRoomNo').textContent = button.dataset.roomNo;
+                document.getElementById('qrRoomType').textContent = button.dataset.roomType + ' — Quét mã để gọi dịch vụ 24/7';
+                document.getElementById('qrImage').src = 'https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=' + encodeURIComponent(url);
+                document.getElementById('qrOpenLink').href = url;
+                new bootstrap.Modal(document.getElementById('roomQrModal')).show();
+            });
+        });
     </script>
 }

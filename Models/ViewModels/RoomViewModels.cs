@@ -25,6 +25,13 @@ public class RoomIndexViewModel
 {
     public PagedList<RoomListItemViewModel> Results { get; set; } = new();
 
+    public int TotalRooms { get; set; }
+    public int AvailableRooms { get; set; }
+    public int PendingCheckInRooms { get; set; }
+    public int OccupiedRooms { get; set; }
+    public int DirtyRooms { get; set; }
+    public int MaintenanceRooms { get; set; }
+
     /// <summary>Dạng lưới theo tầng dùng danh sách đầy đủ, không phân trang.</summary>
     public IReadOnlyList<RoomListItemViewModel> AllForGrid { get; set; } = Array.Empty<RoomListItemViewModel>();
 

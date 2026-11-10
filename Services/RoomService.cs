@@ -43,6 +43,22 @@ public class RoomService : IRoomService
     {
         var query = _db.Rooms.AsNoTracking().Where(r => r.IsActive);
 
+        var pendingCheckInRoomIds = _db.ReservationRooms.AsNoTracking()
+            .Where(rr => rr.RoomId != null
+                && rr.Reservation.Status == ReservationStatus.Confirmed)
+            .Select(rr => rr.RoomId!.Value);
+
+        var activeRooms = _db.Rooms.AsNoTracking().Where(r => r.IsActive);
+        vm.TotalRooms = await activeRooms.CountAsync();
+        vm.PendingCheckInRooms = await activeRooms
+            .CountAsync(r => (r.Status == RoomStatus.Available && pendingCheckInRoomIds.Contains(r.Id))
+                || r.Status == RoomStatus.Reserved);
+        vm.AvailableRooms = await activeRooms
+            .CountAsync(r => r.Status == RoomStatus.Available && !pendingCheckInRoomIds.Contains(r.Id));
+        vm.OccupiedRooms = await activeRooms.CountAsync(r => r.Status == RoomStatus.Occupied);
+        vm.DirtyRooms = await activeRooms.CountAsync(r => r.Status == RoomStatus.Dirty);
+        vm.MaintenanceRooms = await activeRooms.CountAsync(r => r.Status == RoomStatus.Maintenance);
+
         if (!string.IsNullOrWhiteSpace(vm.Keyword))
         {
             var k = vm.Keyword.Trim();
@@ -61,7 +77,14 @@ public class RoomService : IRoomService
 
         if (vm.Status is not null)
         {
-            query = query.Where(r => r.Status == vm.Status);
+            query = vm.Status switch
+            {
+                RoomStatus.Available => query.Where(r => r.Status == RoomStatus.Available
+                    && !pendingCheckInRoomIds.Contains(r.Id)),
+                RoomStatus.Reserved => query.Where(r => r.Status == RoomStatus.Reserved
+                    || (r.Status == RoomStatus.Available && pendingCheckInRoomIds.Contains(r.Id))),
+                _ => query.Where(r => r.Status == vm.Status)
+            };
         }
 
         var projected = query
@@ -73,7 +96,9 @@ public class RoomService : IRoomService
                 Floor = r.Floor,
                 RoomTypeName = r.RoomType.Name,
                 PricePerNight = r.RoomType.BasePricePerNight,
-                Status = r.Status,
+                Status = r.Status == RoomStatus.Available && pendingCheckInRoomIds.Contains(r.Id)
+                    ? RoomStatus.Reserved
+                    : r.Status,
                 StatusNote = r.StatusNote,
                 IsActive = r.IsActive,
                 CurrentGuestName = r.Stays
