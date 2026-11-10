@@ -3,6 +3,12 @@
     ViewData["Title"] = Model.IsResidence ? "Khai báo tạm trú" : "Hồ sơ khách";
 }
 
+<div class="ops-page guests-page">
+<section class="ops-hero">
+    <div><span class="ops-hero-kicker">Khách hàng</span><h2>@(Model.IsResidence ? "Khai báo tạm trú" : "Hồ sơ khách lưu trú")</h2><p>Tra cứu hồ sơ, theo dõi khách đang ở và lịch sử lưu trú từ một nơi.</p></div>
+    <div class="ops-hero-actions"><a class="btn btn-outline-light" asp-controller="FrontDesk" asp-action="Index"><i class="bi bi-bell"></i> Lễ tân</a><a class="btn btn-light" asp-action="Create"><i class="bi bi-person-plus"></i> Thêm khách</a></div>
+</section>
+
 @*
     Hai tab là hai đường dẫn, không phải tab JavaScript: tab tạm trú ghi nhật ký truy cập
     dữ liệu cá nhân mỗi lần mở, nên chỉ được nạp khi người dùng thật sự chọn nó.
@@ -28,3 +34,4 @@ else
 {
     <partial name="_GuestList" model="Model.List" />
 }
+</div>

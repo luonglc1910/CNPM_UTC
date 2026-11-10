@@ -43,6 +43,8 @@ public class GuestListItemViewModel
 
     /// <summary>Số lượt lưu trú đã hoàn tất.</summary>
     public int CompletedStayCount { get; set; }
+    public int TotalStayCount { get; set; }
+    public bool IsStaying { get; set; }
 
     public DateTime? LastStayAt { get; set; }
 
@@ -58,6 +60,11 @@ public class GuestListItemViewModel
 public class GuestIndexViewModel
 {
     public PagedList<GuestListItemViewModel> Results { get; set; } = new();
+
+    public int TotalGuests { get; set; }
+    public int StayingGuests { get; set; }
+    public int LoyalGuests { get; set; }
+    public int BlacklistedGuests { get; set; }
 
     [Display(Name = "Tìm theo họ tên, SĐT hoặc số giấy tờ")]
     public string? Keyword { get; set; }

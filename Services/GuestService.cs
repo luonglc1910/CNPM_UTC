@@ -51,6 +51,16 @@ public class GuestService : IGuestService
     {
         var threshold = await GetLoyalThresholdAsync();
 
+        var allGuests = _db.Guests.AsNoTracking();
+        filter.TotalGuests = await allGuests.CountAsync();
+        filter.StayingGuests = await allGuests.CountAsync(g => _db.Stays.Any(s =>
+            s.Status == StayStatus.CheckedIn
+            && (s.PrimaryGuestId == g.Id || s.Guests.Any(sg => sg.GuestId == g.Id))));
+        filter.LoyalGuests = await allGuests.CountAsync(g => _db.Stays.Count(s =>
+            s.Status == StayStatus.CheckedOut
+            && (s.PrimaryGuestId == g.Id || s.Guests.Any(sg => sg.GuestId == g.Id))) >= threshold);
+        filter.BlacklistedGuests = await allGuests.CountAsync(g => g.IsBlacklisted);
+
         var query = _db.Guests.AsNoTracking();
 
         if (filter.Blacklisted is not null)
@@ -75,13 +85,15 @@ public class GuestService : IGuestService
         if (filter.LastStayFrom is not null)
         {
             var from = filter.LastStayFrom.Value.Date;
-            query = query.Where(g => g.StayGuests.Any(sg => sg.Stay.ActualCheckIn >= from));
+            query = query.Where(g => _db.Stays.Any(s => s.ActualCheckIn >= from
+                && (s.PrimaryGuestId == g.Id || s.Guests.Any(sg => sg.GuestId == g.Id))));
         }
 
         if (filter.LastStayTo is not null)
         {
             var to = filter.LastStayTo.Value.Date.AddDays(1);
-            query = query.Where(g => g.StayGuests.Any(sg => sg.Stay.ActualCheckIn < to));
+            query = query.Where(g => _db.Stays.Any(s => s.ActualCheckIn < to
+                && (s.PrimaryGuestId == g.Id || s.Guests.Any(sg => sg.GuestId == g.Id))));
         }
 
         var projected = query
@@ -96,8 +108,15 @@ public class GuestService : IGuestService
                 PhoneNumber = g.PhoneNumber,
                 Nationality = g.Nationality,
                 IsBlacklisted = g.IsBlacklisted,
-                CompletedStayCount = g.StayGuests.Count(sg => sg.Stay.Status == StayStatus.CheckedOut),
-                LastStayAt = g.StayGuests.Max(sg => (DateTime?)sg.Stay.ActualCheckIn),
+                CompletedStayCount = _db.Stays.Count(s => s.Status == StayStatus.CheckedOut
+                    && (s.PrimaryGuestId == g.Id || s.Guests.Any(sg => sg.GuestId == g.Id))),
+                TotalStayCount = _db.Stays.Count(s =>
+                    s.PrimaryGuestId == g.Id || s.Guests.Any(sg => sg.GuestId == g.Id)),
+                IsStaying = _db.Stays.Any(s => s.Status == StayStatus.CheckedIn
+                    && (s.PrimaryGuestId == g.Id || s.Guests.Any(sg => sg.GuestId == g.Id))),
+                LastStayAt = _db.Stays
+                    .Where(s => s.PrimaryGuestId == g.Id || s.Guests.Any(sg => sg.GuestId == g.Id))
+                    .Max(s => (DateTime?)s.ActualCheckIn),
                 LoyalThreshold = threshold
             });
 
@@ -236,22 +255,22 @@ public class GuestService : IGuestService
             return null;
         }
 
-        var stays = await _db.StayGuests.AsNoTracking()
-            .Where(sg => sg.GuestId == id)
-            .OrderByDescending(sg => sg.Stay.ActualCheckIn)
-            .Select(sg => new GuestStayHistoryItem
+        var stays = await _db.Stays.AsNoTracking()
+            .Where(s => s.PrimaryGuestId == id || s.Guests.Any(sg => sg.GuestId == id))
+            .OrderByDescending(s => s.ActualCheckIn)
+            .Select(s => new GuestStayHistoryItem
             {
-                StayId = sg.StayId,
-                CheckIn = sg.Stay.ActualCheckIn,
-                CheckOut = sg.Stay.ActualCheckOut,
-                RoomNumber = sg.Stay.Room.RoomNumber,
-                RoomTypeName = sg.Stay.Room.RoomType.Name,
-                Nights = sg.Stay.Nights,
-                Status = sg.Stay.Status,
-                IsPrimaryGuest = sg.IsPrimary,
-                InvoiceNo = sg.Stay.Folio!.Invoice!.InvoiceNo,
-                InvoiceTotal = sg.Stay.Folio.Invoice.TotalAmount,
-                InvoiceStatus = sg.Stay.Folio.Invoice.Status
+                StayId = s.Id,
+                CheckIn = s.ActualCheckIn,
+                CheckOut = s.ActualCheckOut,
+                RoomNumber = s.Room.RoomNumber,
+                RoomTypeName = s.Room.RoomType.Name,
+                Nights = s.Nights,
+                Status = s.Status,
+                IsPrimaryGuest = s.PrimaryGuestId == id,
+                InvoiceNo = s.Folio!.Invoice!.InvoiceNo,
+                InvoiceTotal = s.Folio.Invoice.TotalAmount,
+                InvoiceStatus = s.Folio.Invoice.Status
             })
             .ToListAsync();
 
@@ -478,12 +497,31 @@ public class GuestService : IGuestService
 
         // Tiêu chí của spec: mọi lượt lưu trú GIAO với ngày được chọn. Khách nhận phòng
         // trong ngày hoặc trước đó, và chưa trả phòng trước khi ngày đó bắt đầu.
-        var rows = await _db.StayGuests.AsNoTracking()
-            .Where(sg => sg.Stay.ActualCheckIn < nextDay
+        var primaryRows = _db.Stays.AsNoTracking()
+            .Where(s => s.ActualCheckIn < nextDay
+                && (s.ActualCheckOut == null || s.ActualCheckOut >= day))
+            .Select(s => new ResidenceRow
+            {
+                GuestId = s.PrimaryGuestId,
+                FullName = s.PrimaryGuest.FullName,
+                DateOfBirth = s.PrimaryGuest.DateOfBirth,
+                Gender = s.PrimaryGuest.Gender,
+                Nationality = s.PrimaryGuest.Nationality,
+                IdType = s.PrimaryGuest.IdType,
+                IdNumber = s.PrimaryGuest.IdNumber,
+                Address = s.PrimaryGuest.Address,
+                RoomNumber = s.Room.RoomNumber,
+                From = s.ActualCheckIn,
+                To = s.ActualCheckOut,
+                IsPrimary = true
+            });
+
+        // Khách đứng tên luôn lấy từ Stay.PrimaryGuestId. Cách này vẫn đúng
+        // với dữ liệu cũ bị thiếu dòng StayGuest và không nhân đôi dữ liệu mới.
+        var companionRows = _db.StayGuests.AsNoTracking()
+            .Where(sg => sg.GuestId != sg.Stay.PrimaryGuestId
+                && sg.Stay.ActualCheckIn < nextDay
                 && (sg.Stay.ActualCheckOut == null || sg.Stay.ActualCheckOut >= day))
-            .OrderBy(sg => sg.Stay.Room.RoomNumber)
-            .ThenByDescending(sg => sg.IsPrimary)
-            .ThenBy(sg => sg.Guest.FullName)
             .Select(sg => new ResidenceRow
             {
                 GuestId = sg.GuestId,
@@ -497,8 +535,13 @@ public class GuestService : IGuestService
                 RoomNumber = sg.Stay.Room.RoomNumber,
                 From = sg.Stay.ActualCheckIn,
                 To = sg.Stay.ActualCheckOut,
-                IsPrimary = sg.IsPrimary
-            })
+                IsPrimary = false
+            });
+
+        var rows = await primaryRows.Concat(companionRows)
+            .OrderBy(r => r.RoomNumber)
+            .ThenByDescending(r => r.IsPrimary)
+            .ThenBy(r => r.FullName)
             .ToListAsync();
 
         // Màn hình này hiện số giấy tờ đầy đủ của nhiều người một lúc. Spec xếp nó vào nhóm

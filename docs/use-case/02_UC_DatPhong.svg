@@ -1,0 +1,59 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="970" viewBox="0 0 1500 970" font-family="Helvetica, Arial, sans-serif">
+<defs><marker id="ar" markerWidth="12" markerHeight="10" refX="11" refY="5" orient="auto"><path d="M0,0 L12,5 L0,10" fill="none" stroke="#374151" stroke-width="1.8"/></marker></defs>
+<rect width="1500" height="970" fill="#fff"/>
+<text x="750.0" y="60" text-anchor="middle" font-size="30" font-weight="700" fill="#111827">Use Case: Quản lý đặt phòng</text>
+<rect x="330" y="95" width="900" height="845" rx="14" fill="#f8fafc" stroke="#1f2937" stroke-width="2.5"/>
+<text x="780.0" y="125" text-anchor="middle" font-size="19" font-weight="700" fill="#1f2937">Hệ thống Quản lý Khách sạn</text>
+<line x1="103" y1="228.0" x2="160" y2="228.0" stroke="#dc2626" stroke-width="2.2"/>
+<line x1="160" y1="190" x2="160" y2="290" stroke="#dc2626" stroke-width="2.2"/>
+<line x1="160" y1="190" x2="395" y2="190" stroke="#dc2626" stroke-width="2.2"/>
+<line x1="160" y1="290" x2="395" y2="290" stroke="#dc2626" stroke-width="2.2"/>
+<line x1="103" y1="478.0" x2="198" y2="478.0" stroke="#16a34a" stroke-width="2.2"/>
+<line x1="198" y1="190" x2="198" y2="790" stroke="#16a34a" stroke-width="2.2"/>
+<line x1="198" y1="190" x2="395" y2="190" stroke="#16a34a" stroke-width="2.2"/>
+<line x1="198" y1="290" x2="395" y2="290" stroke="#16a34a" stroke-width="2.2"/>
+<line x1="198" y1="390" x2="395" y2="390" stroke="#16a34a" stroke-width="2.2"/>
+<line x1="198" y1="490" x2="395" y2="490" stroke="#16a34a" stroke-width="2.2"/>
+<line x1="198" y1="590" x2="395" y2="590" stroke="#16a34a" stroke-width="2.2"/>
+<line x1="198" y1="690" x2="395" y2="690" stroke="#16a34a" stroke-width="2.2"/>
+<line x1="198" y1="790" x2="395" y2="790" stroke="#16a34a" stroke-width="2.2"/>
+<line x1="103" y1="678.0" x2="236" y2="678.0" stroke="#7c3aed" stroke-width="2.2"/>
+<line x1="236" y1="590" x2="236" y2="790" stroke="#7c3aed" stroke-width="2.2"/>
+<line x1="236" y1="590" x2="395" y2="590" stroke="#7c3aed" stroke-width="2.2"/>
+<line x1="236" y1="790" x2="395" y2="790" stroke="#7c3aed" stroke-width="2.2"/>
+<line x1="725.0" y1="290.0" x2="845.0" y2="290.0" stroke="#374151" stroke-width="1.8" stroke-dasharray="8,6" marker-end="url(#ar)"/>
+<line x1="560.0" y1="258.0" x2="560.0" y2="222.0" stroke="#374151" stroke-width="1.8" stroke-dasharray="8,6" marker-end="url(#ar)"/>
+<line x1="725.0" y1="490.0" x2="845.0" y2="490.0" stroke="#374151" stroke-width="1.8" stroke-dasharray="8,6" marker-end="url(#ar)"/>
+<line x1="725.0" y1="590.0" x2="845.0" y2="590.0" stroke="#374151" stroke-width="1.8" stroke-dasharray="8,6" marker-end="url(#ar)"/>
+<line x1="901.5" y1="214.1" x2="668.5" y2="265.9" stroke="#374151" stroke-width="1.8" stroke-dasharray="8,6" marker-end="url(#ar)"/>
+<ellipse cx="560" cy="190" rx="165.0" ry="32.0" fill="#dbeafe" stroke="#2563eb" stroke-width="2.2"/>
+<text x="560" y="196" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">Tra cứu phòng trống</text>
+<ellipse cx="560" cy="290" rx="165.0" ry="32.0" fill="#dbeafe" stroke="#2563eb" stroke-width="2.2"/>
+<text x="560" y="296" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">Tạo đơn đặt phòng</text>
+<ellipse cx="560" cy="390" rx="165.0" ry="32.0" fill="#dbeafe" stroke="#2563eb" stroke-width="2.2"/>
+<text x="560" y="396" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">Ghi nhận tiền cọc</text>
+<ellipse cx="560" cy="490" rx="165.0" ry="32.0" fill="#dbeafe" stroke="#2563eb" stroke-width="2.2"/>
+<text x="560" y="496" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">Sửa đơn (đổi ngày / phòng / gia hạn)</text>
+<ellipse cx="560" cy="590" rx="165.0" ry="32.0" fill="#dbeafe" stroke="#2563eb" stroke-width="2.2"/>
+<text x="560" y="596" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">Hủy đơn đặt phòng</text>
+<ellipse cx="560" cy="690" rx="165.0" ry="32.0" fill="#dbeafe" stroke="#2563eb" stroke-width="2.2"/>
+<text x="560" y="696" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">Đánh dấu No-show</text>
+<ellipse cx="560" cy="790" rx="165.0" ry="32.0" fill="#dbeafe" stroke="#2563eb" stroke-width="2.2"/>
+<text x="560" y="796" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">Xem / lọc danh sách đơn</text>
+<ellipse cx="1010" cy="290" rx="165.0" ry="32.0" fill="#fef3c7" stroke="#d97706" stroke-width="2.2"/>
+<text x="1010" y="296" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">Chọn / tạo hồ sơ khách</text>
+<ellipse cx="1010" cy="490" rx="165.0" ry="32.0" fill="#fef3c7" stroke="#d97706" stroke-width="2.2"/>
+<text x="1010" y="496" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">Kiểm tra xung đột phòng</text>
+<ellipse cx="1010" cy="590" rx="165.0" ry="32.0" fill="#fef3c7" stroke="#d97706" stroke-width="2.2"/>
+<text x="1010" y="596" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">Tính phí hủy &amp; hoàn cọc</text>
+<ellipse cx="1010" cy="190" rx="165.0" ry="32.0" fill="#fef3c7" stroke="#d97706" stroke-width="2.2"/>
+<text x="1010" y="196" text-anchor="middle" font-size="17" font-weight="600" fill="#111827">In phiếu xác nhận đặt phòng</text>
+<rect x="747.0" y="278.0" width="76" height="22" rx="4" fill="#f8fafc"/><text x="785.0" y="295.0" text-anchor="middle" font-size="14" font-style="italic" fill="#374151">«include»</text>
+<rect x="522.0" y="228.0" width="76" height="22" rx="4" fill="#f8fafc"/><text x="560.0" y="245.0" text-anchor="middle" font-size="14" font-style="italic" fill="#374151">«include»</text>
+<rect x="747.0" y="478.0" width="76" height="22" rx="4" fill="#f8fafc"/><text x="785.0" y="495.0" text-anchor="middle" font-size="14" font-style="italic" fill="#374151">«include»</text>
+<rect x="747.0" y="578.0" width="76" height="22" rx="4" fill="#f8fafc"/><text x="785.0" y="595.0" text-anchor="middle" font-size="14" font-style="italic" fill="#374151">«include»</text>
+<rect x="747.0" y="228.0" width="76" height="22" rx="4" fill="#f8fafc"/><text x="785.0" y="245.0" text-anchor="middle" font-size="14" font-style="italic" fill="#374151">«extend»</text>
+<g stroke="#1f2937" stroke-width="2.5" fill="none"><circle cx="75" cy="448.0" r="16" fill="#fff"/><line x1="75" y1="464.0" x2="75" y2="504.0"/><line x1="47" y1="478.0" x2="103" y2="478.0"/><line x1="75" y1="504.0" x2="51" y2="540.0"/><line x1="75" y1="504.0" x2="99" y2="540.0"/></g><text x="75" y="566.0" text-anchor="middle" font-size="18" font-weight="600" fill="#111827">Lễ tân</text><text x="75" y="588.0" text-anchor="middle" font-size="18" font-weight="600" fill="#111827">(Receptionist)</text>
+<g stroke="#1f2937" stroke-width="2.5" fill="none"><circle cx="75" cy="648.0" r="16" fill="#fff"/><line x1="75" y1="664.0" x2="75" y2="704.0"/><line x1="47" y1="678.0" x2="103" y2="678.0"/><line x1="75" y1="704.0" x2="51" y2="740.0"/><line x1="75" y1="704.0" x2="99" y2="740.0"/></g><text x="75" y="766.0" text-anchor="middle" font-size="18" font-weight="600" fill="#111827">Quản lý</text><text x="75" y="788.0" text-anchor="middle" font-size="18" font-weight="600" fill="#111827">(Admin)</text>
+<g stroke="#1f2937" stroke-width="2.5" fill="none"><circle cx="75" cy="198.0" r="16" fill="#fff"/><line x1="75" y1="214.0" x2="75" y2="254.0"/><line x1="47" y1="228.0" x2="103" y2="228.0"/><line x1="75" y1="254.0" x2="51" y2="290.0"/><line x1="75" y1="254.0" x2="99" y2="290.0"/></g><text x="75" y="316.0" text-anchor="middle" font-size="18" font-weight="600" fill="#111827">Khách hàng</text><text x="75" y="338.0" text-anchor="middle" font-size="18" font-weight="600" fill="#111827">(Guest)</text>
+</svg>

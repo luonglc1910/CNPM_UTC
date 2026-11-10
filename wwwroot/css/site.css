@@ -404,6 +404,17 @@ h1, h2, h3, h4, h5, h6 {
   .admin-topbar {
     padding-left: 1rem;
     padding-right: 1rem;
+    gap: .55rem;
+  }
+
+  /* Trên điện thoại, trạng thái ca được xem trong menu/ca làm việc.
+     Ẩn pill tại topbar để các thao tác bảo mật không làm tràn trang. */
+  .admin-topbar .shift-pill {
+    display: none;
+  }
+
+  .admin-topbar > .ms-auto {
+    gap: .5rem !important;
   }
 
   .admin-content {
@@ -1485,6 +1496,27 @@ h1, h2, h3, h4, h5, h6 {
 .ops-filter-card form { margin: 0; }
 .ops-section-title { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .75rem; }
 .ops-section-title h3 { margin: 0; color: var(--ink); font-size: .95rem; }
+.admin-auto-body { display: grid; gap: 1rem; min-width: 0; }
+.admin-auto-body > .mb-3:has(> a:only-child) { margin: 0 !important; }
+.admin-auto-body > .d-flex:first-child,
+.admin-auto-body > .row:first-child { margin-top: 0; }
+.admin-auto-body > .d-flex.justify-content-between,
+.admin-auto-body > .d-flex.flex-wrap { padding: .9rem 1rem; background: #fff; border: 1px solid var(--rule); border-radius: 12px; }
+.admin-auto-body > .card,
+.admin-auto-body > .row > [class*="col-"] > .card { box-shadow: none !important; }
+.admin-auto-body .nav-pills { width: fit-content; max-width: 100%; margin: 0 !important; padding: .3rem; background: #edf2f0; border-radius: 10px; overflow-x: auto; flex-wrap: nowrap; }
+.admin-auto-body .nav-pills .nav-link { color: var(--fg-muted); border-radius: 7px; font-size: .7rem; white-space: nowrap; }
+.admin-auto-body .nav-pills .nav-link.active { color: var(--ink); background: #fff; box-shadow: 0 1px 4px rgba(15,43,37,.08); }
+.admin-auto-body .stat-card { height: 100%; padding: .9rem 1rem; background: #fff; border: 1px solid var(--rule); border-radius: 11px; }
+.admin-auto-body .stat-label { color: var(--fg-muted); font-size: .62rem; font-weight: 700; letter-spacing: .035em; text-transform: uppercase; }
+.admin-auto-body .stat-value { margin-top: .2rem; color: var(--ink); font-weight: 700; }
+.admin-auto-body .table-responsive { border-radius: 0 0 11px 11px; }
+.admin-auto-body .card > .table-responsive:first-child:last-child { border-radius: 11px; }
+.admin-auto-body form .btn { min-height: 2.3rem; }
+.admin-auto-body .card[style*="max-width"] { width: 100%; max-width: none !important; }
+.admin-auto-body > .row.justify-content-center { justify-content: stretch !important; }
+.admin-auto-body > .row.justify-content-center > [class*="col-"] { width: min(100%, 60rem); margin-inline: auto; }
+.admin-auto-hero h2 i { color: var(--brass-bright); font-size: .9em; }
 @media (max-width: 991.98px) {
   .ops-form-shell { grid-template-columns: 1fr; }
   .ops-help-card { position: static; }
@@ -1494,6 +1526,42 @@ h1, h2, h3, h4, h5, h6 {
   .ops-hero { align-items: flex-start; flex-direction: column; padding: 1.15rem; }
   .ops-hero-actions { width: 100%; }
   .ops-hero-actions .btn { flex: 1; }
+}
+
+/* ============================ Hồ sơ khách ============================ */
+.guests-summary-grid { display: grid; grid-template-columns: repeat(4,minmax(0,1fr)); gap: .75rem; }
+.guests-summary-card { display: flex; align-items: center; gap: .75rem; min-width: 0; padding: .9rem 1rem; background: #fff; border: 1px solid var(--rule); border-radius: 12px; }
+.guests-summary-icon { display: grid; place-items: center; width: 2.45rem; height: 2.45rem; flex: 0 0 auto; color: var(--ink); background: #edf2f0; border-radius: 10px; font-size: 1rem; }
+.guests-summary-card > div { min-width: 0; display: grid; }
+.guests-summary-card small { color: var(--fg-muted); font-size: .62rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.guests-summary-card strong { color: var(--ink); font-size: 1.45rem; line-height: 1.25; }
+.guests-summary-card > div > span { overflow: hidden; color: var(--fg-faint); font-size: .62rem; text-overflow: ellipsis; white-space: nowrap; }
+.guests-summary-card.is-staying .guests-summary-icon { color: #18794e; background: #e5f5ed; }
+.guests-summary-card.is-loyal .guests-summary-icon { color: #8a641f; background: #fbf2dc; }
+.guests-summary-card.is-limited .guests-summary-icon { color: #a33b35; background: #fae9e7; }
+.guests-filter-panel { padding: 1rem; background: #fff; border: 1px solid var(--rule); border-radius: 12px; }
+.guests-section-heading { display: flex; align-items: center; justify-content: space-between; gap: 1rem; margin-bottom: .8rem; }
+.guests-section-heading > div { display: grid; }
+.guests-section-heading span { color: var(--ink); font-size: .82rem; font-weight: 700; }
+.guests-section-heading small { color: var(--fg-faint); font-size: .62rem; }
+.guests-section-heading > a { color: var(--fg-muted); font-size: .65rem; text-decoration: none; }
+.guests-filter-grid { display: grid; grid-template-columns: minmax(15rem,1.5fr) repeat(2,minmax(8rem,.75fr)) repeat(2,minmax(8.5rem,.8fr)) auto; gap: .65rem; align-items: end; }
+.guests-filter-submit { min-height: 2.45rem; padding-inline: 1rem; white-space: nowrap; }
+.guests-table-card { overflow: hidden; }
+.guests-table-head { display: flex; align-items: center; justify-content: space-between; padding: .8rem 1rem; background: #f7f9f8; border-bottom: 1px solid var(--rule); }
+.guests-table-head > div { display: grid; }
+.guests-table-head strong { color: var(--ink); font-size: .78rem; }
+.guests-table-head span { color: var(--fg-faint); font-size: .61rem; }
+.guests-name-link { color: var(--ink); font-weight: 700; text-decoration: none; }
+.guests-name-link:hover { color: var(--brass); }
+.guests-live-badge { display: inline-flex; align-items: center; gap: .25rem; margin-left: .35rem; padding: .16rem .38rem; color: #18794e; background: #e5f5ed; border-radius: 999px; font-size: .55rem; font-weight: 700; white-space: nowrap; }
+.guests-live-badge i { font-size: .35rem; }
+@media (max-width: 1199.98px) {
+  .guests-summary-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+  .guests-filter-grid { grid-template-columns: repeat(2,minmax(0,1fr)); }
+}
+@media (max-width: 575.98px) {
+  .guests-summary-grid, .guests-filter-grid { grid-template-columns: 1fr; }
 }
 
 /* ============================ Sơ đồ phòng ============================

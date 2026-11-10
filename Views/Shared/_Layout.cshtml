@@ -115,7 +115,9 @@
                 </div>
             </header>
 
-            <main class="admin-content" id="main">
+            <main class="admin-content" id="main"
+                  data-admin-controller="@ViewContext.RouteData.Values["controller"]"
+                  data-admin-action="@ViewContext.RouteData.Values["action"]">
                 @RenderBody()
             </main>
         </div>
